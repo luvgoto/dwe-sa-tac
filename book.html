@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DWE Smart Songbook Viewer</title>
+  <title>DWE VIEWER</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- PDF.js 3.11.174 -->
@@ -16,48 +16,20 @@
       overflow: hidden;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-      perspective: 1600px; /* 원근감 */
     }
 
-    /* 책 컨테이너 및 부드러운 페이지 전환 */
-    #book-spread {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.22s ease;
-      transform-style: preserve-3d;
-    }
-    
-    .anim-flip-next {
-      animation: flipNext 0.32s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-    .anim-flip-prev {
-      animation: flipPrev 0.32s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-
-    @keyframes flipNext {
-      0% { transform: scale(0.98) rotateY(-8deg); opacity: 0.85; }
-      100% { transform: scale(1) rotateY(0deg); opacity: 1; }
-    }
-    @keyframes flipPrev {
-      0% { transform: scale(0.98) rotateY(8deg); opacity: 0.85; }
-      100% { transform: scale(1) rotateY(0deg); opacity: 1; }
-    }
-
-    /* 개별 페이지 래퍼 및 양장본 그림자 효과 */
+    /* 양면 책 페이지 래퍼 */
     .page-wrapper {
       position: relative;
       background: white;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
-      backface-visibility: hidden;
     }
     
-    /* 실제 책 제본선(중앙 홈) 그림자 */
     .book-spine-left {
-      box-shadow: inset -10px 0 16px -8px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      box-shadow: inset -8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     }
     .book-spine-right {
-      box-shadow: inset 10px 0 16px -8px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      box-shadow: inset 8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     }
 
     /* 하이퍼링크 레이어 */
@@ -76,45 +48,78 @@
       pointer-events: auto;
       cursor: pointer;
       border-radius: 3px;
-      transition: background-color 0.15s;
     }
     .link-layer a:hover {
       background-color: rgba(59, 130, 246, 0.18);
       outline: 1.5px solid rgba(59, 130, 246, 0.5);
     }
+
+    /* 하단 호버/터치 페이지 네비게이터 */
+    #bottom-nav-trigger {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      z-index: 40;
+    }
+    #bottom-nav-bar {
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      transform: translateY(100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    #bottom-nav-trigger:hover #bottom-nav-bar,
+    #bottom-nav-bar.active {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 페이지 슬라이더 커스텀 */
+    input[type=range] {
+      accent-color: #2563eb;
+    }
   </style>
 </head>
-<body class="h-screen w-screen flex flex-col">
+<body class="h-screen w-screen flex flex-col bg-slate-100">
 
-  <!-- 상단 컨트롤 헤더 -->
-  <header class="h-12 bg-white border-b border-slate-200 px-3 sm:px-5 flex items-center justify-between shrink-0 z-30 shadow-xs">
+  <!-- 상단 심플 패널 -->
+  <header id="top-panel" class="h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-30 transition-all duration-300">
+    <!-- 좌측 타이틀 -->
     <div class="flex items-center gap-2">
       <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs shadow-xs">
         <i class="fa-solid fa-book-open"></i>
       </span>
-      <span class="font-black text-slate-800 text-xs sm:text-sm tracking-tight">SMART BOOK VIEWER</span>
+      <span class="font-black text-slate-800 text-sm tracking-tight">DWE VIEWER</span>
     </div>
 
-    <!-- 옵션 토글 버튼들 -->
-    <div class="flex items-center gap-1.5 sm:gap-2">
-      <!-- 표지 포함 여부 토글 -->
-      <button id="btn-cover-toggle" onclick="toggleCoverMode()" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition">
-        <i class="fa-solid fa-bookmark mr-1 text-blue-600"></i><span id="cover-label">표지 포함 (우측시작)</span>
+    <!-- 우측 토글 버튼들 -->
+    <div class="flex items-center gap-2">
+      <!-- 2쪽보기 / 1쪽보기 -->
+      <button id="btn-spread" onclick="toggleSpreadMode()" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition">
+        <i class="fa-solid fa-columns mr-1"></i><span id="label-spread">2쪽보기</span>
       </button>
 
-      <!-- 1쪽/2쪽 모아보기 토글 -->
-      <button id="btn-spread-toggle" onclick="toggleSpreadMode()" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition">
-        <i class="fa-solid fa-columns mr-1"></i><span id="spread-label">2쪽 보기</span>
+      <!-- 표지포함 / 표지미포함 -->
+      <button id="btn-cover" onclick="toggleCoverMode()" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition">
+        <i class="fa-solid fa-bookmark mr-1 text-blue-600"></i><span id="label-cover">표지포함</span>
       </button>
 
-      <!-- 페이지 번호 -->
-      <div class="flex items-center bg-slate-100 rounded-lg px-2 py-1 border border-slate-200 text-xs font-mono font-bold ml-1">
-        <input type="number" id="page-input" min="1" value="1" onchange="goToPage(this.value)" class="w-10 bg-transparent text-center text-slate-800 focus:outline-none">
-        <span class="text-slate-400 mx-0.5">/</span>
-        <span id="total-pages" class="text-slate-600">-</span>
-      </div>
+      <!-- 전체보기 아이콘 -->
+      <button onclick="enterFullscreen()" title="전체보기" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center text-xs font-bold transition ml-1">
+        <i class="fa-solid fa-expand"></i>
+      </button>
     </div>
   </header>
+
+  <!-- 전체보기 시 복귀용 최상단 감지 핫스팟 (상단 터치 시 전체보기 해제) -->
+  <div id="top-exit-hotspot" onclick="exitFullscreen()" class="hidden fixed top-0 left-0 right-0 h-4 z-50 cursor-pointer" title="상단을 누르면 원래 화면으로 돌아옵니다"></div>
+
+  <!-- 전체보기 시 플로팅 복귀 미니 버튼 -->
+  <button id="btn-floating-exit" onclick="exitFullscreen()" class="hidden fixed top-3 right-3 z-50 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-white/20 transition">
+    <i class="fa-solid fa-compress mr-1"></i> 복귀
+  </button>
 
   <!-- 메인 뷰어 영역 -->
   <main id="viewer-container" class="flex-1 w-full h-full relative flex items-center justify-center p-2 sm:p-4 overflow-hidden">
@@ -127,7 +132,7 @@
 
     <!-- 양면 책 펼침 컨테이너 -->
     <div id="book-spread" class="hidden flex items-center justify-center">
-      <!-- 왼쪽 페이지 (1페이지 단독일 땐 자리만 차지하거나 투명) -->
+      <!-- 왼쪽 페이지 -->
       <div id="left-page-box" class="page-wrapper rounded-l-md overflow-hidden">
         <canvas id="canvas-left" class="block"></canvas>
         <div id="links-left" class="link-layer"></div>
@@ -147,8 +152,30 @@
     <button onclick="nextPage()" class="fixed right-3 top-1/2 -translate-y-1/2 w-10 h-14 rounded-2xl bg-white/85 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center z-30 active:scale-90 transition">
       <i class="fa-solid fa-chevron-right text-sm"></i>
     </button>
-
   </main>
+
+  <!-- 하단 감지 영역 & 숨김형 페이지 네비게이터 -->
+  <div id="bottom-nav-trigger" onclick="toggleBottomNavActive(event)">
+    <div id="bottom-nav-bar" class="w-full h-full flex items-center justify-center px-4 pb-2">
+      <div class="bg-slate-900/85 backdrop-blur-md border border-white/20 text-white rounded-2xl px-5 py-2 shadow-2xl flex items-center gap-4 max-w-lg w-full" onclick="event.stopPropagation()">
+        
+        <!-- 현재 페이지 / 전체 페이지 -->
+        <span class="font-mono text-xs font-black shrink-0 text-white/90">
+          <span id="current-page-num" class="text-blue-400 text-sm">1</span> / <span id="total-page-num">1</span>
+        </span>
+
+        <!-- 스크롤 슬라이더 바 -->
+        <input type="range" id="page-slider" min="1" max="1" value="1" oninput="onSliderInput(this.value)" class="flex-1 h-1.5 bg-white/20 rounded-lg cursor-pointer">
+
+        <!-- 직접 입력창 -->
+        <div class="flex items-center bg-white/10 rounded-lg px-2 py-0.5 border border-white/20 shrink-0">
+          <input type="number" id="direct-page-input" min="1" value="1" onchange="goToPage(this.value)" class="w-10 bg-transparent text-center text-xs font-bold text-white focus:outline-none">
+          <span class="text-white/40 text-xs">P</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -158,9 +185,10 @@
     let pdfDoc = null;
     let currentPage = 1;
     let totalPages = 1;
-    let isSpreadMode = true;       // true: 2쪽 보기, false: 1쪽 보기
-    let hasCoverPage = true;       // true: 1p 표지 우측 시작, false: 1p부터 좌우 나란히
+    let isSpreadMode = true; // true: 2쪽보기, false: 1쪽보기
+    let hasCoverPage = true; // true: 표지포함(1p우측), false: 표지미포함
     let isRendering = false;
+    let isFullscreenMode = false;
 
     async function init() {
       try {
@@ -168,8 +196,9 @@
         pdfDoc = await loadingTask.promise;
         totalPages = pdfDoc.numPages;
 
-        document.getElementById('total-pages').textContent = totalPages;
-        document.getElementById('page-input').max = totalPages;
+        document.getElementById('total-page-num').textContent = totalPages;
+        document.getElementById('page-slider').max = totalPages;
+        document.getElementById('direct-page-input').max = totalPages;
 
         await renderCurrentView();
 
@@ -184,22 +213,17 @@
       }
     }
 
-    // 화면 렌더링 및 페이지 배치 계산
-    async function renderCurrentView(animDirection = null) {
+    async function renderCurrentView() {
       if (!pdfDoc || isRendering) return;
       isRendering = true;
 
-      const spreadEl = document.getElementById('book-spread');
-      if (animDirection) {
-        spreadEl.classList.remove('anim-flip-next', 'anim-flip-prev');
-        void spreadEl.offsetWidth; // DOM 리플로우 유도
-        spreadEl.classList.add(animDirection === 'next' ? 'anim-flip-next' : 'anim-flip-prev');
-      }
-
       try {
         const container = document.getElementById('viewer-container');
-        const availW = container.clientWidth - 48;
-        const availH = container.clientHeight - 24;
+        // 전체보기 모드일 때와 일반 모드일 때 여백 조정
+        const padX = isFullscreenMode ? 16 : 48;
+        const padY = isFullscreenMode ? 16 : 24;
+        const availW = container.clientWidth - padX;
+        const availH = container.clientHeight - padY;
 
         const leftBox = document.getElementById('left-page-box');
         const rightBox = document.getElementById('right-page-box');
@@ -208,45 +232,41 @@
         let rightPageNum = null;
 
         if (!isSpreadMode) {
-          // [1쪽 보기 모드]
+          // [1쪽 보기]
           leftPageNum = currentPage;
           rightPageNum = null;
         } else {
-          // [2쪽 모아보기 모드]
+          // [2쪽 보기]
           if (hasCoverPage) {
-            // 표지 포함 모드: 1페이지는 책 겉표지로서 우측에 단독 표시
+            // 표지 포함: 1p 우측 시작
             if (currentPage === 1) {
               leftPageNum = null;
               rightPageNum = 1;
             } else {
-              // 2페이지부터는 짝수가 왼쪽, 홀수가 오른쪽 (2-3, 4-5...)
               leftPageNum = (currentPage % 2 === 0) ? currentPage : currentPage - 1;
               rightPageNum = (leftPageNum + 1 <= totalPages) ? leftPageNum + 1 : null;
             }
           } else {
-            // 표지 미포함 모드: 1페이지부터 일반 양면 (1-2, 3-4, 5-6...)
+            // 표지 미포함: 1-2, 3-4...
             leftPageNum = (currentPage % 2 !== 0) ? currentPage : currentPage - 1;
             rightPageNum = (leftPageNum + 1 <= totalPages) ? leftPageNum + 1 : null;
           }
         }
 
-        // 기준 비율 계산
         const refPageNum = leftPageNum || rightPageNum || 1;
         const samplePage = await pdfDoc.getPage(refPageNum);
         const baseVp = samplePage.getViewport({ scale: 1.0 });
 
-        // 양면일 때는 2개 분량의 가로폭 대비 축소율 계산
-        const isDualLayout = isSpreadMode;
-        const targetW = isDualLayout ? (availW / 2) : availW;
+        const isDual = isSpreadMode;
+        const targetW = isDual ? (availW / 2) : availW;
         const scale = Math.min(targetW / baseVp.width, availH / baseVp.height);
 
-        // 1. 왼쪽 슬롯 처리
+        // 1. 왼쪽 슬롯
         if (leftPageNum) {
           leftBox.style.visibility = 'visible';
           leftBox.className = 'page-wrapper rounded-l-md overflow-hidden book-spine-left';
           await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', scale);
         } else if (isSpreadMode && rightPageNum === 1) {
-          // 1페이지가 우측에 배치될 때 왼쪽 공간을 투명하게 비워 균형 유지
           leftBox.style.visibility = 'hidden';
           leftBox.style.width = `${Math.floor(baseVp.width * scale)}px`;
           leftBox.style.height = `${Math.floor(baseVp.height * scale)}px`;
@@ -254,29 +274,28 @@
           leftBox.style.visibility = 'visible';
         }
 
-        // 2. 오른쪽 슬롯 처리
+        // 2. 오른쪽 슬롯
         if (rightPageNum) {
           rightBox.classList.remove('hidden');
           rightBox.className = (isSpreadMode && !leftPageNum)
-            ? 'page-wrapper rounded-md overflow-hidden' // 표지 단독일 땐 양쪽 모서리 둥글게
+            ? 'page-wrapper rounded-md overflow-hidden'
             : 'page-wrapper rounded-r-md overflow-hidden book-spine-right border-l border-slate-200';
           await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', scale);
         } else {
           rightBox.classList.add('hidden');
         }
 
-        // 1쪽 모드일 때 왼쪽 박스 테두리 정돈
         if (!isSpreadMode) {
           leftBox.className = 'page-wrapper rounded-md overflow-hidden shadow-lg';
         }
 
-        document.getElementById('page-input').value = currentPage;
+        // 하단 인디케이터 동기화
+        updateBottomNavUI();
       } finally {
         isRendering = false;
       }
     }
 
-    // 캔버스 + 하이퍼링크 렌더링
     async function renderSinglePage(pageNum, canvasId, linkLayerId, scale) {
       const page = await pdfDoc.getPage(pageNum);
       const viewport = page.getViewport({ scale });
@@ -293,7 +312,7 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       await page.render({ canvasContext: ctx, viewport }).promise;
 
-      // 하이퍼링크 레이어
+      // 하이퍼링크 얹기
       const linkLayer = document.getElementById(linkLayerId);
       linkLayer.innerHTML = '';
       linkLayer.style.width = `${Math.floor(viewport.width)}px`;
@@ -342,7 +361,7 @@
           const ref = destArray[0];
           const pageIndex = (typeof ref === 'object') ? await pdfDoc.getPageIndex(ref) : ref;
           currentPage = pageIndex + 1;
-          await renderCurrentView('next');
+          await renderCurrentView();
         }
       } catch (err) {
         console.warn('목차 이동 실패:', err);
@@ -360,7 +379,7 @@
           currentPage = (currentPage <= 2) ? 1 : currentPage - 2;
         }
       }
-      renderCurrentView('prev');
+      renderCurrentView();
     }
 
     function nextPage() {
@@ -374,7 +393,7 @@
           currentPage = Math.min(totalPages, currentPage + 2);
         }
       }
-      renderCurrentView('next');
+      renderCurrentView();
     }
 
     function goToPage(val) {
@@ -385,25 +404,80 @@
       }
     }
 
-    function toggleCoverMode() {
-      hasCoverPage = !hasCoverPage;
-      document.getElementById('cover-label').textContent = hasCoverPage ? '표지 포함 (우측시작)' : '표지 미포함 (1p좌측)';
-      renderCurrentView();
-    }
-
+    /* 토글 기능들 */
     function toggleSpreadMode() {
       isSpreadMode = !isSpreadMode;
-      document.getElementById('spread-label').textContent = isSpreadMode ? '2쪽 보기' : '1쪽 보기';
+      document.getElementById('label-spread').textContent = isSpreadMode ? '2쪽보기' : '1쪽보기';
       renderCurrentView();
     }
 
-    // 키보드 좌우 방향키
+    function toggleCoverMode() {
+      hasCoverPage = !hasCoverPage;
+      document.getElementById('label-cover').textContent = hasCoverPage ? '표지포함' : '표지미포함';
+      renderCurrentView();
+    }
+
+    /* 전체보기 (몰입 모드) */
+    function enterFullscreen() {
+      isFullscreenMode = true;
+      document.getElementById('top-panel').classList.add('hidden');
+      document.getElementById('top-exit-hotspot').classList.remove('hidden');
+      document.getElementById('btn-floating-exit').classList.remove('hidden');
+
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+      renderCurrentView();
+    }
+
+    function exitFullscreen() {
+      isFullscreenMode = false;
+      document.getElementById('top-panel').classList.remove('hidden');
+      document.getElementById('top-exit-hotspot').classList.add('hidden');
+      document.getElementById('btn-floating-exit').classList.add('hidden');
+
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+      renderCurrentView();
+    }
+
+    /* 하단 바 UI 갱신 및 터치 인터랙션 */
+    function updateBottomNavUI() {
+      document.getElementById('current-page-num').textContent = currentPage;
+      document.getElementById('page-slider').value = currentPage;
+      document.getElementById('direct-page-input').value = currentPage;
+    }
+
+    let sliderDebounce;
+    function onSliderInput(val) {
+      document.getElementById('current-page-num').textContent = val;
+      document.getElementById('direct-page-input').value = val;
+      clearTimeout(sliderDebounce);
+      sliderDebounce = setTimeout(() => {
+        goToPage(val);
+      }, 80);
+    }
+
+    let hideBottomTimer;
+    function toggleBottomNavActive(e) {
+      const bar = document.getElementById('bottom-nav-bar');
+      bar.classList.add('active');
+      clearTimeout(hideBottomTimer);
+      // 태블릿 터치 후 3초 뒤 자동 숨김
+      hideBottomTimer = setTimeout(() => {
+        bar.classList.remove('active');
+      }, 3500);
+    }
+
+    // 키보드 지원
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft') prevPage();
       if (e.key === 'ArrowRight') nextPage();
+      if (e.key === 'Escape' && isFullscreenMode) exitFullscreen();
     });
 
-    // 태블릿 터치 스와이프 지원
+    // 태블릿 스와이프
     let touchStartX = 0;
     window.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
     window.addEventListener('touchend', e => {
@@ -417,7 +491,7 @@
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(renderCurrentView, 150);
+      resizeTimer = setTimeout(renderCurrentView, 120);
     });
 
     window.onload = init;
