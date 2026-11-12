@@ -498,36 +498,74 @@
     }
 
     async function renderBookPage(num) {
-      if (!pdfDoc || isRenderingPdf) return;
-      isRenderingPdf = true;
+  if (!pdfDoc || isRenderingPdf) return;
+  isRenderingPdf = true;
 
-      const page = await pdfDoc.getPage(num);
-      const canvas = document.getElementById('pdf-render-canvas');
-      const ctx = canvas.getContext('2d');
-      const container = document.getElementById('pdf-scroll-container');
-      const interactiveLayer = document.getElementById('pdf-interactive-layer');
+  const page = await pdfDoc.getPage(num);
+  const canvas = document.getElementById('pdf-render-canvas');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('pdf-scroll-container');
+  const annotationLayer = document.getElementById('pdf-annotation-layer');
+  const pageContainer = document.getElementById('pdf-page-container');
 
-      // 화면 높이와 너비에 맞게 최적 비율(Fit) 계산
-      const baseViewport = page.getViewport({ scale: 1.0 });
-      const availableWidth = container.clientWidth - 24;
-      const availableHeight = container.clientHeight - 24;
-      const scale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
-      const viewport = page.getViewport({ scale: Math.max(scale, 0.6) });
+  // 화면 크기에 맞게 최적 비율(Fit) 계산
+  const baseViewport = page.getViewport({ scale: 1.0 });
+  const availableWidth = container.clientWidth - 24;
+  const availableHeight = container.clientHeight - 24;
+  const scale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
+  const viewport = page.getViewport({ scale: Math.max(scale, 0.6) });
 
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      document.getElementById('pdf-page-container').style.width = `${viewport.width}px`;
-      document.getElementById('pdf-page-container').style.height = `${viewport.height}px`;
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  pageContainer.style.width = `${viewport.width}px`;
+  pageContainer.style.height = `${viewport.height}px`;
 
-      const renderContext = { canvasContext: ctx, viewport: viewport };
-      await page.render(renderContext).promise;
+  // 1. 캔버스 렌더링
+  const renderContext = { canvasContext: ctx, viewport: viewport };
+  await page.render(renderContext).promise;
 
-      // 인터랙티브 핫스팟 레이어 렌더링
-      renderInteractiveHotspots(num);
+  // 2. PDF 기본 하이퍼링크 (목차 이동, 외부 웹 링크) 렌더링
+  annotationLayer.innerHTML = '';
+  annotationLayer.style.width = `${viewport.width}px`;
+  annotationLayer.style.height = `${viewport.height}px`;
 
-      document.getElementById('book-page-input').value = num;
-      isRenderingPdf = false;
+  const annotations = await page.getAnnotations();
+  pdfjsLib.AnnotationLayer.render({
+    viewport: viewport.clone({ dontFlip: true }),
+    div: annotationLayer,
+    annotations: annotations,
+    page: page,
+    linkService: {
+      getDestinationHash: (dest) => '#',
+      getAnchorUrl: (hash) => hash,
+      setHash: () => {},
+      executeNamedAction: () => {},
+      addLinkAttributes: (link, url, newWindow) => {
+        link.href = url;
+        link.target = newWindow ? '_blank' : '_self';
+        link.rel = 'noopener noreferrer';
+      },
+      // PDF 내부 목차 링크(페이지 이동) 처리
+      goToDestination: async (dest) => {
+        let destRef = dest;
+        if (typeof dest === 'string') {
+          destRef = await pdfDoc.getDestination(dest);
+        }
+        if (Array.isArray(destRef)) {
+          const pageIndex = await pdfDoc.getPageIndex(destRef[0]);
+          currentBookPage = pageIndex + 1;
+          renderBookPage(currentBookPage);
+        }
+      }
     }
+  });
+
+  // 3. 커스텀 카드 음원 및 VOCA 핫스팟 레이어 렌더링
+  renderInteractiveHotspots(num);
+
+  document.getElementById('book-page-input').value = num;
+  isRenderingPdf = false;
+}
 
     function renderInteractiveHotspots(pageNum) {
       const layer = document.getElementById('pdf-interactive-layer');
