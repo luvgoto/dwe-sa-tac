@@ -1,5 +1,5 @@
 // R2 음원 기본 경로 및 143곡 매핑 데이터
-const R2_SONGS_BASE = 'https://pub-9a123d611bc04283a5fcc6df16f30d10.r2.dev/songs';
+const R2_SONGS_BASE = 'https://dwe-songs.luvgoto.workers.dev/songs';
 
 const SONGS_DB = {
   1: "SA_01_mix.mp3", 2: "SA_01_01 What's Your Name 1.mp3", 3: "SA_01_02 What's Your Name 2.mp3",
