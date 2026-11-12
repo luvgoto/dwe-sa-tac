@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TAC PLAYER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- R2 Worker 주소 공유 -->
+  <script src="songs-data.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .gothic-font {
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    }
+    .btn-jelly:active {
+      transform: scale(0.92);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 8px;
+    }
+
+    @media screen and (min-width: 1300px) and (min-height: 850px) and (hover: hover) {
+      #view-card {
+        transform: scale(1.22);
+        transform-origin: center center;
+      }
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-800 min-h-screen flex flex-col justify-start sm:justify-between antialiased">
+
+  <!-- ================= 상단 헤더 ================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-3 sm:px-8 py-2.5 flex items-center justify-between gap-2 shadow-xs">
+    <div class="flex items-center gap-2 shrink-0">
+      <!-- 송북(book.html)으로 바로 돌아가는 버튼 -->
+      <button onclick="goBackToSongbook()" title="송북으로 이동" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[11px] sm:text-xs font-black flex items-center gap-1 transition btn-jelly">
+        <i class="fa-solid fa-book-open text-blue-600"></i>
+        <span class="hidden xs:inline sm:inline">BOOK</span>
+      </button>
+      <div class="cursor-pointer" onclick="switchView('card')">
+        <h1 class="text-base sm:text-2xl font-black tracking-tight text-slate-900">
+          TAC PLAYER
+        </h1>
+      </div>
+    </div>
+
+    <!-- 모드 탭 (CARD / QUIZ / SELECT CARD) & 전체화면 버튼 -->
+    <div class="flex items-center gap-1 sm:gap-2">
+      <button id="nav-btn-card" onclick="switchView('card')" class="px-2 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-sm font-black transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly">
+        <span>CARD</span>
+      </button>
+      <button id="nav-btn-quiz" onclick="switchView('quiz')" class="px-2 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-sm font-black transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly">
+        <span>QUIZ</span>
+      </button>
+      <button id="nav-btn-filter" onclick="switchView('filter')" class="px-2 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-sm font-black transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly">
+        <span>SELECT CARD</span>
+      </button>
+
+      <button onclick="toggleFullscreen()" title="전체화면" class="hidden sm:flex w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 items-center justify-center border border-slate-200 ml-1 btn-jelly">
+        <i id="fullscreen-icon" class="fa-solid fa-expand text-xs"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= 1. 메인 카드 놀이 뷰 ================= -->
+  <main id="view-card" class="flex-1 max-w-xl md:max-w-3xl lg:max-w-4xl w-full mx-auto px-3 py-2 sm:py-3 flex flex-col justify-center items-center gap-1 sm:gap-2 my-auto">
+    <div class="w-full flex items-center justify-between px-1 py-0.5 text-xs">
+      <div class="flex items-center gap-2">
+        <span id="card-stage-badge" class="px-3 py-1 rounded-full font-black text-white text-[11px] sm:text-xs shadow-xs bg-blue-600 tracking-wider">
+          BLUE
+        </span>
+        <span id="card-indicator" class="font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200 text-[11px] sm:text-xs">
+          1 / 510
+        </span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="toggleAutoPlay()" id="btn-autoplay" class="px-3.5 py-1 font-black rounded-full bg-white border border-pink-500 text-pink-600 hover:bg-pink-50 transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs">
+          <i id="autoplay-icon" class="fa-solid fa-play text-xs"></i>
+          <span id="autoplay-text">PLAY ALL</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="w-full my-0 py-0.5 sm:py-1">
+      <div onclick="toggleAudioPlayback()" class="w-full aspect-[2.1/1] bg-slate-100 rounded-2xl sm:rounded-3xl shadow-lg border-2 sm:border-3 border-slate-200 overflow-hidden relative cursor-pointer flex items-center justify-center">
+        <img id="card-image" src="" alt="Card" loading="eager" class="w-full h-full object-cover">
+        <canvas id="filter-canvas" class="hidden w-full h-full object-cover absolute inset-0 pointer-events-none"></canvas>
+
+        <div id="magic-filter-controls" class="hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 flex items-center gap-1.5 sm:gap-2.5 z-20" onclick="event.stopPropagation()">
+          <button id="btn-filter-orig" onclick="applyMagicFilter('original')" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly">
+            ORIG
+          </button>
+          <button id="btn-filter-red" onclick="applyMagicFilter('red-only')" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly">
+            RED
+          </button>
+          <button id="btn-filter-green" onclick="applyMagicFilter('green-only')" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly">
+            GREEN
+          </button>
+        </div>
+
+        <div id="image-fallback" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-50 text-slate-400 p-4 text-center">
+          <i class="fa-regular fa-image text-4xl mb-2 text-slate-300"></i>
+          <p class="text-base font-bold text-slate-800" id="fallback-word"></p>
+          <p class="text-xs text-slate-400 mt-1" id="fallback-text"></p>
+        </div>
+
+        <div id="touch-ripple" class="absolute inset-0 bg-blue-500/10 opacity-0 pointer-events-none transition-opacity duration-200"></div>
+      </div>
+
+      <div class="mt-2 sm:mt-2.5 flex items-start justify-between px-1 gap-2">
+        <span id="card-word-title" class="gothic-font text-lg sm:text-2xl font-black text-slate-900 tracking-tight break-words flex-1"></span>
+        <div id="card-tags-box" class="flex flex-wrap gap-1 justify-end shrink-0"></div>
+      </div>
+    </div>
+
+    <footer class="w-full flex flex-col items-center gap-1.5 sm:gap-2 pt-0.5">
+      <div class="w-full flex items-center justify-between gap-2.5 sm:gap-6">
+        <button onclick="prevCard()" class="flex-1 py-3 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-2xl border border-slate-200 shadow-xs text-sm sm:text-base btn-jelly flex items-center justify-center gap-1.5 sm:gap-2">
+          <i class="fa-solid fa-chevron-left text-xs sm:text-sm"></i>
+          <span>PRE</span>
+        </button>
+
+        <button id="btn-speaker" onclick="toggleAudioPlayback()" class="w-14 h-14 min-w-[56px] min-h-[56px] sm:w-20 sm:h-16 sm:min-w-[80px] sm:min-h-[64px] bg-amber-400 hover:bg-amber-300 text-slate-900 font-black rounded-2xl shadow-md flex items-center justify-center text-xl sm:text-2xl btn-jelly transform active:scale-95 transition shrink-0">
+          <i id="speaker-icon" class="fa-solid fa-volume-high"></i>
+        </button>
+
+        <button onclick="nextCard()" class="flex-1 py-3 sm:py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-sm text-sm sm:text-base btn-jelly flex items-center justify-center gap-1.5 sm:gap-2">
+          <span>NEXT</span>
+          <i class="fa-solid fa-chevron-right text-xs sm:text-sm"></i>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+        <span class="font-bold">Jump to:</span>
+        <input type="number" id="jump-input" min="1" max="510" placeholder="1~510" class="w-20 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-center text-slate-900 font-bold focus:outline-none focus:border-blue-500 text-xs sm:text-sm">
+        <button onclick="jumpToCard()" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-black text-xs sm:text-sm">Go</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ================= 2. 소리 퀴즈 놀이 뷰 ================= -->
+  <main id="view-quiz" class="hidden flex-1 max-w-xl md:max-w-4xl lg:max-w-5xl w-full mx-auto p-4 sm:p-8 flex flex-col space-y-4 sm:space-y-6 my-auto">
+    <div class="w-full flex items-center justify-between px-1">
+      <div class="flex items-center gap-2">
+        <span class="px-3 py-1 rounded-full text-xs font-black text-amber-800 bg-amber-100 border border-amber-200 tracking-wide">
+          QUIZ
+        </span>
+        <span id="quiz-progress-badge" class="text-xs font-mono font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200">
+          1 / 10
+        </span>
+        <span id="quiz-score-badge" class="text-xs font-black bg-slate-100 text-green-700 px-3 py-1 rounded-full border border-slate-200">
+          SCORE: 0 / 10
+        </span>
+      </div>
+      <button onclick="resetAndStartQuiz()" title="다시 시작" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center border border-slate-200 btn-jelly">
+        <i class="fa-solid fa-rotate text-xs"></i>
+      </button>
+    </div>
+
+    <div onclick="handleQuizSpeakerClick()" class="w-full bg-slate-50 hover:bg-slate-100 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition group">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl sm:text-2xl shadow-xs group-hover:scale-105 transition">
+          <i class="fa-solid fa-volume-high animate-pulse"></i>
+        </div>
+        <div class="text-left">
+          <p class="text-xs sm:text-base font-black text-slate-900 leading-tight">Listen carefully and choose the correct card.</p>
+          <p class="text-[11px] sm:text-xs text-blue-600 font-bold mt-0.5">Tap to listen again.</p>
+        </div>
+      </div>
+      <span class="px-3.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-black rounded-xl shrink-0 uppercase tracking-wider">
+        repeat
+      </span>
+    </div>
+
+    <div id="quiz-options-grid" class="w-full grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1"></div>
+
+    <div id="quiz-complete-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border-2 border-slate-100 animate-in fade-in zoom-in duration-200">
+        <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+          🎉
+        </div>
+        <h3 class="text-xl font-black text-slate-900">GREAT JOB!</h3>
+        <p class="text-slate-500 text-xs mt-1">10문제를 모두 완료했습니다.</p>
+        
+        <div class="my-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl">
+          <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Total Score</span>
+          <p class="text-3xl font-black text-blue-700 mt-0.5"><span id="quiz-final-score">0</span> / 10</p>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="resetAndStartQuiz()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-xs text-sm btn-jelly">
+            PLAY AGAIN
+          </button>
+          <button onclick="switchView('card')" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm btn-jelly">
+            CARD
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= 3. 부모 모드 & 카드 선택/연속재생 뷰 ================= -->
+  <main id="view-filter" class="hidden flex-1 max-w-3xl lg:max-w-5xl w-full mx-auto p-4 sm:p-7 flex flex-col space-y-4 sm:space-y-5 my-auto">
+    <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      <div>
+        <h2 class="text-sm sm:text-lg font-black text-slate-900">
+          카드 선택 & 연속 재생
+        </h2>
+        <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+          원하는 카드를 선택해 연속 재생하고 퀴즈에 반영하세요.
+        </p>
+      </div>
+      <button onclick="playSelectedCardsImmediately()" class="px-4 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 btn-jelly transition">
+        <i class="fa-solid fa-play text-xs"></i>
+        <span><span id="btn-selected-count" class="underline">510</span>장 연속재생 시작</span>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col justify-between">
+        <span class="font-bold text-slate-700 mb-1 flex items-center gap-1">
+          <i class="fa-solid fa-magnifying-glass text-blue-600"></i> 단어 / 번호 / 인덱스 찾기
+        </span>
+        <div class="relative">
+          <input type="text" id="parent-search-input" oninput="handleSearchInput()" placeholder="예: book, cat, 25, MAGIC" class="w-full px-2.5 py-1.5 pl-7 bg-white border border-slate-300 rounded-lg text-slate-900 font-bold placeholder-slate-400 text-xs focus:outline-none focus:border-blue-600 shadow-xs">
+          <i class="fa-solid fa-search absolute left-2 top-2 text-slate-400 text-xs"></i>
+          <button onclick="clearSearchInput()" id="btn-clear-search" class="hidden absolute right-2.5 top-1.5 text-slate-400 hover:text-slate-700 font-bold text-xs">✕</button>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col justify-between">
+        <span class="font-bold text-slate-700 mb-1 flex items-center gap-1">
+          <i class="fa-solid fa-list-ol text-blue-600"></i> 카드 범위
+        </span>
+        <div class="flex items-center gap-1.5">
+          <input type="text" id="parent-range-input" placeholder="예: 1-20 또는 3, 7, 15" class="flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-bold placeholder-slate-400 text-xs focus:outline-none focus:border-blue-600 shadow-xs">
+          <button onclick="applyNumberRangeInput()" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shrink-0 text-xs">담기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-2.5">
+      <div class="flex items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 flex-1 pr-1">
+          <span class="font-black text-slate-400 mr-0.5 text-[11px] shrink-0">단계:</span>
+          <button onclick="setStageTab('all')" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-slate-700 btn-jelly" data-stage="all">ALL</button>
+          <button onclick="setStageTab('1단계')" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-blue-600 btn-jelly" data-stage="1단계">BLUE</button>
+          <button onclick="setStageTab('2단계')" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-green-600 btn-jelly" data-stage="2단계">GREEN</button>
+          <button onclick="setStageTab('3단계')" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-lime-600 btn-jelly" data-stage="3단계">LIME</button>
+          <button onclick="setStageTab('4단계')" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-yellow-500 btn-jelly" data-stage="4단계">YELLOW</button>
+          <button onclick="setStageTab('스토리')" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-purple-600 btn-jelly" data-stage="스토리">STORY</button>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="selectAllCurrentlyVisible()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold border border-slate-200 text-[11px]">화면선택</button>
+          <button onclick="deselectAll()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-rose-600 font-bold border border-slate-200 text-[11px]">전체해제</button>
+        </div>
+      </div>
+
+      <div id="filter-tags-container" class="flex items-start gap-2 py-0.5 text-[11px]"></div>
+    </div>
+
+    <div class="bg-white p-3 rounded-2xl border-2 border-slate-200 flex-1 flex flex-col min-h-[340px] max-h-[480px] shadow-xs">
+      <div class="flex items-center justify-between text-xs text-slate-500 px-1 pb-2 border-b border-slate-100">
+        <span class="font-bold">카드를 터치하면 바로 담기/빼기가 됩니다:</span>
+        <span class="text-blue-600 font-bold">선택됨: <span id="current-selected-stat" class="font-mono text-sm font-black">510</span> / 510</span>
+      </div>
+
+      <div id="parent-card-grid" onscroll="handleGridScroll(this)" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 pt-2.5 overflow-y-auto custom-scroll pr-1 flex-1 content-start"></div>
+      
+      <div id="parent-load-more" class="hidden text-center py-1 text-xs text-slate-400 font-bold">
+        스크롤하면 더 많은 카드가 나타납니다...
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+      <span>음원이 끝나고 1.2초 후 다음 카드가 자동 재생됩니다.</span>
+      <button onclick="switchView('card')" class="text-slate-600 font-bold underline hover:text-slate-900">닫기</button>
+    </div>
+  </main>
+
+  <audio id="audio-player" crossorigin="anonymous" preload="auto"></audio>
+
+  <script>
+    /* ========================================================
+       R2 단어 음원 기본 경로 자동 연결 (songs-data.js 공유)
+       ======================================================== */
+    const R2_VOCA_BASE = (typeof R2_AUDIO_BASE !== 'undefined')
+      ? R2_AUDIO_BASE
+      : ((typeof R2_SONGS_BASE !== 'undefined') ? R2_SONGS_BASE.replace(/\/songs\/?$/, '/audio') : 'audio');
+
+    function getR2VocaUrl(cardId) {
+      const padded = String(cardId).padStart(3, '0');
+      return `${R2_VOCA_BASE}/${padded}.mp3`;
+    }
+
+    function goBackToSongbook() {
+      const params = new URLSearchParams(window.location.search);
+      const fromPage = params.get('fromPage');
+      if (fromPage) {
+        window.location.href = `book.html?page=${encodeURIComponent(fromPage)}`;
+      } else {
+        window.location.href = 'book.html';
+      }
+    }
+
+    const MAGIC_CARD_SET = new Set([
+      3, 8, 20, 31, 49, 51, 53, 54, 59, 60, 62, 64, 65, 82, 83, 84, 87, 89, 90, 91,
+      100, 107, 109, 116, 119, 121, 124, 127, 131, 133, 140, 146, 153, 154, 157,
+      164, 171, 175, 178, 198, 201, 210, 217, 218, 220, 228, 246, 253, 262, 271,
+      278, 281, 285, 292, 293, 306, 309, 314, 315, 316, 377, 378, 381, 384, 388
+    ]);
+
+    const STAGES = ["1단계", "2단계", "3단계", "4단계", "스토리"];
+    const STAGE_THEMES = {
+      "1단계": { bg: "bg-blue-600", text: "text-blue-600", border: "border-blue-500", name: "BLUE" },
+      "2단계": { bg: "bg-green-600", text: "text-green-600", border: "border-green-500", name: "GREEN" },
+      "3단계": { bg: "bg-lime-600", text: "text-lime-600", border: "border-lime-500", name: "LIME" },
+      "4단계": { bg: "bg-yellow-500", text: "text-yellow-600", border: "border-yellow-500", name: "YELLOW" },
+      "스토리": { bg: "bg-purple-600", text: "text-purple-600", border: "border-purple-500", name: "STORY" }
+    };
+
+    const RAW_CATEGORY_DICT = [
+      "감정", "동사", "동식물", "명사", "문장", "사람", "사물", "상황스토리", 
+      "색상", "신체", "옷", "음식", "음악", "자연", "지시방향", "직업", "집", "취미놀이", "형용전치"
+    ];
+
+    const CATEGORIES = [
+      "명사", "동사", "형용전치", "지시방향", "사람", "신체", "감정", "직업", 
+      "색상", "동식물", "자연", "사물", "문장", "집", "옷", "취미놀이", "음식", "음악", "MAGIC"
+    ];
+
+    const RAW_CARDS = [[1, "book", 0, [3, 6, 17], 0], [2, "pointed", 0, [14, 18], 0], [3, "no / yes", 0, [3, 4], 0], [4, "name", 0, [3, 5], 0], [5, "mouse", 0, [2, 3], 0], [6, "listen", 0, [1, 17], 0], [7, "sing", 0, [1, 17], 0], [8, "in / on", 0, [4, 14, 18], 0], [9, "basket", 0, [3, 6, 16, 17], 0], [10, "hat", 0, [3, 6, 10], 0], [11, "cat", 0, [2, 3], 0], [12, "house", 0, [3, 6, 16], 0], [13, "chair", 0, [3, 6], 0], [14, "bear", 0, [2, 3], 0], [15, "bed", 0, [3, 6, 16], 0], [16, "sled", 0, [3, 6, 17], 0], [17, "flower", 0, [2, 3, 13], 0], [18, "tower", 0, [3, 6], 0], [19, "picture", 0, [3, 6], 0], [20, "that / this", 0, [3, 4, 14], 0], [21, "whistle(동)", 0, [1, 17], 0], [22, "clap", 0, [1, 9, 17], 0], [23, "duck", 0, [2, 3], 0], [24, "dog", 0, [2, 3], 0], [25, "boy / girl", 0, [3, 5], 0], [26, "wand", 0, [3, 6, 17], 0], [27, "table", 0, [3, 6, 16], 0], [28, "letters", 0, [3, 17], 0], [29, "look", 0, [1, 9], 0], [30, "wave", 0, [1], 0], [31, "bow(동)", 0, [1, 9], 0], [32, "match", 0, [3, 6, 16], 0], [33, "bat", 0, [3, 6, 17], 0], [34, "music", 0, [3, 17], 0], [35, "look like", 0, [1], 0], [36, "blow", 0, [1], 0], [37, "balloon", 0, [3, 6, 17], 0], [38, "green / yellow", 0, [3, 8], 0], [39, "blue / red", 0, [3, 8], 0], [40, "elephant", 0, [2, 3], 0], [41, "big / small", 0, [18], 0], [42, "long / short", 0, [18], 0], [43, "beans", 0, [3, 11], 0], [44, "shoe", 0, [3, 6, 10], 0], [45, "sleepy", 0, [0, 18], 0], [46, "eat", 0, [1, 9], 0], [47, "wear", 0, [1, 9], 0], [48, "color", 0, [3, 8], 0], [49, "stand / sit", 0, [1, 9], 0], [50, "hold", 0, [1, 9], 0], [51, "at / on", 0, [4, 14, 18], 0], [52, "next to", 0, [4, 14, 18], 0], [53, "here / there", 0, [3, 4, 14], 0], [54, "pin", 0, [3, 6, 10], 0], [55, "under", 0, [4, 18], 0], [56, "behind", 0, [4, 18], 0], [57, "stairs", 0, [3, 6, 16], 0], [58, "in line", 0, [4, 18], 0], [59, "break", 0, [1], 0], [60, "fall", 0, [1], 0], [61, "angry", 0, [0, 18], 0], [62, "run / walk", 0, [1, 9], 0], [63, "around", 0, [4, 18], 0], [64, "fast / slow", 0, [18], 0], [65, "down / up", 0, [14, 18], 0], [66, "jump", 0, [1, 9], 0], [67, "window", 0, [3, 6, 16], 0], [68, "come out / go in", 0, [1, 16], 0], [69, "tree", 0, [2, 3, 13], 0], [70, "hands", 0, [3, 5, 9], 0], [71, "trun around", 0, [1, 9], 0], [72, "bend down", 0, [1, 9], 0], [73, "floor / ground", 0, [3, 6, 16], 0], [74, "touch", 0, [1, 9], 0], [75, "toes", 0, [3, 9], 0], [76, "nose", 0, [3, 9], 0], [77, "cake", 0, [3, 6, 11, 17], 0], [78, "ice cream", 0, [3, 6, 11, 17], 0], [79, "candle", 0, [3, 6, 16, 17], 0], [80, "gift", 0, [3, 6, 17], 0], [81, "play", 0, [1, 9, 17], 0], [82, "chicken", 0, [2, 3], 0], [83, "cow", 0, [2, 3], 0], [84, "horse", 0, [2, 3], 0], [85, "rose", 0, [2, 3, 13], 0], [86, "bow(명) / ribbon", 0, [3, 6, 10], 0], [87, "face", 0, [3, 9], 0], [88, "lick", 0, [1, 9, 11], 0], [89, "happy / sad", 0, [0, 18], 0], [90, "count", 0, [1, 17], 0], [91, "big / little", 0, [18], 0], [92, "black / white", 0, [3, 8], 0], [93, "draw", 0, [1, 8, 17], 0], [94, "living room", 0, [3, 16], 0], [95, "sofa", 0, [3, 6, 16], 0], [96, "television", 0, [3, 6, 16], 0], [97, "dining room", 0, [3, 16], 0], [98, "sandwich", 0, [3, 6, 11, 17], 0], [99, "bedroom", 0, [3, 16], 0], [100, "lie / sit", 0, [1, 9], 0], [101, "bathroom", 0, [3, 16], 0], [102, "take a bath", 0, [1, 16], 0], [103, "kitchen", 0, [3, 16], 0], [104, "help", 0, [1], 0], [105, "refrigerator / stove", 0, [3, 6, 11, 16], 0], [106, "bowl", 0, [3, 6, 11, 16], 0], [107, "cup / glass(셀있)", 0, [3, 6, 11, 16], 0], [108, "fork / spoon", 0, [3, 6, 11, 16], 0], [109, "knife", 0, [3, 6, 11, 16], 0], [110, "pan", 0, [3, 6, 11, 16], 0], [111, "on top of", 0, [4, 14, 18], 0], [112, "oven", 0, [3, 6, 11, 16], 0], [113, "bottles", 0, [3, 6, 11, 16], 0], [114, "milk(명)", 0, [3, 6, 11], 0], [115, "butter", 0, [3, 6, 11], 0], [116, "egg", 0, [3, 6, 11], 0], [117, "cupboard", 0, [3, 6, 11, 16], 0], [118, "bag", 0, [3, 6, 10, 17], 0], [119, "box", 0, [3, 6, 17], 0], [120, "a lot / a little", 0, [18], 0], [121, "cut", 0, [1], 0], [122, "finger", 0, [3, 9], 0], [123, "pour", 0, [1, 11, 16], 0], [124, "empty / full", 0, [18], 0], [125, "pitcher", 0, [3, 6, 11, 16], 0], [126, "drink", 0, [1, 11], 0], [127, "give / give back", 0, [1], 0], [128, "circles", 0, [3, 17], 0], [129, "clocks", 0, [3, 6, 16], 0], [130, "piece of paper", 0, [3, 6, 16, 17], 0], [131, "tie(동) / untie", 0, [1, 10], 0], [132, "butterfly", 0, [2, 3], 0], [133, "turn into", 0, [1], 0], [134, "rope", 0, [3, 6, 17], 0], [135, "bicycle", 0, [3, 6, 17], 0], [136, "ride / walk", 0, [1, 9, 17], 0], [137, "pencil", 0, [3, 6, 17], 0], [138, "wheel", 0, [3, 6], 0], [139, "bread", 0, [3, 6, 11], 0], [140, "put on / take off", 0, [1, 9, 10], 0], [141, "tie(명)", 0, [3, 10], 0], [142, "mirror", 0, [3, 6, 16], 0], [143, "inside / outside", 0, [18], 0], [144, "knock", 0, [1, 9, 16], 0], [145, "door", 0, [3, 6, 16], 0], [146, "close / open", 0, [1], 0], [147, "show", 0, [1], 0], [148, "pants / shirt", 0, [3, 6, 10], 0], [149, "blouse / skirt", 0, [3, 6, 10], 0], [150, "pink / purple", 0, [3, 8], 0], [151, "jacket / sweater", 0, [3, 6, 10], 0], [152, "brown / orange", 0, [3, 8], 0], [153, "dress", 0, [3, 6, 10], 0], [154, "purse", 0, [3, 6, 10], 0], [155, "hair", 0, [3, 9], 0], [156, "string", 0, [3, 6, 10], 0], [157, "leaf", 0, [2, 3, 13], 0], [158, "clothes", 0, [3, 6, 10], 0], [159, "carry / hold", 0, [1, 9], 0], [160, "plate", 0, [3, 6, 11, 16], 0], [161, "in front of", 0, [4, 14, 18], 0], [162, "hide", 0, [1, 9], 0], [163, "ears", 0, [3, 9, 12], 0], [164, "foot", 0, [3, 9], 0], [165, "between", 0, [4, 18], 0], [166, "tails", 0, [2, 3, 9], 0], [167, "surprised", 0, [0, 9, 18], 0], [168, "smile", 0, [0, 1, 9], 0], [169, "eyes", 0, [3, 9], 0], [170, "mouth", 0, [3, 9], 0], [171, "cover", 0, [1, 11, 17], 0], [172, "monsters", 0, [2, 3, 17], 0], [173, "light(동)", 0, [1, 16], 0], [174, "burn", 0, [1, 16], 0], [175, "kiss", 0, [1, 17], 0], [176, "bone", 0, [3, 9], 0], [177, "fireplace", 0, [3, 6, 16], 0], [178, "ball", 0, [3, 6, 17], 0], [179, "collar", 0, [3, 6, 10], 0], [180, "covered", 0, [17, 18], 0], [181, "star", 0, [3, 13], 0], [182, "baby", 0, [3, 5], 0], [183, "sun", 1, [3, 13], 0], [184, "clouds", 1, [3, 13], 0], [185, "day / night", 1, [13, 18], 0], [186, "bird", 1, [2, 3, 13], 0], [187, "pick up", 1, [1], 0], [188, "grass", 1, [2, 3, 13, 17], 0], [189, "picnic", 1, [3, 17], 0], [190, "hot dog", 1, [3, 6, 11], 0], [191, "salad", 1, [3, 6, 11], 0], [192, "read", 1, [1, 17], 0], [193, "fish(동)", 1, [1, 17], 0], [194, "swim", 1, [1, 17], 0], [195, "hike", 1, [1, 17], 0], [196, "build", 1, [1, 15], 0], [197, "firefighter", 1, [3, 15], 0], [198, "bus", 1, [3, 6], 0], [199, "cars", 1, [3, 6], 0], [200, "money", 1, [3, 6], 0], [201, "fish(명)", 1, [2, 3], 0], [202, "old / young", 1, [9, 18], 0], [203, "new / old", 1, [6, 18], 0], [204, "numbers", 1, [3, 17], 0], [205, "busy", 1, [18], 0], [206, "pack", 1, [1, 16], 0], [207, "apple", 1, [3, 6, 11], 0], [208, "orange", 1, [3, 6, 8, 11], 0], [209, "cherry", 1, [3, 6, 11], 0], [210, "banana", 1, [3, 6, 11], 0], [211, "lemon", 1, [3, 6, 11], 0], [212, "blanket", 1, [3, 6, 16, 17], 0], [213, "bucket", 1, [3, 6, 17], 0], [214, "towel", 1, [3, 6, 16], 0], [215, "boat", 1, [3, 6, 17], 0], [216, "gloves", 1, [3, 6, 17], 0], [217, "ax", 1, [3, 6, 16, 17], 0], [218, "match", 1, [3, 6, 16], 0], [219, "drive", 1, [1], 0], [220, "get out of / get into", 1, [1], 0], [221, "city / country", 1, [3], 0], [222, "building", 1, [3, 6, 16], 0], [223, "arms", 1, [3, 9], 0], [224, "short / tall", 1, [18], 0], [225, "road / tunnel", 1, [3, 6], 0], [226, "hill", 1, [3, 6, 13], 0], [227, "pond / river", 1, [3, 6, 13], 0], [228, "bridge", 1, [3, 6], 0], [229, "farm", 1, [3, 6, 17], 0], [230, "farmer", 1, [3, 5, 15], 0], [231, "forest", 1, [3, 6, 13], 0], [232, "fields", 1, [3, 6, 13], 0], [233, "whistle(명)", 1, [3, 6, 17], 0], [234, "police officer", 1, [3, 5, 15], 0], [235, "rooster", 1, [2, 3], 0], [236, "bee", 1, [2, 3], 0], [237, "frog", 1, [2, 3], 0], [238, "gold", 1, [2, 3], 0], [239, "push", 1, [1], 0], [240, "pay", 1, [1, 17], 0], [241, "swing(명)", 1, [3, 17], 0], [242, "milk(동)", 1, [1, 2, 11], 0], [243, "hammock", 1, [3, 6, 17], 0], [244, "barn", 1, [3, 6, 16], 0], [245, "animals", 1, [2, 3], 0], [246, "sheep", 1, [2, 3], 0], [247, "pig", 1, [2, 3], 0], [248, "work", 1, [1, 15], 0], [249, "tomato", 1, [2, 3, 6, 11], 0], [250, "chop", 1, [1, 17], 0], [251, "wood", 1, [2, 3, 13, 16], 0], [252, "well", 1, [3, 13], 0], [253, "wake up", 1, [1, 9, 16], 0], [254, "find", 1, [1], 0], [255, "signs", 1, [3, 6], 0], [256, "back / front / side", 1, [4, 18], 0], [257, "shovel", 1, [3, 6, 16, 17], 0], [258, "dig", 1, [1, 16, 17], 0], [259, "holes", 1, [3, 6], 0], [260, "grow / plant", 1, [1, 13, 17], 0], [261, "worm", 1, [2, 3, 13], 0], [262, "deep", 1, [17, 18], 0], [263, "branch / log / twig", 1, [2, 3, 13], 0], [264, "rainbow", 1, [3, 13, 17], 0], [265, "nest", 1, [3, 6, 17], 0], [266, "umbrella", 1, [3, 6, 16], 0], [267, "hook", 1, [3, 6], 0], [268, "hang up", 1, [1, 16], 0], [269, "bathing suits", 1, [3, 16], 0], [270, "splash", 1, [1, 16], 0], [271, "dive", 1, [1, 17], 0], [272, "knees", 1, [3, 9], 0], [273, "chin", 1, [3, 9], 0], [274, "dry(동) / wash", 1, [1, 16, 17], 0], [275, "socks", 1, [3, 10], 0], [276, "climb", 1, [3, 17], 0], [277, "knot", 1, [3, 6, 10], 0], [278, "swing(동)", 1, [1, 17], 0], [279, "monkey", 1, [2, 3], 0], [280, "fly", 1, [1, 2], 0], [281, "pull / push", 1, [1], 0], [282, "think", 1, [1, 9], 0], [283, "tired", 1, [0, 9, 18], 0], [284, "daisy", 1, [2, 3, 13], 0], [285, "skip", 1, [1, 9], 0], [286, "chain", 1, [3, 6], 0], [287, "neck", 1, [3, 9], 0], [288, "scissors", 1, [3, 6, 17], 0], [289, "dry(형) / wet", 1, [10, 16, 18], 0], [290, "laugh", 1, [0, 1, 9], 0], [291, "look for", 1, [1, 9], 0], [292, "drop(동) / pick up", 1, [1, 16], 0], [293, "pile up", 1, [1, 16], 0], [294, "light the fire / put it out", 1, [1, 16], 0], [295, "cook(동)", 1, [1, 11], 0], [296, "cold / hot", 1, [0, 18], 0], [297, "dark / light(형)", 1, [18], 0], [298, "food", 1, [3, 6, 11], 0], [299, "sticks", 1, [3, 6], 0], [300, "tummy", 1, [3, 9], 0], [301, "clean / dirty", 1, [16, 18], 0], [302, "soap", 1, [3, 6, 16], 0], [303, "wash the dishes", 1, [1, 11, 16], 0], [304, "fold", 1, [1], 0], [305, "throw away", 1, [1, 17], 0], [306, "catch / throw", 1, [1, 17], 0], [307, "sleepy", 1, [0, 9, 16, 18], 0], [308, "yawn", 1, [0, 1, 9], 0], [309, "asleep / awake", 1, [9, 18], 0], [310, "snore", 1, [1, 9], 0], [311, "dream", 1, [3, 9], 0], [312, "love", 1, [0, 1, 9], 0], [313, "team", 1, [3, 17], 0], [314, "strong", 1, [9, 18], 0], [315, "hold on / let go", 1, [1, 9], 0], [316, "hit / miss", 1, [1, 9], 0], [317, "write", 1, [1, 9, 17], 0], [318, "turtles", 1, [2, 3], 0], [319, "legs", 1, [3, 9], 0], [320, "gray", 1, [3, 8], 0], [321, "wind(명)", 1, [3, 13], 0], [322, "drops(명)", 1, [3, 16], 0], [323, "glass(셀없)", 1, [3, 6, 16], 0], [324, "broken", 1, [16, 18], 0], [325, "lock", 1, [1, 16], 0], [326, "afraid", 1, [0, 18], 0], [327, "heart", 1, [3, 9], 0], [328, "rabbit", 1, [2, 3], 0], [329, "rainbow", 1, [3, 13], 0], [330, "smell", 1, [3, 9, 11], 0], [331, "paint(동)", 2, [1, 16, 17], 0], [332, "brushes", 2, [3, 6, 16], 0], [333, "paint(명)", 2, [3, 6, 16, 17], 0], [334, "thin", 2, [9, 18], 0], [335, "hungry", 2, [0, 9, 18], 0], [336, "lion", 2, [2, 3], 0], [337, "rush", 2, [0, 3], 0], [338, "ladder", 2, [3, 6, 16, 17], 0], [339, "circus", 2, [3, 17], 0], [340, "tiger", 2, [2, 3], 0], [341, "clowns", 2, [3, 6, 17], 0], [342, "tooth", 2, [3, 9], 0], [343, "hippopotamus", 2, [2, 3], 0], [344, "train", 2, [3, 6], 0], [345, "track", 2, [3, 6], 0], [346, "acrobats", 2, [3, 9, 17], 0], [347, "people", 2, [3, 5], 0], [348, "striped", 2, [11, 18], 0], [349, "tiny", 2, [18], 0], [350, "tuba", 2, [3, 6, 12, 17], 0], [351, "lunch", 2, [3, 11], 0], [352, "funny", 2, [0, 18], 0], [353, "dinner", 2, [3, 11], 0], [354, "pajamas", 2, [3, 6, 10, 16], 0], [355, "breakfast", 2, [3, 11], 0], [356, "father / mother", 2, [3, 5], 0], [357, "grandfather / grandmather", 2, [3, 5], 0], [358, "trumpet", 2, [3, 6, 12, 17], 0], [359, "drums", 2, [3, 6, 12, 17], 0], [360, "band", 2, [3, 12, 15, 17], 0], [361, "bells", 2, [3, 6, 12, 17], 0], [362, "ring(동)", 2, [1, 12, 17], 0], [363, "shiny", 2, [13, 18], 0], [364, "cheer", 2, [1, 9], 0], [365, "loud / soft", 2, [12, 17, 18], 0], [366, "buy", 2, [1], 0], [367, "tickets", 2, [3, 6, 12], 0], [368, "brother / sister", 2, [3, 5], 0], [369, "man / woman", 2, [3, 5], 0], [370, "sell", 2, [1], 0], [371, "candy", 2, [3, 6, 11], 0], [372, "peanuts", 2, [3, 6, 11], 0], [373, "hips", 2, [3, 9], 0], [374, "glasses", 2, [3, 6, 9, 10], 0], [375, "dance", 2, [1, 9, 17], 0], [376, "tent", 2, [3, 6, 17], 0], [377, "backwrds / forwards", 2, [4, 14, 18], 0], [378, "lift", 2, [1], 0], [379, "cage", 2, [2, 3], 0], [380, "toys", 2, [3, 6, 17], 0], [381, "disappear", 2, [1], 0], [382, "giggle", 2, [0, 1, 9], 0], [383, "cry", 2, [0, 1, 9], 0], [384, "frown / smile", 2, [0, 1, 9], 0], [385, "tear", 2, [0, 3, 9], 0], [386, "fruit", 2, [2, 3, 11], 0], [387, "juggle", 2, [1, 15, 17], 0], [388, "bite", 2, [1, 9, 11], 0], [389, "piano", 2, [3, 6, 12], 0], [390, "tennis", 2, [3, 6, 17], 0], [391, "wall", 2, [3, 6, 16], 0], [392, "fit", 2, [1, 10], 0], [393, "pointed", 2, [9, 18], 0], [394, "crack", 2, [3], 0], [395, "ring(명)", 2, [3, 6, 17], 0], [396, "teapot", 2, [3, 6, 16], 0], [397, "soap", 2, [3, 6, 16], 0], [398, "potatoes", 2, [2, 3, 11], 0], [399, "spaghetti", 2, [3, 6, 11], 0], [400, "thirsty", 2, [0, 9, 18], 0], [401, "a few / a lot", 2, [18], 0], [402, "bathtub", 2, [3, 6, 16], 0], [403, "bubbles", 2, [3, 16, 17], 0], [404, "cheese", 2, [3, 6, 11], 0], [405, "feather", 2, [2, 3, 6, 10], 0], [406, "jewels", 2, [3, 6, 10, 16, 17], 0], [407, "stretch", 3, [1, 9], 0], [408, "get up", 3, [1, 9], 0], [409, "roll", 3, [1, 9], 0], [410, "school", 3, [3, 6, 15, 17], 0], [411, "get dressed", 3, [1, 9, 10], 0], [412, "telephone", 3, [3, 6, 16], 0], [413, "classroom", 3, [3, 6, 17], 0], [414, "teacher", 3, [3, 5, 15, 17], 0], [415, "desk", 3, [3, 6, 17], 0], [416, "blackboard", 3, [3, 6, 17], 0], [417, "proud", 3, [0, 1], 0], [418, "cook(명)", 3, [3, 11, 15], 0], [419, "nurse", 3, [3, 5, 15], 0], [420, "gardener", 3, [3, 5, 15, 17], 0], [421, "fisherman", 3, [3, 5, 15, 17], 0], [422, "cowboy", 3, [3, 5, 15, 17], 0], [423, "boots", 3, [3, 6, 10], 0], [424, "airplane", 3, [3, 6, 15, 17], 0], [425, "pilot", 3, [3, 5, 15], 0], [426, "doctor", 3, [3, 5, 15], 0], [427, "sick", 3, [0, 1, 9], 0], [428, "garden", 3, [3, 13, 15, 16, 17], 0], [429, "firefighter", 3, [3, 5, 15], 0], [430, "zoo", 3, [2, 3, 17], 0], [431, "kangaroos", 3, [2, 3], 0], [432, "zebra", 3, [2, 3], 0], [433, "tickle", 3, [1, 9, 17], 0], [434, "king", 3, [3, 5, 15], 0], [435, "crown", 3, [3, 6, 10, 15], 0], [436, "dentist", 3, [3, 5, 15], 0], [437, "scratch", 3, [1, 9], 0], [438, "moon", 3, [3, 13], 0], [439, "sunset", 3, [3, 13], 0], [440, "giraffe", 3, [2, 3], 0], [441, "kittens", 3, [2, 3], 0], [442, "shed", 3, [3, 6, 16], 0], [443, "key", 3, [3, 6, 16], 0], [444, "pocket", 3, [3, 6, 10], 0], [445, "sweep", 3, [1, 9, 16], 0], [446, "thief", 3, [3, 5, 15], 0], [447, "detective", 3, [3, 5, 15], 0], [448, "pillow", 3, [3, 6, 16], 0], [449, "nails", 3, [3, 6, 16, 17], 0], [450, "hammer", 3, [3, 6, 16, 17], 0], [451, "lock", 3, [1, 16], 0], [452, "shells", 3, [2, 3, 13], 0], [453, "wind(동)", 3, [1, 13], 0], [454, "footprints", 3, [3, 9], 0], [455, "octopus", 3, [2, 3], 0], [456, "snow", 3, [3, 13], 0], [457, "broom", 3, [3, 6, 16], 0], [458, "float", 3, [1, 9, 17], 0], [459, "ashamed", 3, [0, 9, 18], 0], [460, "Story 460", 4, [7, 4], 1], [461, "Story 461", 4, [7, 4], 1], [462, "Story 462", 4, [7, 4], 1], [463, "Story 463", 4, [7, 4], 1], [464, "Story 464", 4, [7, 4], 1], [465, "Story 465", 4, [7, 4], 1], [466, "Story 466", 4, [7, 4], 1], [467, "Story 467", 4, [7, 4], 1], [468, "Story 468", 4, [7, 4], 1], [469, "Story 469", 4, [7, 4], 1], [470, "Story 470", 4, [7, 4], 1], [471, "Story 471", 4, [7, 4], 1], [472, "Story 472", 4, [7, 4], 1], [473, "Story 473", 4, [7, 4], 1], [474, "Story 474", 4, [7, 4], 1], [475, "Story 475", 4, [7, 4], 1], [476, "Story 476", 4, [7, 4], 1], [477, "Story 477", 4, [7, 4], 1], [478, "Story 478", 4, [7, 4], 1], [479, "Story 479", 4, [7, 4], 1], [480, "Story 480", 4, [7, 4], 1], [481, "Story 481", 4, [7, 4], 1], [482, "Story 482", 4, [7, 4], 1], [483, "Story 483", 4, [7, 4], 1], [484, "Story 484", 4, [7, 4], 1], [485, "Story 485", 4, [7, 4], 1], [486, "Story 486", 4, [7, 4], 1], [487, "Story 487", 4, [7, 4], 1], [488, "Story 488", 4, [7, 4], 1], [489, "Story 489", 4, [7, 4], 1], [490, "Story 490", 4, [7, 4], 1], [491, "Story 491", 4, [7, 4], 1], [492, "Story 492", 4, [7, 4], 1], [493, "Story 493", 4, [7, 4], 1], [494, "Story 494", 4, [7, 4], 1], [495, "Story 495", 4, [7, 4], 1], [496, "Story 496", 4, [7, 4], 1], [497, "Story 497", 4, [7, 4], 1], [498, "Story 498", 4, [7, 4], 1], [499, "Story 499", 4, [7, 4], 1], [500, "Story 500", 4, [7, 4], 1], [501, "Story 501", 4, [7, 4], 1], [502, "Story 502", 4, [7, 4], 1], [503, "Story 503", 4, [7, 4], 1], [504, "Story 504", 4, [7, 4], 1], [505, "Story 505", 4, [7, 4], 1], [506, "Story 506", 4, [7, 4], 1], [507, "Story 507", 4, [7, 4], 1], [508, "Story 508", 4, [7, 4], 1], [509, "Story 509", 4, [7, 4], 1], [510, "Story 510", 4, [7, 4], 1]];
+
+    const CARDS = RAW_CARDS.map(r => {
+      const isMagic = MAGIC_CARD_SET.has(r[0]);
+      const cardCats = r[3].map(idx => RAW_CATEGORY_DICT[idx]);
+      if (isMagic) cardCats.push("MAGIC");
+
+      return {
+        id: r[0],
+        word: r[1],
+        stage: STAGES[r[2]],
+        cats: cardCats,
+        isStory: r[4] === 1,
+        isMagic: isMagic
+      };
+    });
+
+    let selectedSet = new Set(CARDS.map(c => c.id));
+    let currentPlaylist = [...CARDS];
+    let currentIndex = 0;
+    let isAutoPlaying = false;
+    let autoPlayTimer = null;
+
+    let quizScore = 0;
+    let quizCurrentRound = 1;
+    const QUIZ_TOTAL_ROUNDS = 10;
+    let currentQuizAnswer = null;
+    let currentQuizPool = [];
+    let isCheckingAnswer = false;
+    let isFirstQuizPlayed = false;
+
+    let parentCurrentStage = 'all';
+    let parentCurrentCategory = 'all';
+    let parentSearchKeyword = '';
+    let renderedParentCount = 30;
+    let filteredCache = [];
+
+    const imgElement = document.getElementById('card-image');
+    const filterCanvas = document.getElementById('filter-canvas');
+    const filterCtx = filterCanvas.getContext('2d', { willReadFrequently: true });
+    const magicControls = document.getElementById('magic-filter-controls');
+    const fallbackBox = document.getElementById('image-fallback');
+    const fallbackWord = document.getElementById('fallback-word');
+    const fallbackText = document.getElementById('fallback-text');
+    const indicator = document.getElementById('card-indicator');
+    const stageBadge = document.getElementById('card-stage-badge');
+    const wordTitle = document.getElementById('card-word-title');
+    const tagsBox = document.getElementById('card-tags-box');
+    const audioPlayer = document.getElementById('audio-player');
+
+    let currentMagicImageData = null;
+    let currentMagicFilterMode = 'original';
+
+    imgElement.onerror = function() {
+      imgElement.classList.add('hidden');
+      filterCanvas.classList.add('hidden');
+      fallbackBox.classList.remove('hidden');
+      const c = currentPlaylist[currentIndex];
+      if (c) {
+        fallbackWord.textContent = c.word;
+        fallbackText.textContent = `images/${c.id}.jpg 없음`;
+      }
+    };
+
+    imgElement.onload = function() {
+      fallbackBox.classList.add('hidden');
+      const card = currentPlaylist[currentIndex];
+      if (card && card.isMagic) {
+        filterCanvas.width = imgElement.naturalWidth || imgElement.width || 630;
+        filterCanvas.height = imgElement.naturalHeight || imgElement.height || 300;
+        filterCtx.drawImage(imgElement, 0, 0);
+        try {
+          currentMagicImageData = filterCtx.getImageData(0, 0, filterCanvas.width, filterCanvas.height);
+        } catch (e) {
+          console.warn('Canvas 이미지 접근 제약:', e);
+          currentMagicImageData = null;
+        }
+      }
+    };
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSoundEffect(type) {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            gain.gain.setValueAtTime(0.22, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.3);
+          });
+        } else {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(220, now + 0.22);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.22);
+        }
+      } catch (e) {
+        console.warn('효과음 에러:', e);
+      }
+    }
+
+    audioPlayer.addEventListener('play', () => updatePlayPauseUI(true));
+    audioPlayer.addEventListener('pause', () => updatePlayPauseUI(false));
+    audioPlayer.addEventListener('ended', () => {
+      updatePlayPauseUI(false);
+      if (isAutoPlaying) {
+        clearTimeout(autoPlayTimer);
+        autoPlayTimer = setTimeout(() => {
+          if (isAutoPlaying) nextCard();
+        }, 1200);
+      }
+    });
+
+    audioPlayer.addEventListener('error', () => {
+      if (isAutoPlaying) {
+        clearTimeout(autoPlayTimer);
+        autoPlayTimer = setTimeout(() => {
+          if (isAutoPlaying) nextCard();
+        }, 2500);
+      }
+    });
+
+    function stopAllAudioPlayback() {
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+      }
+      stopAutoPlay();
+      updatePlayPauseUI(false);
+    }
+
+    function updateCardView() {
+      if (currentPlaylist.length === 0) return;
+      if (currentIndex >= currentPlaylist.length) currentIndex = 0;
+      if (currentIndex < 0) currentIndex = currentPlaylist.length - 1;
+
+      const card = currentPlaylist[currentIndex];
+      const stageConfig = STAGE_THEMES[card.stage] || STAGE_THEMES["1단계"];
+
+      indicator.textContent = `${currentIndex + 1} / ${currentPlaylist.length}`;
+      stageBadge.className = `px-3 py-1 rounded-full font-black text-white text-[11px] sm:text-xs shadow-xs tracking-wider ${stageConfig.bg}`;
+      stageBadge.textContent = stageConfig.name;
+
+      wordTitle.textContent = card.isStory ? `STORY #${card.id}` : card.word;
+      
+      tagsBox.innerHTML = '';
+      card.cats.forEach(cat => {
+        const s = document.createElement('span');
+        if (cat === "MAGIC") {
+          s.className = "text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-900 border border-amber-300 shadow-xs flex items-center gap-1";
+          s.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> MAGIC`;
+        } else {
+          s.className = "text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200";
+          s.textContent = cat;
+        }
+        tagsBox.appendChild(s);
+      });
+
+      currentMagicImageData = null;
+      currentMagicFilterMode = 'original';
+      filterCanvas.classList.add('hidden');
+      imgElement.classList.remove('hidden');
+
+      if (card.isMagic) {
+        magicControls.classList.remove('hidden');
+        updateMagicFilterButtonsUI('original');
+      } else {
+        magicControls.classList.add('hidden');
+      }
+
+      fallbackBox.classList.add('hidden');
+      imgElement.src = `images/${card.id}.jpg`;
+      // R2 버킷(/audio/001.mp3) 경로 사용
+      audioPlayer.src = getR2VocaUrl(card.id);
+    }
+
+    function applyMagicFilter(mode) {
+      currentMagicFilterMode = mode;
+      updateMagicFilterButtonsUI(mode);
+
+      if (mode === 'original') {
+        filterCanvas.classList.add('hidden');
+        imgElement.classList.remove('hidden');
+        return;
+      }
+
+      if (!currentMagicImageData) {
+        if (imgElement.complete && imgElement.naturalWidth) {
+          filterCanvas.width = imgElement.naturalWidth;
+          filterCanvas.height = imgElement.naturalHeight;
+          filterCtx.drawImage(imgElement, 0, 0);
+          try {
+            currentMagicImageData = filterCtx.getImageData(0, 0, filterCanvas.width, filterCanvas.height);
+          } catch(e) {
+            console.warn(e);
+            return;
+          }
+        } else {
+          return;
+        }
+      }
+
+      imgElement.classList.add('hidden');
+      filterCanvas.classList.remove('hidden');
+
+      const output = filterCtx.createImageData(currentMagicImageData);
+      const data = output.data;
+      const orig = currentMagicImageData.data;
+      const width = filterCanvas.width;
+      const height = filterCanvas.height;
+
+      const bottomCutoffY = height * 0.78;
+      const numberCutoffX = width * 0.89;
+      const numberCutoffY = height * 0.22;
+
+      for (let i = 0; i < orig.length; i += 4) {
+        const pixelIndex = i / 4;
+        const x = pixelIndex % width;
+        const y = Math.floor(pixelIndex / width);
+
+        const r = orig[i];
+        const g = orig[i + 1];
+        const b = orig[i + 2];
+        const a = orig[i + 3];
+
+        if (x > numberCutoffX && y < numberCutoffY) {
+          data[i] = 255;
+          data[i + 1] = 255;
+          data[i + 2] = 255;
+          data[i + 3] = a;
+          continue;
+        }
+
+        if (y > bottomCutoffY) {
+          data[i] = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+          data[i + 3] = a;
+          continue;
+        }
+
+        if (mode === 'red-only') {
+          const rawDensity = Math.max(0, 255 - g);
+          const greenExcess = Math.max(0, ((g + b) / 2) - r);
+          const effectiveDensity = rawDensity - (greenExcess * 0.85);
+
+          if (effectiveDensity < 22) {
+            data[i] = 255;
+            data[i + 1] = 255;
+            data[i + 2] = 255;
+          } else {
+            const factor = Math.min(1, Math.pow((effectiveDensity - 20) / 85, 0.78));
+            data[i] = Math.round(255 - (255 - 225) * factor);
+            data[i + 1] = Math.round(255 - (255 - 35) * factor);
+            data[i + 2] = Math.round(255 - (255 - 35) * factor);
+          }
+          data[i + 3] = a;
+
+        } else if (mode === 'green-only') {
+          const rawDensity = Math.max(0, 255 - r);
+          const greenBias = (g + b) / 2 - r;
+          const inkDensity = rawDensity + Math.max(-20, greenBias * 0.5);
+
+          if (inkDensity < 22) {
+            data[i] = 255;
+            data[i + 1] = 255;
+            data[i + 2] = 255;
+          } else {
+            const factor = Math.min(1, Math.pow((inkDensity - 20) / 85, 0.8));
+            data[i] = Math.round(255 - (255 - 0) * factor);
+            data[i + 1] = Math.round(255 - (255 - 130) * factor);
+            data[i + 2] = Math.round(255 - (255 - 110) * factor);
+          }
+          data[i + 3] = a;
+        }
+      }
+
+      filterCtx.putImageData(output, 0, 0);
+    }
+
+    function updateMagicFilterButtonsUI(mode) {
+      const btnOrig = document.getElementById('btn-filter-orig');
+      const btnRed = document.getElementById('btn-filter-red');
+      const btnGreen = document.getElementById('btn-filter-green');
+
+      btnOrig.className = `w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly ${
+        mode === 'original'
+          ? 'bg-slate-900 text-white ring-3 ring-amber-300 scale-105'
+          : 'bg-slate-700/80 hover:bg-slate-700 text-slate-100 opacity-90'
+      }`;
+
+      btnRed.className = `w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly ${
+        mode === 'red-only'
+          ? 'bg-red-600 text-white ring-3 ring-amber-300 scale-105'
+          : 'bg-red-700/80 hover:bg-red-600 text-red-100 opacity-90'
+      }`;
+
+      btnGreen.className = `w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly ${
+        mode === 'green-only'
+          ? 'bg-emerald-600 text-white ring-3 ring-amber-300 scale-105'
+          : 'bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 opacity-90'
+      }`;
+    }
+
+    function updatePlayPauseUI(isPlaying) {
+      const speakerIcon = document.getElementById('speaker-icon');
+      const speakerBtn = document.getElementById('btn-speaker');
+
+      if (isPlaying) {
+        if (speakerIcon) speakerIcon.className = "fa-solid fa-pause text-slate-900";
+        if (speakerBtn) speakerBtn.className = "w-14 h-14 min-w-[56px] min-h-[56px] sm:w-20 sm:h-16 sm:min-w-[80px] sm:min-h-[64px] bg-amber-400 hover:bg-amber-300 text-slate-900 font-black rounded-2xl shadow-md ring-4 ring-amber-300/40 flex items-center justify-center text-xl sm:text-2xl btn-jelly transform active:scale-95 transition shrink-0";
+      } else {
+        if (speakerIcon) speakerIcon.className = "fa-solid fa-volume-high text-slate-900";
+        if (speakerBtn) speakerBtn.className = "w-14 h-14 min-w-[56px] min-h-[56px] sm:w-20 sm:h-16 sm:min-w-[80px] sm:min-h-[64px] bg-amber-400 hover:bg-amber-300 text-slate-900 font-black rounded-2xl shadow-md flex items-center justify-center text-xl sm:text-2xl btn-jelly transform active:scale-95 transition shrink-0";
+      }
+    }
+
+    function toggleAudioPlayback() {
+      const ripple = document.getElementById('touch-ripple');
+      if (ripple) {
+        ripple.classList.remove('opacity-0');
+        ripple.classList.add('opacity-100');
+        setTimeout(() => ripple.classList.remove('opacity-100'), 250);
+      }
+
+      if (!audioPlayer.paused && !audioPlayer.ended && audioPlayer.currentTime > 0) {
+        audioPlayer.pause();
+        updatePlayPauseUI(false);
+      } else {
+        if (audioPlayer.ended) audioPlayer.currentTime = 0;
+        audioPlayer.play().then(() => updatePlayPauseUI(true)).catch(e => console.warn(e));
+      }
+    }
+
+    function playCurrentAudio(reset = true) {
+      if (reset) audioPlayer.currentTime = 0;
+      audioPlayer.play().then(() => updatePlayPauseUI(true)).catch(e => console.warn(e));
+    }
+
+    function nextCard() {
+      if (currentPlaylist.length === 0) return;
+      currentIndex = (currentIndex + 1) % currentPlaylist.length;
+      updateCardView();
+      playCurrentAudio();
+    }
+
+    function prevCard() {
+      if (currentPlaylist.length === 0) return;
+      currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
+      updateCardView();
+      playCurrentAudio();
+    }
+
+    function goToSpecificCardId(cardId, autoPlayAudio = false) {
+      const numId = parseInt(String(cardId).replace(/\D/g, ''), 10);
+      if (isNaN(numId) || numId < 1 || numId > 510) return;
+
+      const fIdx = currentPlaylist.findIndex(c => c.id === numId);
+      if (fIdx !== -1) {
+        currentIndex = fIdx;
+      } else {
+        currentPlaylist = [...CARDS];
+        currentIndex = currentPlaylist.findIndex(c => c.id === numId);
+      }
+      updateCardView();
+      if (autoPlayAudio) playCurrentAudio();
+    }
+
+    function jumpToCard() {
+      const val = parseInt(document.getElementById('jump-input').value, 10);
+      if (!isNaN(val) && val >= 1 && val <= 510) {
+        goToSpecificCardId(val, true);
+        document.getElementById('jump-input').value = '';
+      }
+    }
+
+    function toggleAutoPlay() {
+      if (isAutoPlaying) stopAutoPlay();
+      else startAutoPlay();
+    }
+
+    function startAutoPlay() {
+      if (currentPlaylist.length === 0) return;
+      isAutoPlaying = true;
+      document.getElementById('autoplay-icon').className = 'fa-solid fa-pause text-xs';
+      document.getElementById('autoplay-text').textContent = 'PAUSE';
+      document.getElementById('btn-autoplay').className = 'px-3.5 py-1 font-black rounded-full bg-pink-600 border border-pink-600 text-white animate-pulse transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs';
+      playCurrentAudio();
+    }
+
+    function stopAutoPlay() {
+      isAutoPlaying = false;
+      clearTimeout(autoPlayTimer);
+      document.getElementById('autoplay-icon').className = 'fa-solid fa-play text-xs';
+      document.getElementById('autoplay-text').textContent = 'PLAY ALL';
+      document.getElementById('btn-autoplay').className = 'px-3.5 py-1 font-black rounded-full bg-white border border-pink-500 text-pink-600 hover:bg-pink-50 transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs';
+    }
+
+    /* QUIZ 모드 */
+    function resetAndStartQuiz() {
+      quizScore = 0;
+      quizCurrentRound = 1;
+      isCheckingAnswer = false;
+      isFirstQuizPlayed = false;
+      document.getElementById('quiz-complete-modal').classList.add('hidden');
+      
+      const hasMomSelection = (selectedSet.size > 0 && selectedSet.size < CARDS.length);
+      const selectedPool = CARDS.filter(c => selectedSet.has(c.id) && !c.isStory);
+
+      if (hasMomSelection && selectedPool.length >= 3) {
+        currentQuizPool = selectedPool;
+      } else {
+        currentQuizPool = CARDS.filter(c => !c.isStory);
+      }
+
+      updateQuizScoreUI();
+      generateNewQuiz(false);
+    }
+
+    function generateNewQuiz(autoPlay = true) {
+      if (quizCurrentRound > QUIZ_TOTAL_ROUNDS) {
+        showQuizCompleteModal();
+        return;
+      }
+
+      isCheckingAnswer = false;
+      updateQuizScoreUI();
+
+      const shuffled = [...currentQuizPool].sort(() => 0.5 - Math.random());
+      const choices = shuffled.slice(0, 3);
+      currentQuizAnswer = choices[Math.floor(Math.random() * choices.length)];
+
+      const grid = document.getElementById('quiz-options-grid');
+      grid.innerHTML = '';
+
+      choices.forEach(card => {
+        const btn = document.createElement('button');
+        const stConfig = STAGE_THEMES[card.stage] || STAGE_THEMES["1단계"];
+        
+        btn.className = "w-full aspect-[2.1/1] bg-slate-100 rounded-2xl border-2 sm:border-3 border-slate-200 shadow-xs overflow-hidden relative cursor-pointer active:scale-[0.98] transition group text-left";
+        btn.onclick = () => checkQuiz(card, btn);
+
+        btn.innerHTML = `
+          <img src="images/${card.id}.jpg" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+          
+          <div class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-50 p-2 text-center">
+            <span class="gothic-font text-base sm:text-lg text-slate-800 font-black break-words">${card.word}</span>
+            <span class="text-xs text-slate-400 font-mono font-bold">${card.id}</span>
+          </div>
+
+          <div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-xs px-2.5 py-1 rounded-md text-[11px] font-mono font-bold text-white flex items-center gap-1.5 pointer-events-none">
+            <span class="text-amber-300 font-black">${card.id}</span>
+            <span class="text-[10px] px-1 rounded text-white ${stConfig.bg}">${stConfig.name}</span>
+          </div>
+
+          <div class="quiz-feedback-overlay absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity pointer-events-none">
+            <span class="quiz-feedback-icon text-5xl sm:text-6xl drop-shadow-md"></span>
+          </div>
+        `;
+        grid.appendChild(btn);
+      });
+
+      if (autoPlay) {
+        setTimeout(() => playQuizPromptAudio(), 250);
+      }
+    }
+
+    function handleQuizSpeakerClick() {
+      isFirstQuizPlayed = true;
+      playQuizPromptAudio();
+    }
+
+    function playQuizPromptAudio() {
+      if (!currentQuizAnswer) return;
+      audioPlayer.src = getR2VocaUrl(currentQuizAnswer.id);
+      audioPlayer.currentTime = 0;
+      audioPlayer.play().catch(e => console.warn(e));
+    }
+
+    function checkQuiz(chosen, btn) {
+      if (isCheckingAnswer) return;
+
+      const overlay = btn.querySelector('.quiz-feedback-overlay');
+      const icon = btn.querySelector('.quiz-feedback-icon');
+
+      if (chosen.id === currentQuizAnswer.id) {
+        isCheckingAnswer = true;
+        isFirstQuizPlayed = true;
+        quizScore++;
+        
+        btn.classList.remove('border-slate-200');
+        btn.classList.add('border-green-500', 'ring-4', 'ring-green-400/40');
+        
+        if (overlay && icon) {
+          icon.textContent = '⭕';
+          overlay.classList.remove('opacity-0');
+        }
+
+        playSoundEffect('correct');
+
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+        }
+
+        setTimeout(() => {
+          quizCurrentRound++;
+          generateNewQuiz(true);
+        }, 1200);
+      } else {
+        btn.classList.remove('border-slate-200');
+        btn.classList.add('border-rose-500', 'ring-4', 'ring-rose-400/40');
+        
+        playSoundEffect('incorrect');
+
+        if (overlay && icon) {
+          icon.textContent = '❌';
+          overlay.classList.remove('opacity-0');
+          setTimeout(() => {
+            overlay.classList.add('opacity-0');
+            btn.classList.remove('border-rose-500', 'ring-4', 'ring-rose-400/40');
+            btn.classList.add('border-slate-200');
+          }, 600);
+        }
+      }
+    }
+
+    function updateQuizScoreUI() {
+      document.getElementById('quiz-progress-badge').textContent = `${Math.min(quizCurrentRound, QUIZ_TOTAL_ROUNDS)} / ${QUIZ_TOTAL_ROUNDS}`;
+      document.getElementById('quiz-score-badge').textContent = `SCORE: ${quizScore} / ${QUIZ_TOTAL_ROUNDS}`;
+    }
+
+    function showQuizCompleteModal() {
+      document.getElementById('quiz-final-score').textContent = quizScore;
+      document.getElementById('quiz-complete-modal').classList.remove('hidden');
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 90, spread: 80, origin: { y: 0.5 } });
+      }
+    }
+
+    /* SELECT CARD (부모 모드) */
+    function renderParentView() {
+      const container = document.getElementById('filter-tags-container');
+      container.innerHTML = '';
+
+      const allBtn = document.createElement('button');
+      allBtn.className = `px-3 py-1 rounded-xl border shrink-0 text-xs font-black shadow-xs transition btn-jelly ${
+        parentCurrentCategory === 'all' 
+          ? 'bg-slate-900 text-white border-slate-900 ring-2 ring-slate-900/30' 
+          : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+      }`;
+      allBtn.textContent = '전체 인덱스';
+      allBtn.onclick = () => { parentCurrentCategory = 'all'; refreshParentFilteredList(); };
+      container.appendChild(allBtn);
+
+      const tagWrap = document.createElement('div');
+      tagWrap.className = 'flex flex-wrap items-center gap-1.5 flex-1 min-w-0';
+
+      CATEGORIES.forEach(cat => {
+        const btn = document.createElement('button');
+        const active = parentCurrentCategory === cat;
+        if (cat === "MAGIC") {
+          btn.className = `px-2.5 py-1 rounded-full border shrink-0 text-xs font-black flex items-center gap-1 transition shadow-xs btn-jelly ${
+            active 
+              ? 'bg-amber-400 text-slate-900 border-amber-400 ring-2 ring-amber-300' 
+              : 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
+          }`;
+          btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> MAGIC`;
+        } else {
+          btn.className = `px-2.5 py-1 rounded-full border shrink-0 text-xs font-bold transition shadow-xs btn-jelly ${
+            active 
+              ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-400/40' 
+              : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+          }`;
+          btn.textContent = cat;
+        }
+        btn.onclick = () => {
+          parentCurrentCategory = active ? 'all' : cat;
+          refreshParentFilteredList();
+        };
+        tagWrap.appendChild(btn);
+      });
+
+      container.appendChild(tagWrap);
+
+      document.querySelectorAll('.stage-tab-btn').forEach(btn => {
+        const st = btn.getAttribute('data-stage');
+        if (parentCurrentStage === st) {
+          btn.classList.remove('opacity-45', 'scale-95');
+          btn.classList.add('opacity-100', 'ring-2', 'ring-offset-1', 'ring-slate-800', 'scale-105');
+        } else {
+          btn.classList.remove('opacity-100', 'ring-2', 'ring-offset-1', 'ring-slate-800', 'scale-105');
+          btn.classList.add('opacity-45', 'scale-95');
+        }
+      });
+
+      refreshParentFilteredList();
+      updateSelectedCountsUI();
+    }
+
+    function setStageTab(stage) {
+      parentCurrentStage = stage;
+      renderParentView();
+    }
+
+    function refreshParentFilteredList() {
+      const q = parentSearchKeyword.trim().toLowerCase();
+      filteredCache = CARDS.filter(c => {
+        if (parentCurrentStage !== 'all' && c.stage !== parentCurrentStage) return false;
+        if (parentCurrentCategory !== 'all' && !c.cats.includes(parentCurrentCategory)) return false;
+        if (q) {
+          const matchId = String(c.id) === q;
+          const matchWord = c.word.toLowerCase().includes(q);
+          const matchCat = c.cats.some(cat => cat.toLowerCase().includes(q));
+          if (!matchId && !matchWord && !matchCat) return false;
+        }
+        return true;
+      });
+
+      renderedParentCount = 30;
+      renderParentCardsGrid(false);
+    }
+
+    function renderParentCardsGrid(append = false) {
+      const grid = document.getElementById('parent-card-grid');
+      const moreInfo = document.getElementById('parent-load-more');
+
+      if (!append) grid.innerHTML = '';
+
+      if (filteredCache.length === 0) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs">일치하는 카드가 없습니다.</div>';
+        moreInfo.classList.add('hidden');
+        return;
+      }
+
+      const startIndex = append ? grid.children.length : 0;
+      const targetList = filteredCache.slice(startIndex, renderedParentCount);
+
+      targetList.forEach(c => {
+        const isSelected = selectedSet.has(c.id);
+        const cardBox = document.createElement('div');
+        const stStyle = STAGE_THEMES[c.stage] || STAGE_THEMES['1단계'];
+
+        cardBox.className = `h-fit self-start p-2 rounded-xl border-2 transition cursor-pointer select-none flex flex-col justify-between gap-1.5 ${
+          isSelected 
+            ? 'bg-blue-50/70 border-blue-600 shadow-xs ring-1 ring-blue-600' 
+            : 'bg-white border-slate-200 hover:border-slate-300 opacity-60 hover:opacity-100'
+        }`;
+        
+        cardBox.onclick = () => toggleCardSelection(c.id, cardBox);
+
+        cardBox.innerHTML = `
+          <div class="w-full aspect-[2.1/1] rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative">
+            <img src="images/${c.id}.jpg" loading="lazy" decoding="async" class="w-full h-full object-cover">
+            <div class="absolute top-1 left-1 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold text-white flex items-center gap-1">
+              ${c.id}
+              ${c.isMagic ? '<i class="fa-solid fa-wand-magic-sparkles text-amber-300 text-[8px]"></i>' : ''}
+            </div>
+            <div class="selection-check-badge absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center border ${
+              isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/80 border-slate-300 text-transparent'
+            }">
+              <i class="fa-solid fa-check text-[9px]"></i>
+            </div>
+          </div>
+          <div class="flex items-start justify-between px-0.5 gap-1 min-h-[26px]">
+            <p class="gothic-font text-[11px] sm:text-xs font-black text-slate-900 break-words leading-tight flex-1">${c.word}</p>
+            <span class="text-[9px] font-bold px-1 rounded text-white shrink-0 ${stStyle.bg}">${stStyle.name}</span>
+          </div>
+        `;
+
+        grid.appendChild(cardBox);
+      });
+
+      if (renderedParentCount < filteredCache.length) {
+        moreInfo.classList.remove('hidden');
+      } else {
+        moreInfo.classList.add('hidden');
+      }
+    }
+
+    function handleGridScroll(element) {
+      if (renderedParentCount >= filteredCache.length) return;
+      if (element.scrollTop + element.clientHeight >= element.scrollHeight - 80) {
+        renderedParentCount += 30;
+        renderParentCardsGrid(true);
+      }
+    }
+
+    function toggleCardSelection(cardId, cardBox) {
+      if (selectedSet.has(cardId)) {
+        selectedSet.delete(cardId);
+        cardBox.className = "h-fit self-start p-2 rounded-xl border-2 transition cursor-pointer select-none flex flex-col justify-between gap-1.5 bg-white border-slate-200 hover:border-slate-300 opacity-60 hover:opacity-100";
+        const badge = cardBox.querySelector('.selection-check-badge');
+        if (badge) badge.className = "selection-check-badge absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center border bg-white/80 border-slate-300 text-transparent";
+      } else {
+        selectedSet.add(cardId);
+        cardBox.className = "h-fit self-start p-2 rounded-xl border-2 transition cursor-pointer select-none flex flex-col justify-between gap-1.5 bg-blue-50/70 border-blue-600 shadow-xs ring-1 ring-blue-600";
+        const badge = cardBox.querySelector('.selection-check-badge');
+        if (badge) badge.className = "selection-check-badge absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center border bg-blue-600 border-blue-600 text-white";
+      }
+      updateSelectedCountsUI();
+    }
+
+    function updateSelectedCountsUI() {
+      const count = selectedSet.size;
+      document.getElementById('current-selected-stat').textContent = count;
+      document.getElementById('btn-selected-count').textContent = count;
+    }
+
+    function selectAllCurrentlyVisible() {
+      filteredCache.forEach(c => selectedSet.add(c.id));
+      renderParentCardsGrid(false);
+      updateSelectedCountsUI();
+    }
+
+    function deselectAll() {
+      selectedSet.clear();
+      renderParentCardsGrid(false);
+      updateSelectedCountsUI();
+    }
+
+    function handleSearchInput() {
+      const val = document.getElementById('parent-search-input').value;
+      parentSearchKeyword = val;
+      const clearBtn = document.getElementById('btn-clear-search');
+      if (val.length > 0) clearBtn.classList.remove('hidden');
+      else clearBtn.classList.add('hidden');
+      refreshParentFilteredList();
+    }
+
+    function clearSearchInput() {
+      document.getElementById('parent-search-input').value = '';
+      parentSearchKeyword = '';
+      document.getElementById('btn-clear-search').classList.add('hidden');
+      refreshParentFilteredList();
+    }
+
+    function applyNumberRangeInput() {
+      const input = document.getElementById('parent-range-input');
+      const val = input.value.trim();
+      if (!val) return;
+
+      const parts = val.split(/[,\s]+/);
+      let addedCount = 0;
+
+      parts.forEach(part => {
+        if (part.includes('-') || part.includes('~')) {
+          const [startStr, endStr] = part.split(/[-~]/);
+          const start = parseInt(startStr, 10);
+          const end = parseInt(endStr, 10);
+          if (!isNaN(start) && !isNaN(end)) {
+            const min = Math.max(1, Math.min(start, end));
+            const max = Math.min(510, Math.max(start, end));
+            for (let i = min; i <= max; i++) {
+              selectedSet.add(i);
+              addedCount++;
+            }
+          }
+        } else {
+          const num = parseInt(part, 10);
+          if (!isNaN(num) && num >= 1 && num <= 510) {
+            selectedSet.add(num);
+            addedCount++;
+          }
+        }
+      });
+
+      renderParentCardsGrid(false);
+      updateSelectedCountsUI();
+      input.value = '';
+      if (addedCount > 0) alert('선택 목록에 담겼습니다.');
+    }
+
+    function playSelectedCardsImmediately() {
+      if (selectedSet.size === 0) {
+        alert('선택된 카드가 없습니다. 카드를 1장 이상 선택해 주세요.');
+        return;
+      }
+      currentPlaylist = CARDS.filter(c => selectedSet.has(c.id));
+      currentIndex = 0;
+      switchView('card');
+      startAutoPlay();
+    }
+
+    function toggleFullscreen() {
+      const icon = document.getElementById('fullscreen-icon');
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          if (icon) icon.className = "fa-solid fa-compress text-xs";
+        }).catch(err => console.warn(err));
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().then(() => {
+            if (icon) icon.className = "fa-solid fa-expand text-xs";
+          });
+        }
+      }
+    }
+
+    function switchView(view) {
+      stopAllAudioPlayback();
+
+      document.getElementById('view-card').classList.add('hidden');
+      document.getElementById('view-quiz').classList.add('hidden');
+      document.getElementById('view-filter').classList.add('hidden');
+
+      const btnCard = document.getElementById('nav-btn-card');
+      const btnQuiz = document.getElementById('nav-btn-quiz');
+      const btnFilter = document.getElementById('nav-btn-filter');
+
+      [btnCard, btnQuiz, btnFilter].forEach(b => {
+        b.className = "px-2 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-sm font-black transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly";
+      });
+
+      if (view === 'card') {
+        document.getElementById('view-card').classList.remove('hidden');
+        btnCard.className = "px-2 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-sm font-black transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly";
+        updateCardView();
+      } else if (view === 'quiz') {
+        document.getElementById('view-quiz').classList.remove('hidden');
+        btnQuiz.className = "px-2 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-sm font-black transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly";
+        resetAndStartQuiz();
+      } else if (view === 'filter') {
+        document.getElementById('view-filter').classList.remove('hidden');
+        btnFilter.className = "px-2 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-sm font-black transition flex items-center gap-1 bg-slate-900 text-white shadow-xs btn-jelly";
+        renderParentView();
+      }
+    }
+
+    let touchStartX = 0;
+    window.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+    window.addEventListener('touchend', e => {
+      const diff = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diff) > 50) {
+        if (diff < 0) nextCard();
+        else prevCard();
+      }
+    }, { passive: true });
+
+    window.onload = () => {
+      // URL 파라미터(?card=v025 또는 ?card=25)가 있으면 해당 카드로 즉시 점프
+      const params = new URLSearchParams(window.location.search);
+      const targetCard = params.get('card');
+      if (targetCard) {
+        goToSpecificCardId(targetCard, false);
+      } else {
+        updateCardView();
+      }
+    };
+  </script>
+</body>
+</html>
