@@ -100,7 +100,7 @@
         <!-- 원형 크기 입력창 (기본값 12) -->
         <div id="circle-size-box" class="flex items-center gap-1">
           <span class="text-[11px] font-bold text-pink-800">크기</span>
-          <input type="number" id="circle-size-input" step="0.5" min="1" max="50" value="12"
+          <input type="number" id="circle-size-input" step="0.5" min="1" max="60" value="12"
                  onchange="updateCircleSize(this.value)"
                  oninput="updateCircleSize(this.value)"
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
@@ -109,12 +109,12 @@
         <!-- 사각형 가로 / 세로 자유 입력창 -->
         <div id="rect-size-box" class="hidden flex items-center gap-1">
           <span class="text-[11px] font-bold text-pink-800">가로</span>
-          <input type="number" id="rect-w-input" step="0.5" min="1" max="80" value="24"
+          <input type="number" id="rect-w-input" step="0.5" min="1" max="85" value="24"
                  onchange="updateRectW(this.value)"
                  oninput="updateRectW(this.value)"
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
           <span class="text-[11px] font-bold text-pink-800 ml-0.5">세로</span>
-          <input type="number" id="rect-h-input" step="0.5" min="1" max="80" value="11"
+          <input type="number" id="rect-h-input" step="0.5" min="1" max="85" value="11"
                  onchange="updateRectH(this.value)"
                  oninput="updateRectH(this.value)"
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
@@ -197,7 +197,7 @@
         <button onclick="closeSongModal()" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="p-3">
-        <input type="text" id="song-search-input" placeholder="번호(1~143) 또는 곡 제목 일부 검색..."
+        <input type="text" id="song-search-input" placeholder="노래(1~143) 또는 단어(v001~v510) 검색..."
                oninput="filterSongList(this.value)"
                onkeyup="filterSongList(this.value)"
                onkeydown="if(event.key==='Enter') selectFirstFilteredSong()"
@@ -244,7 +244,7 @@
     let currentShape = 'circle';
     let circleSize = 12.0; // 원형 기본 지름 12
     let rectW = 24.0;      // 사각 기본 가로
-    let rectH = 11.0;      // 사각 기본 세로 (24 * 0.455 ≈ 11)
+    let rectH = 11.0;      // 사각 기본 세로
 
     let currentLeftPageNum = null, currentRightPageNum = null;
     let activePlayingTrack = null;
@@ -424,7 +424,6 @@
         hPx = wPx;
         ghost.className = 'ghost-guide shape-circle';
       } else {
-        // 가로·세로 모두 페이지 가로 폭(rect.width) 기준 동일한 배율로 계산해 비율 왜곡 방지
         wPx = Math.round(rect.width * (rectW / 100));
         hPx = Math.round(rect.width * (rectH / 100));
         ghost.className = 'ghost-guide shape-rect';
@@ -452,7 +451,7 @@
         const isCircle = (spot.shape || 'circle') === 'circle';
         const btn = document.createElement('div');
         btn.className = `song-spot ${isCircle ? 'shape-circle' : 'shape-rect'}`;
-        if (activePlayingTrack === spot.track && !audioEl.paused) btn.classList.add('playing');
+        if (String(activePlayingTrack) === String(spot.track) && !audioEl.paused) btn.classList.add('playing');
 
         let wPx, hPx;
         if (isCircle) {
@@ -470,7 +469,9 @@
         btn.style.width = `${wPx}px`; btn.style.height = `${hPx}px`;
 
         if (isSpotEditMode) {
-          btn.innerHTML = `<span class="text-[10px] font-mono font-black text-blue-900 bg-white/95 px-1.5 rounded-full shadow-xs">${spot.track}</span>`;
+          const isVoca = /^v\d+$/i.test(String(spot.track));
+          const badgeColor = isVoca ? 'text-emerald-800' : 'text-blue-900';
+          btn.innerHTML = `<span class="text-[10px] font-mono font-black ${badgeColor} bg-white/95 px-1.5 rounded-full shadow-xs">${spot.track}</span>`;
         }
 
         btn.onclick = (e) => {
@@ -483,7 +484,33 @@
       });
     }
 
-    /* 검색/선택/삭제 모달 로직 */
+    /* ==========================================
+       검색 / 선택 / 삭제 모달 (노래 1~143 + 단어 v001~v510)
+       ========================================== */
+    function getAllAudioItems() {
+      const items = [];
+      if (typeof SONGS_DB !== 'undefined') {
+        Object.entries(SONGS_DB).forEach(([num, fileName]) => {
+          items.push({
+            id: String(num),
+            type: 'song',
+            label: `#${num}`,
+            title: fileName.replace(/\.mp3$/i, '')
+          });
+        });
+      }
+      for (let i = 1; i <= 510; i++) {
+        const padded = String(i).padStart(3, '0');
+        items.push({
+          id: `v${padded}`,
+          type: 'voca',
+          label: `v${padded}`,
+          title: `VOCA 카드 ${padded}번 (${padded}.mp3)`
+        });
+      }
+      return items;
+    }
+
     function openSpotModalNew(e, side) {
       if (!isSpotEditMode) return;
       const pageNum = (side === 'left') ? currentLeftPageNum : currentRightPageNum;
@@ -503,7 +530,7 @@
     function openSpotModalEdit(pageNum, idx) {
       const spot = songSpotsData[String(pageNum)][idx];
       pendingSpotContext = { pageNum, x: spot.x, y: spot.y, editIndex: idx };
-      document.getElementById('modal-title').textContent = `수정/삭제 (현재: #${spot.track})`;
+      document.getElementById('modal-title').textContent = `수정/삭제 (현재: ${spot.track})`;
       document.getElementById('modal-footer-delete').classList.remove('hidden');
       showModalWithFilter('');
     }
@@ -524,55 +551,66 @@
 
     function filterSongList(query) {
       const container = document.getElementById('song-search-results');
-      if (!container || typeof SONGS_DB === 'undefined') return;
+      if (!container) return;
       const rawQ = String(query || '').trim().toLowerCase();
       const compactQ = rawQ.replace(/\s+/g, '');
       container.innerHTML = '';
 
+      const allItems = getAllAudioItems();
       let matchCount = 0;
-      Object.entries(SONGS_DB).forEach(([num, fileName]) => {
-        const cleanTitle = fileName.replace(/\.mp3$/i, '');
-        const lowerTitle = cleanTitle.toLowerCase();
+
+      for (const item of allItems) {
+        const lowerId = item.id.toLowerCase();
+        const lowerTitle = item.title.toLowerCase();
         const compactTitle = lowerTitle.replace(/\s+/g, '');
 
         const isMatch = !rawQ
-          || num === rawQ
-          || num.includes(rawQ)
+          || lowerId === rawQ
+          || lowerId.includes(rawQ)
           || lowerTitle.includes(rawQ)
           || compactTitle.includes(compactQ);
 
         if (isMatch) {
           matchCount++;
-          const item = document.createElement('button');
-          item.type = 'button';
-          item.className = 'w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center gap-2 transition';
-          item.dataset.track = num;
-          item.innerHTML = `<span class="font-mono font-black text-blue-600 w-8 shrink-0">#${num}</span><span class="truncate text-slate-700 font-medium">${cleanTitle}</span>`;
-          item.onclick = () => assignSongToSpot(Number(num));
-          container.appendChild(item);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center gap-2 transition';
+          btn.dataset.track = item.id;
+
+          const badge = item.type === 'voca'
+            ? `<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-mono font-black text-[10px] shrink-0">${item.label}</span>`
+            : `<span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-mono font-black text-[10px] shrink-0">${item.label}</span>`;
+
+          btn.innerHTML = `${badge}<span class="truncate text-slate-700 font-medium">${item.title}</span>`;
+          btn.onclick = () => assignSongToSpot(item.id);
+          container.appendChild(btn);
+
+          if (matchCount >= 60) break;
         }
-      });
+      }
 
       if (matchCount === 0) {
-        container.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">일치하는 곡이 없습니다.</div>`;
+        container.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">일치하는 음원이 없습니다.</div>`;
       }
     }
 
     function selectFirstFilteredSong() {
       const first = document.querySelector('#song-search-results button');
-      if (first) assignSongToSpot(Number(first.dataset.track));
+      if (first) assignSongToSpot(first.dataset.track);
     }
 
-    function assignSongToSpot(trackNum) {
+    function assignSongToSpot(trackId) {
       if (!pendingSpotContext) return;
       const key = String(pendingSpotContext.pageNum);
       if (!songSpotsData[key]) songSpotsData[key] = [];
 
+      const normalizedTrack = /^v\d+$/i.test(String(trackId)) ? String(trackId).toLowerCase() : Number(trackId);
+
       if (pendingSpotContext.editIndex !== null) {
-        songSpotsData[key][pendingSpotContext.editIndex].track = trackNum;
+        songSpotsData[key][pendingSpotContext.editIndex].track = normalizedTrack;
       } else {
         const newSpot = {
-          track: trackNum,
+          track: normalizedTrack,
           x: pendingSpotContext.x,
           y: pendingSpotContext.y,
           shape: currentShape,
@@ -630,20 +668,32 @@
       if (currentRightPageNum) renderSongCircles(currentRightPageNum, 'songs-right', parseInt(rightC.style.width), parseInt(rightC.style.height));
     }
 
-    /* 백그라운드 재생 및 재클릭 일시정지(Pause) 토글 */
-    function playOrPauseR2Song(trackNum) {
-      const fileName = SONGS_DB[trackNum];
-      if (!fileName) return;
+    /* 백그라운드 재생 및 재클릭 일시정지(Pause) 토글 (노래 + 단어 통합) */
+    function playOrPauseR2Song(trackId) {
+      const idStr = String(trackId);
+      let targetUrl = '';
 
-      if (activePlayingTrack === trackNum && audioEl.src) {
+      if (/^v\d+$/i.test(idStr)) {
+        const numPart = idStr.slice(1).padStart(3, '0');
+        const audioBase = (typeof R2_AUDIO_BASE !== 'undefined')
+          ? R2_AUDIO_BASE
+          : R2_SONGS_BASE.replace(/\/songs\/?$/, '/audio');
+        targetUrl = `${audioBase}/${numPart}.mp3`;
+      } else {
+        const fileName = SONGS_DB[Number(idStr)];
+        if (!fileName) return;
+        targetUrl = `${R2_SONGS_BASE}/${encodeURIComponent(fileName)}`;
+      }
+
+      if (String(activePlayingTrack) === idStr && audioEl.src) {
         if (audioEl.paused) audioEl.play();
         else audioEl.pause();
         refreshAllSongLayers();
         return;
       }
 
-      activePlayingTrack = trackNum;
-      audioEl.src = `${R2_SONGS_BASE}/${encodeURIComponent(fileName)}`;
+      activePlayingTrack = idStr;
+      audioEl.src = targetUrl;
       audioEl.play().catch(err => console.warn('오디오 재생 오류:', err));
       refreshAllSongLayers();
     }
