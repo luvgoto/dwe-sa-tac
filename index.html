@@ -478,7 +478,7 @@
 
     async function initPDFViewer() {
       try {
-        const loadingTask = pdfjsLib.getDocument('songbook.pdf');
+        const loadingTask = pdfjsLib.getDocument('https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf');
         pdfDoc = await loadingTask.promise;
         totalBookPages = pdfDoc.numPages;
         document.getElementById('book-total-pages').textContent = totalBookPages;
