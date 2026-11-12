@@ -33,7 +33,7 @@
       box-shadow: inset 8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     }
 
-    /* 하이퍼링크 레이어: 파란색 하이라이트 및 외곽선 완전 제거 */
+    /* PDF 내부 하이퍼링크 레이어 (투명화 유지) */
     .link-layer {
       position: absolute;
       top: 0;
@@ -53,11 +53,50 @@
       -webkit-tap-highlight-color: transparent !important;
       -webkit-touch-callout: none !important;
     }
-    .link-layer a:focus,
-    .link-layer a:active,
-    .link-layer a:hover {
-      background: transparent !important;
-      outline: none !important;
+
+    /* 원형 음원 핫스팟 레이어 */
+    .song-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 25;
+      pointer-events: none;
+    }
+    .edit-active .song-layer {
+      pointer-events: auto;
+      cursor: crosshair;
+      background-color: rgba(37, 99, 235, 0.04);
+    }
+
+    .song-circle {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    /* 일반 모드 원형 버튼: 평소엔 투명, 터치 시 물결 피드백 */
+    .song-circle:active {
+      transform: translate(-50%, -50%) scale(0.92);
+      background-color: rgba(37, 99, 235, 0.25);
+    }
+    .song-circle.playing {
+      background-color: rgba(37, 99, 235, 0.18);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.45);
+    }
+
+    /* 편집 모드 원형 버튼: 위치와 번호 명확히 표시 */
+    .edit-active .song-circle {
+      background-color: rgba(37, 99, 235, 0.28);
+      border: 2px dashed #1d4ed8;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
     /* 하단 숨김형 페이지 네비게이터 */
@@ -90,7 +129,7 @@
 <body class="h-screen w-screen flex flex-col bg-slate-100">
 
   <!-- 상단 패널 -->
-  <header id="top-panel" class="h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-30">
+  <header id="top-panel" class="h-12 bg-white border-b border-slate-200 px-3 sm:px-4 flex items-center justify-between shrink-0 z-30">
     <div class="flex items-center gap-2">
       <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs shadow-xs">
         <i class="fa-solid fa-book-open"></i>
@@ -98,16 +137,35 @@
       <span class="font-black text-slate-800 text-sm tracking-tight">DWE VIEWER</span>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- 편집 모드 도구 (편집 모드 켰을 때만 노출) -->
+      <div id="edit-controls" class="hidden flex items-center gap-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-0.5 mr-1">
+        <span class="text-[11px] font-bold text-amber-800 mr-1">원 크기:</span>
+        <button onclick="changeDefaultRadius(-0.5)" class="w-5 h-5 rounded bg-white border border-amber-300 text-amber-800 font-black text-xs flex items-center justify-center">-</button>
+        <span id="radius-display" class="text-[11px] font-mono font-bold text-amber-900 w-7 text-center">4.5%</span>
+        <button onclick="changeDefaultRadius(0.5)" class="w-5 h-5 rounded bg-white border border-amber-300 text-amber-800 font-black text-xs flex items-center justify-center">+</button>
+        <button onclick="exportSpotsJSON()" title="좌표 데이터 백업 다운로드" class="ml-1.5 px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px]">
+          저장
+        </button>
+      </div>
+
+      <!-- 음원 편집 토글 -->
+      <button id="btn-edit-spots" onclick="toggleSpotEditMode()" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition">
+        <i class="fa-solid fa-music mr-1 text-pink-600"></i><span id="label-edit">음원편집</span>
+      </button>
+
+      <!-- 2쪽보기 / 1쪽보기 -->
       <button id="btn-spread" onclick="toggleSpreadMode()" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition">
         <i class="fa-solid fa-columns mr-1"></i><span id="label-spread">2쪽보기</span>
       </button>
 
+      <!-- 표지포함 / 표지미포함 -->
       <button id="btn-cover" onclick="toggleCoverMode()" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition">
         <i class="fa-solid fa-bookmark mr-1 text-blue-600"></i><span id="label-cover">표지포함</span>
       </button>
 
-      <button onclick="toggleFullscreen()" title="전체화면" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center text-xs font-bold transition ml-1">
+      <!-- 전체화면 -->
+      <button onclick="toggleFullscreen()" title="전체화면" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center text-xs font-bold transition">
         <i id="fs-icon" class="fa-solid fa-expand"></i>
       </button>
     </div>
@@ -134,12 +192,14 @@
       <div id="left-page-box" class="page-wrapper rounded-l-md overflow-hidden">
         <canvas id="canvas-left" class="block"></canvas>
         <div id="links-left" class="link-layer"></div>
+        <div id="songs-left" class="song-layer" onclick="handleLayerClick(event, 'left')"></div>
       </div>
 
       <!-- 오른쪽 페이지 -->
       <div id="right-page-box" class="page-wrapper rounded-r-md overflow-hidden">
         <canvas id="canvas-right" class="block"></canvas>
         <div id="links-right" class="link-layer"></div>
+        <div id="songs-right" class="song-layer" onclick="handleLayerClick(event, 'right')"></div>
       </div>
     </div>
 
@@ -151,6 +211,20 @@
       <i class="fa-solid fa-chevron-right text-sm"></i>
     </button>
   </main>
+
+  <!-- 미니 오디오 플레이어 (음원 재생 시 상단 중앙에 플로팅 표시) -->
+  <div id="mini-player" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-xl border border-white/20 flex items-center gap-3 max-w-[92vw]">
+    <button onclick="toggleAudioPlayPause()" class="w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-xs shrink-0">
+      <i id="mini-play-icon" class="fa-solid fa-pause"></i>
+    </button>
+    <div class="truncate text-xs font-bold pr-1">
+      <span id="mini-track-num" class="text-blue-400 font-mono mr-1">#1</span>
+      <span id="mini-track-title">SA_01_mix</span>
+    </div>
+    <button onclick="stopAudio()" class="text-white/60 hover:text-white text-xs px-1 shrink-0" title="정지 및 닫기">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
 
   <!-- 하단 페이지 바 -->
   <div id="bottom-nav-trigger" onclick="toggleBottomNavActive(event)">
@@ -170,10 +244,68 @@
     </div>
   </div>
 
+  <audio id="r2-audio" preload="auto"></audio>
+
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     const PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
+    const R2_SONGS_BASE = 'https://pub-9a123d611bc04283a5fcc6df16f30d10.r2.dev/songs';
+
+    // 엑셀에서 추출된 1~143번 음원 매핑 테이블
+    const SONGS_DB = {
+      1: "SA_01_mix.mp3", 2: "SA_01_01 What's Your Name 1.mp3", 3: "SA_01_02 What's Your Name 2.mp3",
+      4: "SA_01_03 The Introduction Song1.mp3", 5: "SA_01_04 The Introduction Song2.mp3", 6: "SA_01_05 What's in Your Basket.mp3",
+      7: "SA_01_06 The ABC Song.mp3", 8: "SA_01_07 Pluto's Song.mp3", 9: "SA_01_08 Mickey the Magician.mp3",
+      10: "SA_01_09 Let's Clap for Mickey.mp3", 11: "SA_01_10 The Spelling Song.mp3", 12: "SA_01_11 The Thank You Song.mp3",
+      13: "SA_02_mix.mp3", 14: "SA_02_01 Huey, Dewey, and Louie.mp3", 15: "SA_02_02 Huey Takes a Red Balloon.mp3",
+      16: "SA_02_03 Goofy Is Sleeping in a Red Bed.mp3", 17: "SA_02_04 Huey Is Sitting at the Table.mp3", 18: "SA_02_05 Look! Where, Over There!.mp3",
+      19: "SA_02_06 Around and Around.mp3", 20: "SA_02_07 Up, Down.mp3", 21: "SA_02_08 Clap Your Hands!.mp3",
+      22: "SA_02_09 Pluto's Birthday Song.mp3", 23: "SA_02_10 Birthday, Birthday.mp3", 24: "SA_02_11 What Does a Duck Say.mp3",
+      25: "SA_02_12 Let's Have a Birthday Party.mp3", 26: "SA_02_13 Ten Little Candles.mp3", 27: "SA_03_mix.mp3",
+      28: "SA_03_01 Flour, Sugar, Milk, and Butter.mp3", 29: "SA_03_02 Taking Turns.mp3", 30: "SA_03_03 Ticktock.mp3",
+      31: "SA_03_04 Mickey Mouse's House.mp3", 32: "SA_03_05 Knock, Knock, Knock!.mp3", 33: "SA_03_06 Where Is Mickey.mp3",
+      34: "SA_03_07 When Pluto Is Happy.mp3", 35: "SA_03_08 If You're Happy.mp3", 36: "SA_03_09 Balloons.mp3",
+      37: "SA_03_10 How Old Are You.mp3", 38: "SA_03_11 Happy Birthday to You.mp3", 39: "SA_03_12 The Wishing Song.mp3",
+      40: "SA_03_13 Five Little Candles Burning.mp3", 41: "SA_03_14 Birthday Cake Is Good.mp3", 42: "SA_03_15 Birthday Gifts.mp3",
+      43: "SA_03_16 Mickey and His Friends.mp3", 44: "SA_03_17 Mickey and His Friends(Family Version).mp3", 45: "SA_04_mix.mp3",
+      46: "SA_04_01 Look Up! The Sun Is Shining.mp3", 47: "SA_04_02 Let's Go on a Picnic.mp3", 48: "SA_04_03 We're Packing a Picnic Basket.mp3",
+      49: "SA_04_04 Away Fron the City.mp3", 50: "SA_04_05 Riding Down a Country Road.mp3", 51: "SA_04_06 Green Means Go.mp3",
+      52: "SA_04_07 I Like My Rooster.mp3", 53: "SA_04_08 Lazy Gus.mp3", 54: "SA_04_09 Which Way.mp3",
+      55: "SA_04_10 Where Is Your Right Hand.mp3", 56: "SA_05_mix.mp3", 57: "SA_05_01 We're Going to Plant a Tree.mp3",
+      58: "SA_05_02 The Tree in the Hole.mp3", 59: "SA_05_03 Sitting in a Little Boat.mp3", 60: "SA_05_04 Jump-Splash! Into the Water.mp3",
+      61: "SA_05_05 How Deep Is the Water.mp3", 62: "SA_05_06 Look at Me!.mp3", 63: "SA_05_07 The Fish Eats the Warm.mp3",
+      64: "SA_05_08 We're Hiking Through the Woods.mp3", 65: "SA_05_09 Keep On Climbing.mp3", 66: "SA_05_10 Skip Through the Field.mp3",
+      67: "SA_05_11 If You Listen.mp3", 68: "SA_05_12 Who Did It.mp3", 69: "SA_05_13 Twigs and Branches, Twigs and Logs.mp3",
+      70: "SA_05_14 Yummy, Yummy Food.mp3", 71: "SA_05_15 Fill Up the Bucket.mp3", 72: "SA_05_16 Cover Your Eyes.mp3",
+      73: "SA_06_mix.mp3", 74: "SA_06_01 Scrub, Scrub, Scrub.mp3", 75: "SA_06_02 Clean-up Time.mp3",
+      76: "SA_06_03 Hush! Hush!.mp3", 77: "SA_06_04 Donald's Dream.mp3", 78: "SA_06_05 Pull, Pull, Pull the Rope.mp3",
+      79: "SA_06_06 The Baseball Song.mp3", 80: "SA_06_07 When the Sky Is Blue.mp3", 81: "SA_06_08 Ooo, Ooo, Ooo.mp3",
+      82: "SA_06_09 Eyes and Ears.mp3", 83: "SA_06_10 This Was a Wonderful Picnic.mp3", 84: "SA_07-08_mix.mp3",
+      85: "SA_07_01 The Painter's Song.mp3", 86: "SA_07_02 The Circus Train.mp3", 87: "SA_07_03 Look at All the People!.mp3",
+      88: "SA_07_04 The Circus Band.mp3", 89: "SA_07_05 What Should I Buy.mp3", 90: "SA_07_06 Step Right Up!.mp3",
+      91: "SA_07_07 The Hippopotamus.mp3", 92: "SA_07_08 The Dancing Bears.mp3", 93: "SA_09_mix.mp3",
+      94: "SA_08_01 The Little Circus Bear.mp3", 95: "SA_08_02 The Acrobats.mp3", 96: "SA_08_03 Hey, Mr. Strongman!.mp3",
+      97: "SA_08_04 The Lion Tamer.mp3", 98: "SA_08_05 The Disappearing Cat.mp3", 99: "SA_08_06 Some Clowns.mp3",
+      100: "SA_09_01 The Juggler's Jig.mp3", 101: "SA_09_02 The Thin Man.mp3", 102: "SA_09_03 The Tall Man.mp3",
+      103: "SA_09_04 The Small Man.mp3", 104: "SA_09_05 If I Were Tall.mp3", 105: "SA_09_06 If I Were As Small As the Small Man.mp3",
+      106: "SA_09_07 The Plate Spinner.mp3", 107: "SA_09_08 The Elephant and the Mouse.mp3", 108: "SA_09_09 The Lovely Ladies on Beautiful Horses.mp3",
+      109: "SA_09_10 The Crazy Mixed-Up Circus.mp3", 110: "SA_10_mix.mp3", 111: "SA_10_01 The ABC Song.mp3",
+      112: "SA_10_02 The Rooster's Song.mp3", 113: "SA_10_03 The Alarm Clock Song.mp3", 114: "SA_10_04 Every Morning.mp3",
+      115: "SA_10_05 When I Grow Up.mp3", 116: "SA_10_06 When You Are at the Zoo.mp3", 117: "SA_10_07 Which Way.mp3",
+      118: "SA_10_08 The Lion.mp3", 119: "SA_10_09 The Tiger.mp3", 120: "SA_10_10 The Different Giraffe.mp3",
+      121: "SA_10_11 The Zebra.mp3", 122: "SA_10_12 Five Funny Monkeys.mp3", 123: "SA_10_13 When You're a Baby Kangaroo.mp3",
+      124: "SA_10_14 Good Night.mp3", 125: "SA_11_mix.mp3", 126: "SA_11_01 Mickey the Zookeeper.mp3",
+      127: "SA_11_02 Mickey's Story.mp3", 128: "SA_11_03 When You're a Detective.mp3", 129: "SA_11_04 A Very Strange Mystery.mp3",
+      130: "SA_11_05 Who Took the Peanuts.mp3", 131: "SA_11_06 Who Took the Peanuts.mp3", 132: "SA_11_07 Quietly, Slowly, Carefully.mp3",
+      133: "SA_11_08 The Octopus.mp3", 134: "SA_11_09 You Took the Peanuts!.mp3", 135: "SA_11_10 The Zookeeper's Helpers.mp3",
+      136: "SA_12_mix.mp3", 137: "SA_12_01 When the Sorcerer Wore His Magic Hat.mp3", 138: "SA_12_02 Mickey's Work Song.mp3",
+      139: "SA_12_03 If I Had the Sorcerer's Magic Hat.mp3", 140: "SA_12_04 Now That I Have This Magic Hat.mp3", 141: "SA_12_05 Mickey Told the Broom.mp3",
+      142: "SA_12_06 Magic is Easy.mp3", 143: "SA_12_07 The March of the Brooms.mp3"
+    };
+
+    // 페이지별 원형 음원 핫스팟 저장소 { "페이지번호": [ { track: 2, x: 15.2, y: 20.4, r: 4.5 }, ... ] }
+    let songSpotsData = JSON.parse(localStorage.getItem('dwe_song_circles')) || {};
 
     let pdfDoc = null;
     let currentPage = 1;
@@ -182,6 +314,14 @@
     let hasCoverPage = true;
     let isRendering = false;
     let isFullscreenMode = false;
+    let isSpotEditMode = false;
+    let defaultCircleRadiusPct = 4.5; // 기본 원 반지름(페이지 너비 대비 %)
+
+    let currentLeftPageNum = null;
+    let currentRightPageNum = null;
+    let activePlayingTrack = null;
+
+    const audioEl = document.getElementById('r2-audio');
 
     async function init() {
       try {
@@ -241,6 +381,9 @@
           }
         }
 
+        currentLeftPageNum = leftPageNum;
+        currentRightPageNum = rightPageNum;
+
         const refPageNum = leftPageNum || rightPageNum || 1;
         const samplePage = await pdfDoc.getPage(refPageNum);
         const baseVp = samplePage.getViewport({ scale: 1.0 });
@@ -256,9 +399,8 @@
           leftBox.style.display = 'block';
           leftBox.style.visibility = 'visible';
           leftBox.className = 'page-wrapper rounded-l-md overflow-hidden book-spine-left';
-          await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', scale);
+          await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', 'songs-left', scale);
         } else if (isSpreadMode && rightPageNum === 1) {
-          // 표지 우측 시작 시 왼쪽 영역 투명 처리 (크기를 명확히 맞춰 우측 밀림 방지)
           leftBox.style.display = 'block';
           leftBox.style.visibility = 'hidden';
           leftBox.style.width = `${renderedW}px`;
@@ -275,7 +417,7 @@
           rightBox.className = (isSpreadMode && !leftPageNum)
             ? 'page-wrapper rounded-md overflow-hidden'
             : 'page-wrapper rounded-r-md overflow-hidden book-spine-right border-l border-slate-200';
-          await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', scale);
+          await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', 'songs-right', scale);
         } else {
           rightBox.style.display = 'none';
         }
@@ -290,7 +432,7 @@
       }
     }
 
-    async function renderSinglePage(pageNum, canvasId, linkLayerId, scale) {
+    async function renderSinglePage(pageNum, canvasId, linkLayerId, songLayerId, scale) {
       const page = await pdfDoc.getPage(pageNum);
       const viewport = page.getViewport({ scale });
 
@@ -350,8 +492,218 @@
         }
         linkLayer.appendChild(a);
       });
+
+      // 원형 음원 핫스팟 그리기
+      renderSongCircles(pageNum, songLayerId, floorW, floorH);
     }
 
+    /* ==========================================
+       원형 음원 핫스팟 렌더링 및 클릭 매핑
+       ========================================== */
+    function renderSongCircles(pageNum, layerId, pageW, pageH) {
+      const layer = document.getElementById(layerId);
+      layer.innerHTML = '';
+      layer.style.width = `${pageW}px`;
+      layer.style.height = `${pageH}px`;
+
+      const list = songSpotsData[String(pageNum)] || [];
+      list.forEach((spot, idx) => {
+        const btn = document.createElement('div');
+        btn.className = 'song-circle';
+        if (activePlayingTrack === spot.track && !audioEl.paused) {
+          btn.classList.add('playing');
+        }
+
+        const diameterPx = Math.round(pageW * (spot.r * 2 / 100));
+        btn.style.left = `${spot.x}%`;
+        btn.style.top = `${spot.y}%`;
+        btn.style.width = `${diameterPx}px`;
+        btn.style.height = `${diameterPx}px`;
+
+        const songName = SONGS_DB[spot.track] || `Track #${spot.track}`;
+        btn.title = `${spot.track}. ${songName.replace('.mp3', '')}`;
+
+        if (isSpotEditMode) {
+          btn.innerHTML = `<span class="text-[11px] font-mono font-black text-blue-900 bg-white/90 px-1.5 rounded-full shadow-xs">${spot.track}</span>`;
+        }
+
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          if (isSpotEditMode) {
+            editOrDeleteSpot(pageNum, idx);
+          } else {
+            playR2Song(spot.track);
+          }
+        };
+
+        layer.appendChild(btn);
+      });
+    }
+
+    // 편집 모드에서 빈 공간 클릭 시 새 원형 버튼 추가
+    function handleLayerClick(e, side) {
+      if (!isSpotEditMode) return;
+      const pageNum = (side === 'left') ? currentLeftPageNum : currentRightPageNum;
+      if (!pageNum) return;
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const xPct = Number((((e.clientX - rect.left) / rect.width) * 100).toFixed(2));
+      const yPct = Number((((e.clientY - rect.top) / rect.height) * 100).toFixed(2));
+
+      const input = prompt(`연결할 음원 번호를 입력하세요 (1 ~ 143):\n(예: 2 → SA_01_01 What's Your Name 1)`, '');
+      if (input === null) return;
+
+      const trackNum = parseInt(input.trim(), 10);
+      if (isNaN(trackNum) || !SONGS_DB[trackNum]) {
+        alert('1부터 143 사이의 유효한 음원 번호를 입력해 주세요.');
+        return;
+      }
+
+      const key = String(pageNum);
+      if (!songSpotsData[key]) songSpotsData[key] = [];
+      songSpotsData[key].push({
+        track: trackNum,
+        x: xPct,
+        y: yPct,
+        r: defaultCircleRadiusPct
+      });
+
+      saveSpotsToLocal();
+      refreshAllSongLayers();
+    }
+
+    function editOrDeleteSpot(pageNum, idx) {
+      const key = String(pageNum);
+      const spot = songSpotsData[key][idx];
+      const currentName = SONGS_DB[spot.track] || '';
+      const input = prompt(
+        `현재 연결: #${spot.track} (${currentName})\n\n• 번호 변경: 새 번호(1~143) 입력\n• 삭제: 0 또는 del 입력`,
+        String(spot.track)
+      );
+
+      if (input === null) return;
+      const trimmed = input.trim().toLowerCase();
+
+      if (trimmed === '0' || trimmed === 'del') {
+        songSpotsData[key].splice(idx, 1);
+      } else {
+        const newNum = parseInt(trimmed, 10);
+        if (!isNaN(newNum) && SONGS_DB[newNum]) {
+          spot.track = newNum;
+        } else {
+          alert('올바른 음원 번호(1~143)를 입력하세요.');
+          return;
+        }
+      }
+
+      saveSpotsToLocal();
+      refreshAllSongLayers();
+    }
+
+    function toggleSpotEditMode() {
+      isSpotEditMode = !isSpotEditMode;
+      const spread = document.getElementById('book-spread');
+      const btn = document.getElementById('btn-edit-spots');
+      const controls = document.getElementById('edit-controls');
+
+      if (isSpotEditMode) {
+        spread.classList.add('edit-active');
+        btn.classList.remove('bg-slate-100', 'text-slate-700');
+        btn.classList.add('bg-pink-600', 'text-white', 'border-pink-600');
+        controls.classList.remove('hidden');
+      } else {
+        spread.classList.remove('edit-active');
+        btn.classList.add('bg-slate-100', 'text-slate-700');
+        btn.classList.remove('bg-pink-600', 'text-white', 'border-pink-600');
+        controls.classList.add('hidden');
+      }
+      refreshAllSongLayers();
+    }
+
+    function changeDefaultRadius(delta) {
+      defaultCircleRadiusPct = Math.max(1.5, Math.min(12.0, Number((defaultCircleRadiusPct + delta).toFixed(1))));
+      document.getElementById('radius-display').textContent = `${defaultCircleRadiusPct}%`;
+    }
+
+    function saveSpotsToLocal() {
+      localStorage.setItem('dwe_song_circles', JSON.stringify(songSpotsData));
+    }
+
+    function exportSpotsJSON() {
+      const jsonStr = JSON.stringify(songSpotsData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'dwe_song_spots.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function refreshAllSongLayers() {
+      const leftCanvas = document.getElementById('canvas-left');
+      const rightCanvas = document.getElementById('canvas-right');
+      if (currentLeftPageNum) {
+        renderSongCircles(currentLeftPageNum, 'songs-left', parseInt(leftCanvas.style.width), parseInt(leftCanvas.style.height));
+      }
+      if (currentRightPageNum) {
+        renderSongCircles(currentRightPageNum, 'songs-right', parseInt(rightCanvas.style.width), parseInt(rightCanvas.style.height));
+      }
+    }
+
+    /* ==========================================
+       R2 음원 스트리밍 재생 및 미니 플레이어
+       ========================================== */
+    function playR2Song(trackNum) {
+      const fileName = SONGS_DB[trackNum];
+      if (!fileName) return;
+
+      // 같은 트랙을 다시 누르면 일시정지/재개 토글
+      if (activePlayingTrack === trackNum && audioEl.src) {
+        toggleAudioPlayPause();
+        return;
+      }
+
+      activePlayingTrack = trackNum;
+      const encodedName = encodeURIComponent(fileName);
+      audioEl.src = `${R2_SONGS_BASE}/${encodedName}`;
+      audioEl.play().catch(err => console.warn('오디오 재생 오류:', err));
+
+      document.getElementById('mini-track-num').textContent = `#${trackNum}`;
+      document.getElementById('mini-track-title').textContent = fileName.replace('.mp3', '');
+      document.getElementById('mini-player').classList.remove('hidden');
+      document.getElementById('mini-play-icon').className = 'fa-solid fa-pause';
+
+      refreshAllSongLayers();
+    }
+
+    function toggleAudioPlayPause() {
+      if (audioEl.paused) {
+        audioEl.play();
+        document.getElementById('mini-play-icon').className = 'fa-solid fa-pause';
+      } else {
+        audioEl.pause();
+        document.getElementById('mini-play-icon').className = 'fa-solid fa-play';
+      }
+      refreshAllSongLayers();
+    }
+
+    function stopAudio() {
+      audioEl.pause();
+      audioEl.currentTime = 0;
+      activePlayingTrack = null;
+      document.getElementById('mini-player').classList.add('hidden');
+      refreshAllSongLayers();
+    }
+
+    audioEl.addEventListener('ended', () => {
+      document.getElementById('mini-play-icon').className = 'fa-solid fa-play';
+      refreshAllSongLayers();
+    });
+
+    /* ==========================================
+       페이지 네비게이션 & 전체화면
+       ========================================== */
     async function navigateToDestination(dest) {
       try {
         let destArray = dest;
@@ -417,10 +769,8 @@
       renderCurrentView();
     }
 
-    /* 전체화면 관리 */
     function toggleFullscreen(forceState) {
       const targetState = (typeof forceState === 'boolean') ? forceState : !isFullscreenMode;
-      
       if (targetState) {
         if (document.documentElement.requestFullscreen) {
           document.documentElement.requestFullscreen().catch(() => applyFullscreenUI(true));
@@ -454,18 +804,13 @@
         floatExit.classList.add('hidden');
         if (fsIcon) fsIcon.className = "fa-solid fa-expand";
       }
-
-      // 뷰포트 크기 변화 반영을 위해 지연 재계산
       setTimeout(renderCurrentView, 120);
     }
 
-    // 브라우저 전체화면 상태 변경 감지 (ESC 키, 기기 버튼 완벽 동기화)
     document.addEventListener('fullscreenchange', () => {
-      const isDocFs = !!document.fullscreenElement;
-      applyFullscreenUI(isDocFs);
+      applyFullscreenUI(!!document.fullscreenElement);
     });
 
-    /* 하단 바 UI */
     function updateBottomNavUI() {
       document.getElementById('current-page-num').textContent = currentPage;
       document.getElementById('page-slider').value = currentPage;
@@ -492,14 +837,12 @@
       }, 3500);
     }
 
-    // 키보드 방향키 및 ESC
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft') prevPage();
       if (e.key === 'ArrowRight') nextPage();
       if (e.key === 'Escape' && isFullscreenMode) toggleFullscreen(false);
     });
 
-    // 태블릿 터치 스와이프
     let touchStartX = 0;
     window.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
     window.addEventListener('touchend', e => {
@@ -510,7 +853,6 @@
       }
     }, { passive: true });
 
-    // 리사이즈 디바운스
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
