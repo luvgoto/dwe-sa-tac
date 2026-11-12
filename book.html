@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DWE Smart Songbook Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- PDF.js 3.11.174 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc; /* 깔끔한 밝은 배경 */
+      overflow: hidden;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 양면 페이지 래퍼 */
+    .page-wrapper {
+      position: relative;
+      background: white;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 하이퍼링크 전용 레이어 */
+    .link-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .link-layer a {
+      position: absolute;
+      display: block;
+      pointer-events: auto;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background-color 0.15s;
+    }
+
+    /* 마우스 올리거나 터치할 때 살짝 하이라이트 (링크 위치 확인용) */
+    .link-layer a:hover {
+      background-color: rgba(59, 130, 246, 0.18);
+      outline: 1.5px solid rgba(59, 130, 246, 0.5);
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col">
+
+  <!-- 상단 심플 바 -->
+  <header class="h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center gap-2">
+      <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs">
+        <i class="fa-solid fa-book-open"></i>
+      </span>
+      <span class="font-black text-slate-800 text-sm tracking-tight">SONGBOOK VIEWER</span>
+    </div>
+
+    <!-- 보기 모드 전환 (1쪽 / 2쪽 모아보기) & 페이지 이동 -->
+    <div class="flex items-center gap-2">
+      <button id="btn-spread-toggle" onclick="toggleSpreadMode()" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition">
+        <i class="fa-solid fa-columns mr-1"></i><span id="spread-label">2쪽 보기</span>
+      </button>
+
+      <div class="flex items-center bg-slate-100 rounded-lg px-2 py-1 border border-slate-200 text-xs font-mono font-bold">
+        <input type="number" id="page-input" min="1" value="1" onchange="goToPage(this.value)" class="w-10 bg-transparent text-center text-slate-800 focus:outline-none">
+        <span class="text-slate-400 mx-1">/</span>
+        <span id="total-pages" class="text-slate-600">-</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 뷰어 영역 -->
+  <main id="viewer-container" class="flex-1 w-full h-full relative flex items-center justify-center p-3 overflow-hidden">
+    
+    <!-- 로딩 표시 -->
+    <div id="loading-box" class="flex flex-col items-center justify-center text-slate-500">
+      <div class="w-9 h-9 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+      <p class="text-xs font-bold">송북 PDF를 불러오는 중...</p>
+    </div>
+
+    <!-- 양면 책 컨테이너 -->
+    <div id="book-spread" class="hidden flex items-center justify-center gap-0.5">
+      <!-- 왼쪽 페이지 (또는 단면 모드일 때 메인 페이지) -->
+      <div id="left-page-box" class="page-wrapper rounded-l-md overflow-hidden">
+        <canvas id="canvas-left" class="block"></canvas>
+        <div id="links-left" class="link-layer"></div>
+      </div>
+
+      <!-- 오른쪽 페이지 (2쪽 보기일 때만 표시) -->
+      <div id="right-page-box" class="page-wrapper rounded-r-md overflow-hidden hidden border-l border-slate-200">
+        <canvas id="canvas-right" class="block"></canvas>
+        <div id="links-right" class="link-layer"></div>
+      </div>
+    </div>
+
+    <!-- 좌우 넘김 버튼 -->
+    <button onclick="prevPage()" class="fixed left-3 top-1/2 -translate-y-1/2 w-10 h-14 rounded-2xl bg-white/90 hover:bg-white text-slate-700 shadow-lg border border-slate-200 flex items-center justify-center z-30 active:scale-95 transition">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <button onclick="nextPage()" class="fixed right-3 top-1/2 -translate-y-1/2 w-10 h-14 rounded-2xl bg-white/90 hover:bg-white text-slate-700 shadow-lg border border-slate-200 flex items-center justify-center z-30 active:scale-95 transition">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+
+  </main>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // ★ 나중에 R2 주소가 생기면 아래 URL만 R2 주소로 바꾸면 됩니다!
+    const PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
+
+    let pdfDoc = null;
+    let currentPage = 1;
+    let totalPages = 1;
+    let isSpreadMode = true; // 기본값: 2쪽 모아보기 (표지 1쪽 -> 2-3쪽 -> 4-5쪽...)
+    let isRendering = false;
+
+    async function init() {
+      try {
+        const loadingTask = pdfjsLib.getDocument(PDF_URL);
+        pdfDoc = await loadingTask.promise;
+        totalPages = pdfDoc.numPages;
+
+        document.getElementById('total-pages').textContent = totalPages;
+        document.getElementById('page-input').max = totalPages;
+
+        await renderCurrentView();
+
+        document.getElementById('loading-box').classList.add('hidden');
+        document.getElementById('book-spread').classList.remove('hidden');
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading-box').innerHTML = `
+          <p class="text-sm font-bold text-rose-600">PDF 로딩 실패</p>
+          <p class="text-xs text-slate-500 mt-1">${err.message}</p>
+        `;
+      }
+    }
+
+    // 현재 페이지 번호 기준으로 왼쪽/오른쪽 페이지 결정 및 렌더링
+    async function renderCurrentView() {
+      if (!pdfDoc || isRendering) return;
+      isRendering = true;
+
+      try {
+        const container = document.getElementById('viewer-container');
+        const availW = container.clientWidth - 40;
+        const availH = container.clientHeight - 24;
+
+        const leftBox = document.getElementById('left-page-box');
+        const rightBox = document.getElementById('right-page-box');
+
+        // 2쪽 보기 모드 계산 (1페이지는 표지 단독, 2페이지부터 2-3, 4-5 짝수-홀수 쌍)
+        let leftPageNum = currentPage;
+        let rightPageNum = null;
+
+        if (isSpreadMode) {
+          if (currentPage === 1) {
+            leftPageNum = 1;
+            rightPageNum = null;
+          } else {
+            // 짝수 페이지를 왼쪽에 배치 (예: 3페이지로 점프해도 2-3페이지 펼침으로 표시)
+            leftPageNum = (currentPage % 2 === 0) ? currentPage : currentPage - 1;
+            rightPageNum = (leftPageNum + 1 <= totalPages) ? leftPageNum + 1 : null;
+          }
+        }
+
+        // 화면 비율 계산 (양면일 때는 가로 공간 절반씩 사용)
+        const samplePage = await pdfDoc.getPage(leftPageNum);
+        const baseVp = samplePage.getViewport({ scale: 1.0 });
+        const targetW = rightPageNum ? (availW / 2) : availW;
+        const scale = Math.min(targetW / baseVp.width, availH / baseVp.height);
+
+        // 왼쪽(메인) 페이지 렌더링
+        await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', scale);
+        leftBox.className = rightPageNum 
+          ? 'page-wrapper rounded-l-md overflow-hidden' 
+          : 'page-wrapper rounded-md overflow-hidden';
+
+        // 오른쪽 페이지 렌더링 (있을 경우)
+        if (rightPageNum) {
+          rightBox.classList.remove('hidden');
+          await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', scale);
+        } else {
+          rightBox.classList.add('hidden');
+        }
+
+        document.getElementById('page-input').value = leftPageNum;
+      } finally {
+        isRendering = false;
+      }
+    }
+
+    // 개별 페이지 캔버스 + 하이퍼링크 정확히 그리기
+    async function renderSinglePage(pageNum, canvasId, linkLayerId, scale) {
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale });
+
+      // 레티나/고해상도 디스플레이 대응 (글자 선명도 향상)
+      const dpr = window.devicePixelRatio || 1;
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = Math.floor(viewport.width * dpr);
+      canvas.height = Math.floor(viewport.height * dpr);
+      canvas.style.width = `${Math.floor(viewport.width)}px`;
+      canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      // 하이퍼링크 생성
+      const linkLayer = document.getElementById(linkLayerId);
+      linkLayer.innerHTML = '';
+      linkLayer.style.width = `${Math.floor(viewport.width)}px`;
+      linkLayer.style.height = `${Math.floor(viewport.height)}px`;
+
+      const annotations = await page.getAnnotations();
+
+      annotations.forEach(item => {
+        if (item.subtype !== 'Link') return;
+
+        // PDF 좌표를 현재 화면 픽셀 좌표로 변환
+        const rect = pdfjsLib.Util.normalizeRect(item.rect);
+        const viewRect = viewport.convertToViewportRectangle(rect);
+        const x = Math.min(viewRect[0], viewRect[2]);
+        const y = Math.min(viewRect[1], viewRect[3]);
+        const w = Math.abs(viewRect[2] - viewRect[0]);
+        const h = Math.abs(viewRect[3] - viewRect[1]);
+
+        const a = document.createElement('a');
+        a.style.left = `${x}px`;
+        a.style.top = `${y}px`;
+        a.style.width = `${w}px`;
+        a.style.height = `${h}px`;
+
+        if (item.url) {
+          // 1) 외부 링크 (노션 등)
+          a.href = item.url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+        } else if (item.dest) {
+          // 2) 내부 페이지 이동 (목차 등)
+          a.href = '#';
+          a.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await navigateToDestination(item.dest);
+          };
+        }
+
+        linkLayer.appendChild(a);
+      });
+    }
+
+    // PDF 내부 목적지(Dest) 해석 후 해당 페이지로 점프
+    async function navigateToDestination(dest) {
+      try {
+        let destArray = dest;
+        if (typeof dest === 'string') {
+          destArray = await pdfDoc.getDestination(dest);
+        }
+        if (Array.isArray(destArray) && destArray[0]) {
+          const ref = destArray[0];
+          const pageIndex = (typeof ref === 'object') 
+            ? await pdfDoc.getPageIndex(ref) 
+            : ref;
+          currentPage = pageIndex + 1;
+          await renderCurrentView();
+        }
+      } catch (err) {
+        console.warn('목차 이동 실패:', err);
+      }
+    }
+
+    function prevPage() {
+      if (currentPage <= 1) return;
+      if (isSpreadMode) {
+        currentPage = (currentPage <= 3) ? 1 : currentPage - 2;
+      } else {
+        currentPage--;
+      }
+      renderCurrentView();
+    }
+
+    function nextPage() {
+      if (currentPage >= totalPages) return;
+      if (isSpreadMode) {
+        currentPage = (currentPage === 1) ? 2 : Math.min(totalPages, currentPage + 2);
+      } else {
+        currentPage++;
+      }
+      renderCurrentView();
+    }
+
+    function goToPage(val) {
+      const num = parseInt(val, 10);
+      if (!isNaN(num) && num >= 1 && num <= totalPages) {
+        currentPage = num;
+        renderCurrentView();
+      }
+    }
+
+    function toggleSpreadMode() {
+      isSpreadMode = !isSpreadMode;
+      document.getElementById('spread-label').textContent = isSpreadMode ? '2쪽 보기' : '1쪽 보기';
+      renderCurrentView();
+    }
+
+    // 키보드 방향키 지원
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') prevPage();
+      if (e.key === 'ArrowRight') nextPage();
+    });
+
+    // 창 크기 변경 시 재조정
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(renderCurrentView, 150);
+    });
+
+    window.onload = init;
+  </script>
+</body>
+</html>
