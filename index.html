@@ -51,47 +51,7 @@
       border-radius: 8px;
     }
 
-    /* PDF 뷰어 핫스팟 스타일 */
-    .card-hotspot {
-      position: absolute;
-      cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.15s ease-in-out;
-      z-index: 15;
-    }
-    .card-hotspot:active {
-      background-color: rgba(59, 130, 246, 0.35) !important;
-      transform: scale(0.98);
-    }
-    .voca-hotspot {
-      position: absolute;
-      cursor: pointer;
-      border-radius: 9999px;
-      z-index: 16;
-    }
-    .voca-hotspot:active {
-      background-color: rgba(236, 72, 153, 0.4) !important;
-      transform: scale(0.96);
-    }
-
-    /* 편집 모드 핫스팟 스타일 */
-    .edit-mode .card-hotspot {
-      border: 2px dashed #2563eb;
-      background-color: rgba(37, 99, 235, 0.15);
-    }
-    .edit-mode .voca-hotspot {
-      border: 2px dashed #db2777;
-      background-color: rgba(219, 39, 119, 0.2);
-    }
-
-    /* 태블릿/모바일은 그대로 두고, PC 넉넉한 환경에서 카드 뷰 확대 */
-    @media screen and (min-width: 1300px) and (min-height: 850px) and (hover: hover) {
-      #view-card {
-        transform: scale(1.22);
-        transform-origin: center center;
-      }
-    }
-/* === 여기에 추가할 CSS 코드 시작 === */
+    /* PDF.js 어노테이션 레이어 기본 필수 스타일 */
     .annotationLayer {
       position: absolute;
       top: 0;
@@ -104,7 +64,6 @@
       pointer-events: none;
       z-index: 20;
     }
-
     .annotationLayer section,
     .annotationLayer .linkAnnotation {
       position: absolute;
@@ -113,7 +72,6 @@
       cursor: pointer;
       box-sizing: border-box;
     }
-
     .annotationLayer .linkAnnotation > a {
       position: absolute;
       top: 0;
@@ -123,20 +81,59 @@
       display: block;
     }
 
+    /* PDF 인터랙티브 핫스팟 레이어 */
     #pdf-interactive-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       pointer-events: none;
       z-index: 25;
     }
-    #pdf-interactive-layer .card-hotspot,
-    #pdf-interactive-layer .voca-hotspot {
+    .card-hotspot {
+      position: absolute;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.15s ease-in-out;
       pointer-events: auto;
     }
-    /* === 추가할 CSS 코드 끝 === */
+    .card-hotspot:active {
+      background-color: rgba(59, 130, 246, 0.35) !important;
+      transform: scale(0.98);
+    }
+    .voca-hotspot {
+      position: absolute;
+      cursor: pointer;
+      border-radius: 9999px;
+      pointer-events: auto;
+    }
+    .voca-hotspot:active {
+      background-color: rgba(236, 72, 153, 0.4) !important;
+      transform: scale(0.96);
+    }
+
+    /* 편집 모드 스타일 */
+    .edit-mode .card-hotspot {
+      border: 2px dashed #2563eb;
+      background-color: rgba(37, 99, 235, 0.15);
+    }
+    .edit-mode .voca-hotspot {
+      border: 2px dashed #db2777;
+      background-color: rgba(219, 39, 119, 0.2);
+    }
+
+    @media screen and (min-width: 1300px) and (min-height: 850px) and (hover: hover) {
+      #view-card {
+        transform: scale(1.22);
+        transform-origin: center center;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-800 min-h-screen flex flex-col justify-start antialiased">
 
-  <!-- ================= 상단 통합 헤더 ================= -->
+  <!-- 상단 통합 헤더 -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shadow-xs">
     <div class="cursor-pointer shrink-0 flex items-center gap-2" onclick="switchView('book')">
       <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
@@ -147,7 +144,7 @@
       </h1>
     </div>
 
-    <!-- 모드 탭 (BOOK / CARD / QUIZ / SELECT CARD / EDIT) -->
+    <!-- 모드 탭 -->
     <div class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar">
       <button id="nav-btn-book" onclick="switchView('book')" class="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-black transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly">
         <i class="fa-solid fa-book"></i>
@@ -163,21 +160,18 @@
         <span>LIST</span>
       </button>
 
-      <!-- 편집 모드 토글 버튼 -->
       <button id="nav-btn-edit" onclick="toggleEditMode()" title="편집 모드" class="px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 ml-1 btn-jelly text-xs font-bold">
         <i class="fa-solid fa-gear"></i>
       </button>
 
-      <!-- 전체화면 토글 -->
       <button onclick="toggleFullscreen()" title="전체화면" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center border border-slate-200 btn-jelly">
         <i id="fullscreen-icon" class="fa-solid fa-expand text-xs"></i>
       </button>
     </div>
   </header>
 
-  <!-- ================= [뷰 0] 송북 PDF 인터랙티브 뷰어 (BOOK) ================= -->
+  <!-- [뷰 0] 송북 PDF 인터랙티브 뷰어 (BOOK) -->
   <main id="view-book" class="flex-1 w-full bg-slate-900 flex flex-col items-center justify-start relative overflow-hidden select-none">
-    <!-- 송북 페이지 컨트롤 바 (플로팅) -->
     <div class="fixed bottom-3 left-1/2 -translate-x-1/2 z-30 bg-black/75 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-2xl flex items-center gap-3 text-white text-xs">
       <button onclick="prevBookPage()" class="p-2 hover:bg-white/20 rounded-xl transition btn-jelly">
         <i class="fa-solid fa-chevron-left text-sm"></i>
@@ -191,7 +185,6 @@
         <i class="fa-solid fa-chevron-right text-sm"></i>
       </button>
 
-      <!-- 편집 모드 전용 액션 버튼들 -->
       <div id="edit-toolbar" class="hidden flex items-center gap-2 border-l border-white/20 pl-3">
         <button onclick="addNewCardHotspotPrompt()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg font-black text-[11px] btn-jelly">
           + 카드
@@ -205,20 +198,16 @@
       </div>
     </div>
 
-    <!-- PDF 캔버스 래퍼 & 인터랙티브 오버레이 컨테이너 -->
     <div id="pdf-scroll-container" class="w-full flex-1 overflow-auto flex items-center justify-center p-1 sm:p-3 relative">
       <div id="pdf-page-container" class="relative shadow-2xl bg-white rounded-lg overflow-hidden">
-        <!-- PDF 페이지 렌더링 캔버스 -->
         <canvas id="pdf-render-canvas" class="block"></canvas>
-        <!-- PDF.js 기본 텍스트 & 어노테이션 레이어 (기존 링크 보존) -->
-        <div id="pdf-annotation-layer" class="annotationLayer absolute inset-0 pointer-events-auto"></div>
-        <!-- 인터랙티브 카드 & VOCA 터치 오버레이 레이어 -->
-        <div id="pdf-interactive-layer" class="absolute inset-0 pointer-events-auto"></div>
+        <div id="pdf-annotation-layer" class="annotationLayer"></div>
+        <div id="pdf-interactive-layer"></div>
       </div>
     </div>
   </main>
 
-  <!-- ================= [뷰 1] 메인 카드 놀이 뷰 (CARD) ================= -->
+  <!-- [뷰 1] 메인 카드 놀이 뷰 (CARD) -->
   <main id="view-card" class="hidden flex-1 max-w-xl md:max-w-3xl lg:max-w-4xl w-full mx-auto px-3 py-2 sm:py-3 flex flex-col justify-center items-center gap-1 sm:gap-2 my-auto bg-white rounded-3xl sm:my-3 sm:shadow-xl sm:border border-slate-200">
     <div class="w-full flex items-center justify-between px-1 py-0.5 text-xs">
       <div class="flex items-center gap-2">
@@ -241,13 +230,11 @@
       </div>
     </div>
 
-    <!-- 실물 가로형 카드 프레임 (2.1 : 1) -->
     <div class="w-full my-0 py-0.5 sm:py-1">
       <div onclick="toggleAudioPlayback()" class="w-full aspect-[2.1/1] bg-slate-100 rounded-2xl sm:rounded-3xl shadow-lg border-2 sm:border-3 border-slate-200 overflow-hidden relative cursor-pointer flex items-center justify-center">
         <img id="card-image" src="" alt="Card" loading="eager" class="w-full h-full object-cover">
         <canvas id="filter-canvas" class="hidden w-full h-full object-cover absolute inset-0 pointer-events-none"></canvas>
 
-        <!-- 3구 셀로판 필터 버튼 -->
         <div id="magic-filter-controls" class="hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 flex items-center gap-1.5 sm:gap-2.5 z-20" onclick="event.stopPropagation()">
           <button id="btn-filter-orig" onclick="applyMagicFilter('original')" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly">
             ORIG
@@ -275,7 +262,6 @@
       </div>
     </div>
 
-    <!-- 하단 컨트롤 바 -->
     <footer class="w-full flex flex-col items-center gap-1.5 sm:gap-2 pt-0.5">
       <div class="w-full flex items-center justify-between gap-2.5 sm:gap-6">
         <button onclick="prevCard()" class="flex-1 py-3 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-2xl border border-slate-200 shadow-xs text-sm sm:text-base btn-jelly flex items-center justify-center gap-1.5 sm:gap-2">
@@ -301,7 +287,7 @@
     </footer>
   </main>
 
-  <!-- ================= [뷰 2] 소리 퀴즈 놀이 뷰 (QUIZ) ================= -->
+  <!-- [뷰 2] 소리 퀴즈 놀이 뷰 (QUIZ) -->
   <main id="view-quiz" class="hidden flex-1 max-w-xl md:max-w-4xl lg:max-w-5xl w-full mx-auto p-4 sm:p-8 flex flex-col space-y-4 sm:space-y-6 my-auto bg-white rounded-3xl sm:my-3 sm:shadow-xl sm:border border-slate-200">
     <div class="w-full flex items-center justify-between px-1">
       <div class="flex items-center gap-2">
@@ -330,7 +316,7 @@
           <i class="fa-solid fa-volume-high animate-pulse"></i>
         </div>
         <div class="text-left">
-          <p class="text-xs sm:text-base font-black text-slate-900 leading-tight">Listen carefully and choose the correct card.</p>
+          <p class="text-xs sm:base font-black text-slate-900 leading-tight">Listen carefully and choose the correct card.</p>
           <p class="text-[11px] sm:text-xs text-blue-600 font-bold mt-0.5">Tap to listen again.</p>
         </div>
       </div>
@@ -366,16 +352,12 @@
     </div>
   </main>
 
-  <!-- ================= [뷰 3] 카드 선택 & 필터 뷰 (LIST) ================= -->
+  <!-- [뷰 3] 카드 선택 & 필터 뷰 (LIST) -->
   <main id="view-filter" class="hidden flex-1 max-w-3xl lg:max-w-5xl w-full mx-auto p-4 sm:p-7 flex flex-col space-y-4 sm:space-y-5 my-auto bg-white rounded-3xl sm:my-3 sm:shadow-xl sm:border border-slate-200">
     <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
       <div>
-        <h2 class="text-sm sm:text-lg font-black text-slate-900">
-          카드 선택 & 연속 재생
-        </h2>
-        <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-          원하는 카드를 선택해 연속 재생하고 퀴즈에 반영하세요.
-        </p>
+        <h2 class="text-sm sm:text-lg font-black text-slate-900">카드 선택 & 연속 재생</h2>
+        <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">원하는 카드를 선택해 연속 재생하고 퀴즈에 반영하세요.</p>
       </div>
       <button onclick="playSelectedCardsImmediately()" class="px-4 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 btn-jelly transition">
         <i class="fa-solid fa-play text-xs"></i>
@@ -456,28 +438,21 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     let pdfDoc = null;
-    let currentBookPage = 10; // 첫 시작 페이지 (What's Your Name 노래 페이지)
+    let currentBookPage = 1; // 1페이지부터 시작하도록 설정
     let totalBookPages = 1;
     let isRenderingPdf = false;
     let isEditMode = false;
 
-    // 기본 송북 데이터 (로컬 스토리지에 있으면 우선 사용)
+    // 기본 송북 데이터
     const DEFAULT_SONGBOOK_DATA = {
-      // 10페이지: What's Your Name (카드 4번)
       "10": {
         voca: { x: 5, y: 3, w: 22, h: 6, cards: [4] },
-        cards: [
-          { id: 4, x: 2, y: 15, w: 96, h: 22 }
-        ]
+        cards: [{ id: 4, x: 2, y: 15, w: 96, h: 22 }]
       },
-      // 11페이지: The Introduction Song (카드 4번)
       "11": {
         voca: { x: 5, y: 65, w: 22, h: 6, cards: [4] },
-        cards: [
-          { id: 4, x: 2, y: 72, w: 96, h: 22 }
-        ]
+        cards: [{ id: 4, x: 2, y: 72, w: 96, h: 22 }]
       },
-      // 13페이지: What's in Your Basket? (8, 9, 11, 10, 12, 5, 14, 13, 16, 15, 18, 17)
       "13": {
         voca: { x: 5, y: 2, w: 22, h: 6, cards: [8, 9, 11, 10, 12, 5, 14, 13, 16, 15, 18, 17] },
         cards: [
@@ -495,7 +470,6 @@
           { id: 17, x: 67, y: 75, w: 30, h: 20 }
         ]
       },
-      // 14페이지: The ABC Song (7, 21, 22)
       "14": {
         voca: { x: 5, y: 62, w: 22, h: 6, cards: [7, 21, 22] },
         cards: [
@@ -504,7 +478,6 @@
           { id: 22, x: 68, y: 70, w: 30, h: 24 }
         ]
       },
-      // 15페이지: Pluto's Song (4, 5, 24)
       "15": {
         voca: { x: 5, y: 64, w: 22, h: 6, cards: [4, 5, 24] },
         cards: [
@@ -519,7 +492,9 @@
 
     async function initPDFViewer() {
       try {
-        const loadingTask = pdfjsLib.getDocument('https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf');
+        // GitHub Raw에서 직접 불러오기 (배포 환경과 로컬 환경 완벽 호환)
+        const pdfUrl = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
+        const loadingTask = pdfjsLib.getDocument(pdfUrl);
         pdfDoc = await loadingTask.promise;
         totalBookPages = pdfDoc.numPages;
         document.getElementById('book-total-pages').textContent = totalBookPages;
@@ -527,93 +502,97 @@
         renderBookPage(currentBookPage);
       } catch (e) {
         console.warn('PDF 로드 실패:', e);
-        // PDF가 없거나 로컬 파일 보안 이슈일 경우 안내
         document.getElementById('pdf-scroll-container').innerHTML = `
           <div class="bg-white p-6 rounded-2xl max-w-md text-center shadow-2xl">
             <i class="fa-solid fa-file-pdf text-4xl text-rose-500 mb-2"></i>
-            <h3 class="font-black text-slate-800 text-base">songbook.pdf를 찾을 수 없습니다</h3>
-            <p class="text-xs text-slate-500 mt-1">리포지토리 최상위 경로에 songbook.pdf 파일이 있는지 확인해 주세요.</p>
+            <h3 class="font-black text-slate-800 text-base">songbook.pdf를 불러올 수 없습니다</h3>
+            <p class="text-xs text-slate-500 mt-1">저장소가 Public 상태인지 확인해 주세요.</p>
           </div>
         `;
       }
     }
 
     async function renderBookPage(num) {
-  if (!pdfDoc || isRenderingPdf) return;
-  isRenderingPdf = true;
+      if (!pdfDoc || isRenderingPdf) return;
+      isRenderingPdf = true;
 
-  const page = await pdfDoc.getPage(num);
-  const canvas = document.getElementById('pdf-render-canvas');
-  const ctx = canvas.getContext('2d');
-  const container = document.getElementById('pdf-scroll-container');
-  const annotationLayer = document.getElementById('pdf-annotation-layer');
-  const pageContainer = document.getElementById('pdf-page-container');
+      try {
+        const page = await pdfDoc.getPage(num);
+        const canvas = document.getElementById('pdf-render-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('pdf-scroll-container');
+        const annotationLayer = document.getElementById('pdf-annotation-layer');
+        const pageContainer = document.getElementById('pdf-page-container');
 
-  // 화면 크기에 맞게 최적 비율(Fit) 계산
-  const baseViewport = page.getViewport({ scale: 1.0 });
-  const availableWidth = container.clientWidth - 24;
-  const availableHeight = container.clientHeight - 24;
-  const scale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
-  const viewport = page.getViewport({ scale: Math.max(scale, 0.6) });
+        // 화면 크기에 맞게 최적 비율(Fit) 계산
+        const baseViewport = page.getViewport({ scale: 1.0 });
+        const availableWidth = container.clientWidth - 24;
+        const availableHeight = container.clientHeight - 24;
+        const scale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
+        const viewport = page.getViewport({ scale: Math.max(scale, 0.6) });
 
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  pageContainer.style.width = `${viewport.width}px`;
-  pageContainer.style.height = `${viewport.height}px`;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        pageContainer.style.width = `${viewport.width}px`;
+        pageContainer.style.height = `${viewport.height}px`;
 
-  // 1. 캔버스 렌더링
-  const renderContext = { canvasContext: ctx, viewport: viewport };
-  await page.render(renderContext).promise;
+        // 1. 캔버스 렌더링
+        const renderContext = { canvasContext: ctx, viewport: viewport };
+        await page.render(renderContext).promise;
 
- // 2. PDF 기본 하이퍼링크 (목차 이동, 외부 웹 링크) 렌더링
-      annotationLayer.innerHTML = '';
-      annotationLayer.style.width = `${viewport.width}px`;
-      annotationLayer.style.height = `${viewport.height}px`;
+        // 2. PDF 기본 하이퍼링크 (목차 이동, 외부 웹 링크) 렌더링
+        annotationLayer.innerHTML = '';
+        annotationLayer.style.width = `${viewport.width}px`;
+        annotationLayer.style.height = `${viewport.height}px`;
 
-      const annotations = await page.getAnnotations();
-      
-      const linkService = {
-        getDestinationHash: () => '#',
-        getAnchorUrl: () => '#',
-        setHash: () => {},
-        executeNamedAction: () => {},
-        addLinkAttributes: (link, url, newWindow) => {
-          link.href = url;
-          link.target = newWindow ? '_blank' : '_self';
-          link.rel = 'noopener noreferrer';
-        },
-        goToDestination: async (dest) => {
-          try {
-            let destArray = dest;
-            if (typeof dest === 'string') {
-              destArray = await pdfDoc.getDestination(dest);
+        const annotations = await page.getAnnotations();
+        
+        const linkService = {
+          getDestinationHash: () => '#',
+          getAnchorUrl: () => '#',
+          setHash: () => {},
+          executeNamedAction: () => {},
+          addLinkAttributes: (link, url, newWindow) => {
+            link.href = url;
+            link.target = newWindow ? '_blank' : '_self';
+            link.rel = 'noopener noreferrer';
+          },
+          goToDestination: async (dest) => {
+            try {
+              let destArray = dest;
+              if (typeof dest === 'string') {
+                destArray = await pdfDoc.getDestination(dest);
+              }
+              if (Array.isArray(destArray) && destArray[0]) {
+                const targetPageIndex = await pdfDoc.getPageIndex(destArray[0]);
+                currentBookPage = targetPageIndex + 1;
+                renderBookPage(currentBookPage);
+              }
+            } catch (err) {
+              console.warn('페이지 점프 실패:', err);
             }
-            if (Array.isArray(destArray) && destArray[0]) {
-              const targetPageIndex = await pdfDoc.getPageIndex(destArray[0]);
-              currentBookPage = targetPageIndex + 1;
-              renderBookPage(currentBookPage);
-            }
-          } catch (err) {
-            console.warn('페이지 점프 실패:', err);
           }
-        }
-      };
+        };
 
-      pdfjsLib.AnnotationLayer.render({
-        viewport: viewport.clone({ dontFlip: true }),
-        div: annotationLayer,
-        annotations: annotations,
-        page: page,
-        linkService: linkService,
-        renderInteractiveForms: false
-      });
+        pdfjsLib.AnnotationLayer.render({
+          viewport: viewport.clone({ dontFlip: true }),
+          div: annotationLayer,
+          annotations: annotations,
+          page: page,
+          linkService: linkService,
+          renderInteractiveForms: false
+        });
 
-  // 3. 커스텀 카드 음원 및 VOCA 핫스팟 레이어 렌더링
-  renderInteractiveHotspots(num);
+        // 3. 커스텀 카드 음원 및 VOCA 핫스팟 레이어 렌더링
+        renderInteractiveHotspots(num);
 
-  document.getElementById('book-page-input').value = num;
-  isRenderingPdf = false;
-}
+        document.getElementById('book-page-input').value = num;
+      } catch (err) {
+        console.error('페이지 렌더링 오류:', err);
+      } finally {
+        isRenderingPdf = false;
+      }
+    }
 
     function renderInteractiveHotspots(pageNum) {
       const layer = document.getElementById('pdf-interactive-layer');
@@ -642,7 +621,6 @@
           if (isEditMode) {
             editVocaHotspot(pData.voca);
           } else {
-            // 플레이어로 카드 목록을 넘기며 화면 전환
             launchCardsFromSongbook(pData.voca.cards);
           }
         };
@@ -712,7 +690,6 @@
 
     function launchCardsFromSongbook(cardIds) {
       if (!cardIds || cardIds.length === 0) return;
-      // 지정된 카드 ID들을 가사 순서 그대로 플레이리스트로 주입
       const orderedCards = [];
       cardIds.forEach(id => {
         const found = CARDS.find(c => c.id === id);
@@ -725,12 +702,11 @@
       selectedSet = new Set(orderedCards.map(c => c.id));
       currentIndex = 0;
 
-      // 카드 화면으로 부드럽게 스위칭
       switchView('card');
       playCurrentAudio();
     }
 
-    /* 편집 모드 관리 로직 */
+    /* 편집 모드 관리 */
     function toggleEditMode() {
       isEditMode = !isEditMode;
       const btn = document.getElementById('nav-btn-edit');
@@ -781,7 +757,6 @@
       const id = prompt('새 카드의 번호를 입력하세요 (1~510):', '4');
       if (!id) return;
 
-      // 기본 중앙 위치에 박스 생성
       songbookData[pageKey].cards.push({
         id: parseInt(id, 10),
         x: 10,
@@ -834,7 +809,7 @@
     });
 
     /* ==========================================
-       1. 카드 플레이어 및 퀴즈 코어 엔진 (기존 기능 100% 보존)
+       1. 카드 플레이어 및 퀴즈 코어 엔진
        ========================================== */
     const MAGIC_CARD_SET = new Set([
       3, 8, 20, 31, 49, 51, 53, 54, 59, 60, 62, 64, 65, 82, 83, 84, 87, 89, 90, 91,
@@ -862,7 +837,6 @@
       "색상", "동식물", "자연", "사물", "문장", "집", "옷", "취미놀이", "음식", "음악", "MAGIC"
     ];
 
-    // RAW_CARDS 데이터 (510장 전체 보존)
     const RAW_CARDS = [[1, "book", 0, [3, 6, 17], 0], [2, "pointed", 0, [14, 18], 0], [3, "no / yes", 0, [3, 4], 0], [4, "name", 0, [3, 5], 0], [5, "mouse", 0, [2, 3], 0], [6, "listen", 0, [1, 17], 0], [7, "sing", 0, [1, 17], 0], [8, "in / on", 0, [4, 14, 18], 0], [9, "basket", 0, [3, 6, 16, 17], 0], [10, "hat", 0, [3, 6, 10], 0], [11, "cat", 0, [2, 3], 0], [12, "house", 0, [3, 6, 16], 0], [13, "chair", 0, [3, 6], 0], [14, "bear", 0, [2, 3], 0], [15, "bed", 0, [3, 6, 16], 0], [16, "sled", 0, [3, 6, 17], 0], [17, "flower", 0, [2, 3, 13], 0], [18, "tower", 0, [3, 6], 0], [19, "picture", 0, [3, 6], 0], [20, "that / this", 0, [3, 4, 14], 0], [21, "whistle(동)", 0, [1, 17], 0], [22, "clap", 0, [1, 9, 17], 0], [23, "duck", 0, [2, 3], 0], [24, "dog", 0, [2, 3], 0], [25, "boy / girl", 0, [3, 5], 0], [26, "wand", 0, [3, 6, 17], 0], [27, "table", 0, [3, 6, 16], 0], [28, "letters", 0, [3, 17], 0], [29, "look", 0, [1, 9], 0], [30, "wave", 0, [1], 0], [31, "bow(동)", 0, [1, 9], 0], [32, "match", 0, [3, 6, 16], 0], [33, "bat", 0, [3, 6, 17], 0], [34, "music", 0, [3, 17], 0], [35, "look like", 0, [1], 0], [36, "blow", 0, [1], 0], [37, "balloon", 0, [3, 6, 17], 0], [38, "green / yellow", 0, [3, 8], 0], [39, "blue / red", 0, [3, 8], 0], [40, "elephant", 0, [2, 3], 0], [41, "big / small", 0, [18], 0], [42, "long / short", 0, [18], 0], [43, "beans", 0, [3, 11], 0], [44, "shoe", 0, [3, 6, 10], 0], [45, "sleepy", 0, [0, 18], 0], [46, "eat", 0, [1, 9], 0], [47, "wear", 0, [1, 9], 0], [48, "color", 0, [3, 8], 0], [49, "stand / sit", 0, [1, 9], 0], [50, "hold", 0, [1, 9], 0], [51, "at / on", 0, [4, 14, 18], 0], [52, "next to", 0, [4, 14, 18], 0], [53, "here / there", 0, [3, 4, 14], 0], [54, "pin", 0, [3, 6, 10], 0], [55, "under", 0, [4, 18], 0], [56, "behind", 0, [4, 18], 0], [57, "stairs", 0, [3, 6, 16], 0], [58, "in line", 0, [4, 18], 0], [59, "break", 0, [1], 0], [60, "fall", 0, [1], 0], [61, "angry", 0, [0, 18], 0], [62, "run / walk", 0, [1, 9], 0], [63, "around", 0, [4, 18], 0], [64, "fast / slow", 0, [18], 0], [65, "down / up", 0, [14, 18], 0], [66, "jump", 0, [1, 9], 0], [67, "window", 0, [3, 6, 16], 0], [68, "come out / go in", 0, [1, 16], 0], [69, "tree", 0, [2, 3, 13], 0], [70, "hands", 0, [3, 5, 9], 0], [71, "trun around", 0, [1, 9], 0], [72, "bend down", 0, [1, 9], 0], [73, "floor / ground", 0, [3, 6, 16], 0], [74, "touch", 0, [1, 9], 0], [75, "toes", 0, [3, 9], 0], [76, "nose", 0, [3, 9], 0], [77, "cake", 0, [3, 6, 11, 17], 0], [78, "ice cream", 0, [3, 6, 11, 17], 0], [79, "candle", 0, [3, 6, 16, 17], 0], [80, "gift", 0, [3, 6, 17], 0], [81, "play", 0, [1, 9, 17], 0], [82, "chicken", 0, [2, 3], 0], [83, "cow", 0, [2, 3], 0], [84, "horse", 0, [2, 3], 0], [85, "rose", 0, [2, 3, 13], 0], [86, "bow(명) / ribbon", 0, [3, 6, 10], 0], [87, "face", 0, [3, 9], 0], [88, "lick", 0, [1, 9, 11], 0], [89, "happy / sad", 0, [0, 18], 0], [90, "count", 0, [1, 17], 0], [91, "big / little", 0, [18], 0], [92, "black / white", 0, [3, 8], 0], [93, "draw", 0, [1, 8, 17], 0], [94, "living room", 0, [3, 16], 0], [95, "sofa", 0, [3, 6, 16], 0], [96, "television", 0, [3, 6, 16], 0], [97, "dining room", 0, [3, 16], 0], [98, "sandwich", 0, [3, 6, 11, 17], 0], [99, "bedroom", 0, [3, 16], 0], [100, "lie / sit", 0, [1, 9], 0], [101, "bathroom", 0, [3, 16], 0], [102, "take a bath", 0, [1, 16], 0], [103, "kitchen", 0, [3, 16], 0], [104, "help", 0, [1], 0], [105, "refrigerator / stove", 0, [3, 6, 11, 16], 0], [106, "bowl", 0, [3, 6, 11, 16], 0], [107, "cup / glass(셀있)", 0, [3, 6, 11, 16], 0], [108, "fork / spoon", 0, [3, 6, 11, 16], 0], [109, "knife", 0, [3, 6, 11, 16], 0], [110, "pan", 0, [3, 6, 11, 16], 0], [111, "on top of", 0, [4, 14, 18], 0], [112, "oven", 0, [3, 6, 11, 16], 0], [113, "bottles", 0, [3, 6, 11, 16], 0], [114, "milk(명)", 0, [3, 6, 11], 0], [115, "butter", 0, [3, 6, 11], 0], [116, "egg", 0, [3, 6, 11], 0], [117, "cupboard", 0, [3, 6, 11, 16], 0], [118, "bag", 0, [3, 6, 10, 17], 0], [119, "box", 0, [3, 6, 17], 0], [120, "a lot / a little", 0, [18], 0], [121, "cut", 0, [1], 0], [122, "finger", 0, [3, 9], 0], [123, "pour", 0, [1, 11, 16], 0], [124, "empty / full", 0, [18], 0], [125, "pitcher", 0, [3, 6, 11, 16], 0], [126, "drink", 0, [1, 11], 0], [127, "give / give back", 0, [1], 0], [128, "circles", 0, [3, 17], 0], [129, "clocks", 0, [3, 6, 16], 0], [130, "piece of paper", 0, [3, 6, 16, 17], 0], [131, "tie(동) / untie", 0, [1, 10], 0], [132, "butterfly", 0, [2, 3], 0], [133, "turn into", 0, [1], 0], [134, "rope", 0, [3, 6, 17], 0], [135, "bicycle", 0, [3, 6, 17], 0], [136, "ride / walk", 0, [1, 9, 17], 0], [137, "pencil", 0, [3, 6, 17], 0], [138, "wheel", 0, [3, 6], 0], [139, "bread", 0, [3, 6, 11], 0], [140, "put on / take off", 0, [1, 9, 10], 0], [141, "tie(명)", 0, [3, 10], 0], [142, "mirror", 0, [3, 6, 16], 0], [143, "inside / outside", 0, [18], 0], [144, "knock", 0, [1, 9, 16], 0], [145, "door", 0, [3, 6, 16], 0], [146, "close / open", 0, [1], 0], [147, "show", 0, [1], 0], [148, "pants / shirt", 0, [3, 6, 10], 0], [149, "blouse / skirt", 0, [3, 6, 10], 0], [150, "pink / purple", 0, [3, 8], 0], [151, "jacket / sweater", 0, [3, 6, 10], 0], [152, "brown / orange", 0, [3, 8], 0], [153, "dress", 0, [3, 6, 10], 0], [154, "purse", 0, [3, 6, 10], 0], [155, "hair", 0, [3, 9], 0], [156, "string", 0, [3, 6, 10], 0], [157, "leaf", 0, [2, 3, 13], 0], [158, "clothes", 0, [3, 6, 10], 0], [159, "carry / hold", 0, [1, 9], 0], [160, "plate", 0, [3, 6, 11, 16], 0], [161, "in front of", 0, [4, 14, 18], 0], [162, "hide", 0, [1, 9], 0], [163, "ears", 0, [3, 9, 12], 0], [164, "foot", 0, [3, 9], 0], [165, "between", 0, [4, 18], 0], [166, "tails", 0, [2, 3, 9], 0], [167, "surprised", 0, [0, 9, 18], 0], [168, "smile", 0, [0, 1, 9], 0], [169, "eyes", 0, [3, 9], 0], [170, "mouth", 0, [3, 9], 0], [171, "cover", 0, [1, 11, 17], 0], [172, "monsters", 0, [2, 3, 17], 0], [173, "light(동)", 0, [1, 16], 0], [174, "burn", 0, [1, 16], 0], [175, "kiss", 0, [1, 17], 0], [176, "bone", 0, [3, 9], 0], [177, "fireplace", 0, [3, 6, 16], 0], [178, "ball", 0, [3, 6, 17], 0], [179, "collar", 0, [3, 6, 10], 0], [180, "covered", 0, [17, 18], 0], [181, "star", 0, [3, 13], 0], [182, "baby", 0, [3, 5], 0], [183, "sun", 1, [3, 13], 0], [184, "clouds", 1, [3, 13], 0], [185, "day / night", 1, [13, 18], 0], [186, "bird", 1, [2, 3, 13], 0], [187, "pick up", 1, [1], 0], [188, "grass", 1, [2, 3, 13, 17], 0], [189, "picnic", 1, [3, 17], 0], [190, "hot dog", 1, [3, 6, 11], 0], [191, "salad", 1, [3, 6, 11], 0], [192, "read", 1, [1, 17], 0], [193, "fish(동)", 1, [1, 17], 0], [194, "swim", 1, [1, 17], 0], [195, "hike", 1, [1, 17], 0], [196, "build", 1, [1, 15], 0], [197, "firefighter", 1, [3, 15], 0], [198, "bus", 1, [3, 6], 0], [199, "cars", 1, [3, 6], 0], [200, "money", 1, [3, 6], 0], [201, "fish(명)", 1, [2, 3], 0], [202, "old / young", 1, [9, 18], 0], [203, "new / old", 1, [6, 18], 0], [204, "numbers", 1, [3, 17], 0], [205, "busy", 1, [18], 0], [206, "pack", 1, [1, 16], 0], [207, "apple", 1, [3, 6, 11], 0], [208, "orange", 1, [3, 6, 8, 11], 0], [209, "cherry", 1, [3, 6, 11], 0], [210, "banana", 1, [3, 6, 11], 0], [211, "lemon", 1, [3, 6, 11], 0], [212, "blanket", 1, [3, 6, 16, 17], 0], [213, "bucket", 1, [3, 6, 17], 0], [214, "towel", 1, [3, 6, 16], 0], [215, "boat", 1, [3, 6, 17], 0], [216, "gloves", 1, [3, 6, 17], 0], [217, "ax", 1, [3, 6, 16, 17], 0], [218, "match", 1, [3, 6, 16], 0], [219, "drive", 1, [1], 0], [220, "get out of / get into", 1, [1], 0], [221, "city / country", 1, [3], 0], [222, "building", 1, [3, 6, 16], 0], [223, "arms", 1, [3, 9], 0], [224, "short / tall", 1, [18], 0], [225, "road / tunnel", 1, [3, 6], 0], [226, "hill", 1, [3, 6, 13], 0], [227, "pond / river", 1, [3, 6, 13], 0], [228, "bridge", 1, [3, 6], 0], [229, "farm", 1, [3, 6, 17], 0], [230, "farmer", 1, [3, 5, 15], 0], [231, "forest", 1, [3, 6, 13], 0], [232, "fields", 1, [3, 6, 13], 0], [233, "whistle(명)", 1, [3, 6, 17], 0], [234, "police officer", 1, [3, 5, 15], 0], [235, "rooster", 1, [2, 3], 0], [236, "bee", 1, [2, 3], 0], [237, "frog", 1, [2, 3], 0], [238, "gold", 1, [2, 3], 0], [239, "push", 1, [1], 0], [240, "pay", 1, [1, 17], 0], [241, "swing(명)", 1, [3, 17], 0], [242, "milk(동)", 1, [1, 2, 11], 0], [243, "hammock", 1, [3, 6, 17], 0], [244, "barn", 1, [3, 6, 16], 0], [245, "animals", 1, [2, 3], 0], [246, "sheep", 1, [2, 3], 0], [247, "pig", 1, [2, 3], 0], [248, "work", 1, [1, 15], 0], [249, "tomato", 1, [2, 3, 6, 11], 0], [250, "chop", 1, [1, 17], 0], [251, "wood", 1, [2, 3, 13, 16], 0], [252, "well", 1, [3, 13], 0], [253, "wake up", 1, [1, 9, 16], 0], [254, "find", 1, [1], 0], [255, "signs", 1, [3, 6], 0], [256, "back / front / side", 1, [4, 18], 0], [257, "shovel", 1, [3, 6, 16, 17], 0], [258, "dig", 1, [1, 16, 17], 0], [259, "holes", 1, [3, 6], 0], [260, "grow / plant", 1, [1, 13, 17], 0], [261, "worm", 1, [2, 3, 13], 0], [262, "deep", 1, [17, 18], 0], [263, "branch / log / twig", 1, [2, 3, 13], 0], [264, "rainbow", 1, [3, 13, 17], 0], [265, "nest", 1, [3, 6, 17], 0], [266, "umbrella", 1, [3, 6, 16], 0], [267, "hook", 1, [3, 6], 0], [268, "hang up", 1, [1, 16], 0], [269, "bathing suits", 1, [3, 16], 0], [270, "splash", 1, [1, 16], 0], [271, "dive", 1, [1, 17], 0], [272, "knees", 1, [3, 9], 0], [273, "chin", 1, [3, 9], 0], [274, "dry(동) / wash", 1, [1, 16, 17], 0], [275, "socks", 1, [3, 10], 0], [276, "climb", 1, [3, 17], 0], [277, "knot", 1, [3, 6, 10], 0], [278, "swing(동)", 1, [1, 17], 0], [279, "monkey", 1, [2, 3], 0], [280, "fly", 1, [1, 2], 0], [281, "pull / push", 1, [1], 0], [282, "think", 1, [1, 9], 0], [283, "tired", 1, [0, 9, 18], 0], [284, "daisy", 1, [2, 3, 13], 0], [285, "skip", 1, [1, 9], 0], [286, "chain", 1, [3, 6], 0], [287, "neck", 1, [3, 9], 0], [288, "scissors", 1, [3, 6, 17], 0], [289, "dry(형) / wet", 1, [10, 16, 18], 0], [290, "laugh", 1, [0, 1, 9], 0], [291, "look for", 1, [1, 9], 0], [292, "drop(동) / pick up", 1, [1, 16], 0], [293, "pile up", 1, [1, 16], 0], [294, "light the fire / put it out", 1, [1, 16], 0], [295, "cook(동)", 1, [1, 11], 0], [296, "cold / hot", 1, [0, 18], 0], [297, "dark / light(형)", 1, [18], 0], [298, "food", 1, [3, 6, 11], 0], [299, "sticks", 1, [3, 6], 0], [300, "tummy", 1, [3, 9], 0], [301, "clean / dirty", 1, [16, 18], 0], [302, "soap", 1, [3, 6, 16], 0], [303, "wash the dishes", 1, [1, 11, 16], 0], [304, "fold", 1, [1], 0], [305, "throw away", 1, [1, 17], 0], [306, "catch / throw", 1, [1, 17], 0], [307, "sleepy", 1, [0, 9, 16, 18], 0], [308, "yawn", 1, [0, 1, 9], 0], [309, "asleep / awake", 1, [9, 18], 0], [310, "snore", 1, [1, 9], 0], [311, "dream", 1, [3, 9], 0], [312, "love", 1, [0, 1, 9], 0], [313, "team", 1, [3, 17], 0], [314, "strong", 1, [9, 18], 0], [315, "hold on / let go", 1, [1, 9], 0], [316, "hit / miss", 1, [1, 9], 0], [317, "write", 1, [1, 9, 17], 0], [318, "turtles", 1, [2, 3], 0], [319, "legs", 1, [3, 9], 0], [320, "gray", 1, [3, 8], 0], [321, "wind(명)", 1, [3, 13], 0], [322, "drops(명)", 1, [3, 16], 0], [323, "glass(셀없)", 1, [3, 6, 16], 0], [324, "broken", 1, [16, 18], 0], [325, "lock", 1, [1, 16], 0], [326, "afraid", 1, [0, 18], 0], [327, "heart", 1, [3, 9], 0], [328, "rabbit", 1, [2, 3], 0], [329, "rainbow", 1, [3, 13], 0], [330, "smell", 1, [3, 9, 11], 0], [331, "paint(동)", 2, [1, 16, 17], 0], [332, "brushes", 2, [3, 6, 16], 0], [333, "paint(명)", 2, [3, 6, 16, 17], 0], [334, "thin", 2, [9, 18], 0], [335, "hungry", 2, [0, 9, 18], 0], [336, "lion", 2, [2, 3], 0], [337, "rush", 2, [0, 3], 0], [338, "ladder", 2, [3, 6, 16, 17], 0], [339, "circus", 2, [3, 17], 0], [340, "tiger", 2, [2, 3], 0], [341, "clowns", 2, [3, 6, 17], 0], [342, "tooth", 2, [3, 9], 0], [343, "hippopotamus", 2, [2, 3], 0], [344, "train", 2, [3, 6], 0], [345, "track", 2, [3, 6], 0], [346, "acrobats", 2, [3, 9, 17], 0], [347, "people", 2, [3, 5], 0], [348, "striped", 2, [11, 18], 0], [349, "tiny", 2, [18], 0], [350, "tuba", 2, [3, 6, 12, 17], 0], [351, "lunch", 2, [3, 11], 0], [352, "funny", 2, [0, 18], 0], [353, "dinner", 2, [3, 11], 0], [354, "pajamas", 2, [3, 6, 10, 16], 0], [355, "breakfast", 2, [3, 11], 0], [356, "father / mother", 2, [3, 5], 0], [357, "grandfather / grandmather", 2, [3, 5], 0], [358, "trumpet", 2, [3, 6, 12, 17], 0], [359, "drums", 2, [3, 6, 12, 17], 0], [360, "band", 2, [3, 12, 15, 17], 0], [361, "bells", 2, [3, 6, 12, 17], 0], [362, "ring(동)", 2, [1, 12, 17], 0], [363, "shiny", 2, [13, 18], 0], [364, "cheer", 2, [1, 9], 0], [365, "loud / soft", 2, [12, 17, 18], 0], [366, "buy", 2, [1], 0], [367, "tickets", 2, [3, 6, 12], 0], [368, "brother / sister", 2, [3, 5], 0], [369, "man / woman", 2, [3, 5], 0], [370, "sell", 2, [1], 0], [371, "candy", 2, [3, 6, 11], 0], [372, "peanuts", 2, [3, 6, 11], 0], [373, "hips", 2, [3, 9], 0], [374, "glasses", 2, [3, 6, 9, 10], 0], [375, "dance", 2, [1, 9, 17], 0], [376, "tent", 2, [3, 6, 17], 0], [377, "backwrds / forwards", 2, [4, 14, 18], 0], [378, "lift", 2, [1], 0], [379, "cage", 2, [2, 3], 0], [380, "toys", 2, [3, 6, 17], 0], [381, "disappear", 2, [1], 0], [382, "giggle", 2, [0, 1, 9], 0], [383, "cry", 2, [0, 1, 9], 0], [384, "frown / smile", 2, [0, 1, 9], 0], [385, "tear", 2, [0, 3, 9], 0], [386, "fruit", 2, [2, 3, 11], 0], [387, "juggle", 2, [1, 15, 17], 0], [388, "bite", 2, [1, 9, 11], 0], [389, "piano", 2, [3, 6, 12], 0], [390, "tennis", 2, [3, 6, 17], 0], [391, "wall", 2, [3, 6, 16], 0], [392, "fit", 2, [1, 10], 0], [393, "pointed", 2, [9, 18], 0], [394, "crack", 2, [3], 0], [395, "ring(명)", 2, [3, 6, 17], 0], [396, "teapot", 2, [3, 6, 16], 0], [397, "soap", 2, [3, 6, 16], 0], [398, "potatoes", 2, [2, 3, 11], 0], [399, "spaghetti", 2, [3, 6, 11], 0], [400, "thirsty", 2, [0, 9, 18], 0], [401, "a few / a lot", 2, [18], 0], [402, "bathtub", 2, [3, 6, 16], 0], [403, "bubbles", 2, [3, 16, 17], 0], [404, "cheese", 2, [3, 6, 11], 0], [405, "feather", 2, [2, 3, 6, 10], 0], [406, "jewels", 2, [3, 6, 10, 16, 17], 0], [407, "stretch", 3, [1, 9], 0], [408, "get up", 3, [1, 9], 0], [409, "roll", 3, [1, 9], 0], [410, "school", 3, [3, 6, 15, 17], 0], [411, "get dressed", 3, [1, 9, 10], 0], [412, "telephone", 3, [3, 6, 16], 0], [413, "classroom", 3, [3, 6, 17], 0], [414, "teacher", 3, [3, 5, 15, 17], 0], [415, "desk", 3, [3, 6, 17], 0], [416, "blackboard", 3, [3, 6, 17], 0], [417, "proud", 3, [0, 1], 0], [418, "cook(명)", 3, [3, 11, 15], 0], [419, "nurse", 3, [3, 5, 15], 0], [420, "gardener", 3, [3, 5, 15, 17], 0], [421, "fisherman", 3, [3, 5, 15, 17], 0], [422, "cowboy", 3, [3, 5, 15, 17], 0], [423, "boots", 3, [3, 6, 10], 0], [424, "airplane", 3, [3, 6, 15, 17], 0], [425, "pilot", 3, [3, 5, 15], 0], [426, "doctor", 3, [3, 5, 15], 0], [427, "sick", 3, [0, 1, 9], 0], [428, "garden", 3, [3, 13, 15, 16, 17], 0], [429, "firefighter", 3, [3, 5, 15], 0], [430, "zoo", 3, [2, 3, 17], 0], [431, "kangaroos", 3, [2, 3], 0], [432, "zebra", 3, [2, 3], 0], [433, "tickle", 3, [1, 9, 17], 0], [434, "king", 3, [3, 5, 15], 0], [435, "crown", 3, [3, 6, 10, 15], 0], [436, "dentist", 3, [3, 5, 15], 0], [437, "scratch", 3, [1, 9], 0], [438, "moon", 3, [3, 13], 0], [439, "sunset", 3, [3, 13], 0], [440, "giraffe", 3, [2, 3], 0], [441, "kittens", 3, [2, 3], 0], [442, "shed", 3, [3, 6, 16], 0], [443, "key", 3, [3, 6, 16], 0], [444, "pocket", 3, [3, 6, 10], 0], [445, "sweep", 3, [1, 9, 16], 0], [446, "thief", 3, [3, 5, 15], 0], [447, "detective", 3, [3, 5, 15], 0], [448, "pillow", 3, [3, 6, 16], 0], [449, "nails", 3, [3, 6, 16, 17], 0], [450, "hammer", 3, [3, 6, 16, 17], 0], [451, "lock", 3, [1, 16], 0], [452, "shells", 3, [2, 3, 13], 0], [453, "wind(동)", 3, [1, 13], 0], [454, "footprints", 3, [3, 9], 0], [455, "octopus", 3, [2, 3], 0], [456, "snow", 3, [3, 13], 0], [457, "broom", 3, [3, 6, 16], 0], [458, "float", 3, [1, 9, 17], 0], [459, "ashamed", 3, [0, 9, 18], 0], [460, "Story 460", 4, [7, 4], 1], [461, "Story 461", 4, [7, 4], 1], [462, "Story 462", 4, [7, 4], 1], [463, "Story 463", 4, [7, 4], 1], [464, "Story 464", 4, [7, 4], 1], [465, "Story 465", 4, [7, 4], 1], [466, "Story 466", 4, [7, 4], 1], [467, "Story 467", 4, [7, 4], 1], [468, "Story 468", 4, [7, 4], 1], [469, "Story 469", 4, [7, 4], 1], [470, "Story 470", 4, [7, 4], 1], [471, "Story 471", 4, [7, 4], 1], [472, "Story 472", 4, [7, 4], 1], [473, "Story 473", 4, [7, 4], 1], [474, "Story 474", 4, [7, 4], 1], [475, "Story 475", 4, [7, 4], 1], [476, "Story 476", 4, [7, 4], 1], [477, "Story 477", 4, [7, 4], 1], [478, "Story 478", 4, [7, 4], 1], [479, "Story 479", 4, [7, 4], 1], [480, "Story 480", 4, [7, 4], 1], [481, "Story 481", 4, [7, 4], 1], [482, "Story 482", 4, [7, 4], 1], [483, "Story 483", 4, [7, 4], 1], [484, "Story 484", 4, [7, 4], 1], [485, "Story 485", 4, [7, 4], 1], [486, "Story 486", 4, [7, 4], 1], [487, "Story 487", 4, [7, 4], 1], [488, "Story 488", 4, [7, 4], 1], [489, "Story 489", 4, [7, 4], 1], [490, "Story 490", 4, [7, 4], 1], [491, "Story 491", 4, [7, 4], 1], [492, "Story 492", 4, [7, 4], 1], [493, "Story 493", 4, [7, 4], 1], [494, "Story 494", 4, [7, 4], 1], [495, "Story 495", 4, [7, 4], 1], [496, "Story 496", 4, [7, 4], 1], [497, "Story 497", 4, [7, 4], 1], [498, "Story 498", 4, [7, 4], 1], [499, "Story 499", 4, [7, 4], 1], [500, "Story 500", 4, [7, 4], 1], [501, "Story 501", 4, [7, 4], 1], [502, "Story 502", 4, [7, 4], 1], [503, "Story 503", 4, [7, 4], 1], [504, "Story 504", 4, [7, 4], 1], [505, "Story 505", 4, [7, 4], 1], [506, "Story 506", 4, [7, 4], 1], [507, "Story 507", 4, [7, 4], 1], [508, "Story 508", 4, [7, 4], 1], [509, "Story 509", 4, [7, 4], 1], [510, "Story 510", 4, [7, 4], 1]];
 
     const CARDS = RAW_CARDS.map(r => {
@@ -895,14 +869,13 @@
     let isCheckingAnswer = false;
     let isFirstQuizPlayed = false;
 
-    /* 부모/선택 그리드 변수 */
+    /* 필터 상태 */
     let parentCurrentStage = 'all';
     let parentCurrentCategory = 'all';
     let parentSearchKeyword = '';
     let renderedParentCount = 30;
     let filteredCache = [];
 
-    /* DOM 요소 */
     const imgElement = document.getElementById('card-image');
     const filterCanvas = document.getElementById('filter-canvas');
     const filterCtx = filterCanvas.getContext('2d', { willReadFrequently: true });
@@ -1702,7 +1675,6 @@
       }
     }
 
-    /* URL 쿼리 파라미터 해석 (?cards=8,9,11... & mode=quiz) */
     function checkUrlParameters() {
       const urlParams = new URLSearchParams(window.location.search);
       const cardsParam = urlParams.get('cards');
@@ -1751,7 +1723,6 @@
       initPDFViewer();
       const hasUrlLaunch = checkUrlParameters();
       if (!hasUrlLaunch) {
-        // 기본 시작은 BOOK 모드
         switchView('book');
       }
     };
