@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -91,19 +91,32 @@
     <div class="flex items-center gap-1.5 sm:gap-2">
       <!-- 편집 모드 전용 도구 -->
       <div id="edit-controls" class="hidden flex items-center gap-1.5 bg-pink-50 border border-pink-200 rounded-lg px-2 py-0.5 mr-1">
-        <!-- 도형 선택 (원형 / 사각-대 / 사각-소) -->
+        <!-- 도형 선택 (원형 / 라운드 사각) -->
         <div class="flex items-center bg-white rounded border border-pink-200 p-0.5 text-[10px] font-bold">
-          <button id="btn-shape-circle" onclick="setBrushShape('circle')" class="px-1.5 py-0.5 rounded bg-pink-600 text-white">원형</button>
-          <button id="btn-shape-rectL" onclick="setBrushShape('rectL')" class="px-1.5 py-0.5 rounded text-slate-600 hover:bg-pink-50">사각대</button>
-          <button id="btn-shape-rectS" onclick="setBrushShape('rectS')" class="px-1.5 py-0.5 rounded text-slate-600 hover:bg-pink-50">사각소</button>
+          <button id="btn-shape-circle" onclick="setBrushShape('circle')" class="px-2 py-0.5 rounded bg-pink-600 text-white">원형</button>
+          <button id="btn-shape-rect" onclick="setBrushShape('rect')" class="px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50">사각</button>
         </div>
 
-        <!-- 크기 직접 입력창 (% 단위 생략) -->
-        <div class="flex items-center gap-1">
+        <!-- 원형 크기 입력창 (기본값 12) -->
+        <div id="circle-size-box" class="flex items-center gap-1">
           <span class="text-[11px] font-bold text-pink-800">크기</span>
-          <input type="number" id="size-input" step="0.5" min="1" max="40" value="6.5"
-                 onchange="updateBrushSizeFromInput(this.value)"
-                 oninput="updateBrushSizeFromInput(this.value)"
+          <input type="number" id="circle-size-input" step="0.5" min="1" max="50" value="12"
+                 onchange="updateCircleSize(this.value)"
+                 oninput="updateCircleSize(this.value)"
+                 class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+        </div>
+
+        <!-- 사각형 가로 / 세로 자유 입력창 -->
+        <div id="rect-size-box" class="hidden flex items-center gap-1">
+          <span class="text-[11px] font-bold text-pink-800">가로</span>
+          <input type="number" id="rect-w-input" step="0.5" min="1" max="80" value="24"
+                 onchange="updateRectW(this.value)"
+                 oninput="updateRectW(this.value)"
+                 class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+          <span class="text-[11px] font-bold text-pink-800 ml-0.5">세로</span>
+          <input type="number" id="rect-h-input" step="0.5" min="1" max="80" value="11"
+                 onchange="updateRectH(this.value)"
+                 oninput="updateRectH(this.value)"
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
         </div>
 
@@ -227,15 +240,11 @@
     let isSpreadMode = true, hasCoverPage = true, isRendering = false;
     let isFullscreenMode = false, isSpotEditMode = false;
 
-    // 도형별 기본 사이즈 설정 (페이지 너비 기준 %)
-    // circle: 지름 6.5 / rectL: 가로 26 (세로는 가로의 0.58 비율) / rectS: 가로 19 (세로는 가로의 0.58 비율)
+    // 도형 및 크기 설정 (모두 페이지 가로 너비 기준 % 비율로 일관되게 계산)
     let currentShape = 'circle';
-    const shapeSizes = {
-      circle: 6.5,
-      rectL: 26.0,
-      rectS: 19.0
-    };
-    const RECT_ASPECT = 0.58; // VOCA 카드 세로/가로 비율
+    let circleSize = 12.0; // 원형 기본 지름 12
+    let rectW = 24.0;      // 사각 기본 가로
+    let rectH = 11.0;      // 사각 기본 세로 (24 * 0.455 ≈ 11)
 
     let currentLeftPageNum = null, currentRightPageNum = null;
     let activePlayingTrack = null;
@@ -349,7 +358,6 @@
         a.style.height = `${Math.abs(viewRect[3] - viewRect[1])}px`;
 
         if (item.url) {
-          // 정상 외부 웹 URL(QR코드 등)만 허용하고, 깨진 로컬/오디오 링크는 차단
           if (/^https?:\/\//i.test(item.url)) {
             a.href = item.url;
             a.target = '_blank';
@@ -367,27 +375,41 @@
     }
 
     /* ==========================================
-       브러시 모양/크기 & 가상 미리보기 가이드
+       브러시 모양/크기(원형 & 가로·세로 자유 조절 사각)
        ========================================== */
     function setBrushShape(shape) {
       currentShape = shape;
-      document.getElementById('size-input').value = shapeSizes[shape];
+      const btnCircle = document.getElementById('btn-shape-circle');
+      const btnRect = document.getElementById('btn-shape-rect');
+      const circleBox = document.getElementById('circle-size-box');
+      const rectBox = document.getElementById('rect-size-box');
 
-      ['circle', 'rectL', 'rectS'].forEach(key => {
-        const btn = document.getElementById(`btn-shape-${key}`);
-        if (key === shape) {
-          btn.className = 'px-1.5 py-0.5 rounded bg-pink-600 text-white';
-        } else {
-          btn.className = 'px-1.5 py-0.5 rounded text-slate-600 hover:bg-pink-50';
-        }
-      });
+      if (shape === 'circle') {
+        btnCircle.className = 'px-2 py-0.5 rounded bg-pink-600 text-white';
+        btnRect.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
+        circleBox.classList.remove('hidden');
+        rectBox.classList.add('hidden');
+      } else {
+        btnRect.className = 'px-2 py-0.5 rounded bg-pink-600 text-white';
+        btnCircle.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
+        rectBox.classList.remove('hidden');
+        circleBox.classList.add('hidden');
+      }
     }
 
-    function updateBrushSizeFromInput(val) {
+    function updateCircleSize(val) {
       const num = parseFloat(val);
-      if (!isNaN(num) && num >= 1 && num <= 50) {
-        shapeSizes[currentShape] = num;
-      }
+      if (!isNaN(num) && num >= 1 && num <= 60) circleSize = num;
+    }
+
+    function updateRectW(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num >= 1 && num <= 85) rectW = num;
+    }
+
+    function updateRectH(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num >= 1 && num <= 85) rectH = num;
     }
 
     function moveGhost(e, side) {
@@ -395,11 +417,19 @@
       const ghost = document.getElementById(`ghost-${side}`);
       if (!ghost) return;
       const rect = e.currentTarget.getBoundingClientRect();
-      const sizePct = shapeSizes[currentShape];
-      const wPx = Math.round(rect.width * (sizePct / 100));
-      const hPx = (currentShape === 'circle') ? wPx : Math.round(wPx * RECT_ASPECT);
 
-      ghost.className = `ghost-guide ${currentShape === 'circle' ? 'shape-circle' : 'shape-rect'}`;
+      let wPx, hPx;
+      if (currentShape === 'circle') {
+        wPx = Math.round(rect.width * (circleSize / 100));
+        hPx = wPx;
+        ghost.className = 'ghost-guide shape-circle';
+      } else {
+        // 가로·세로 모두 페이지 가로 폭(rect.width) 기준 동일한 배율로 계산해 비율 왜곡 방지
+        wPx = Math.round(rect.width * (rectW / 100));
+        hPx = Math.round(rect.width * (rectH / 100));
+        ghost.className = 'ghost-guide shape-rect';
+      }
+
       ghost.style.display = 'block';
       ghost.style.width = `${wPx}px`;
       ghost.style.height = `${hPx}px`;
@@ -419,15 +449,22 @@
 
       const list = songSpotsData[String(pageNum)] || [];
       list.forEach((spot, idx) => {
-        const shape = spot.shape || 'circle';
+        const isCircle = (spot.shape || 'circle') === 'circle';
         const btn = document.createElement('div');
-        btn.className = `song-spot ${shape === 'circle' ? 'shape-circle' : 'shape-rect'}`;
+        btn.className = `song-spot ${isCircle ? 'shape-circle' : 'shape-rect'}`;
         if (activePlayingTrack === spot.track && !audioEl.paused) btn.classList.add('playing');
 
-        // 하위 호환: 기존 r(반지름) 데이터는 지름(r*2)으로 환산, 새 w(너비 %) 데이터는 그대로 사용
-        const widthPct = spot.w ? spot.w : (spot.r ? spot.r * 2 : 6.5);
-        const wPx = Math.round(pageW * (widthPct / 100));
-        const hPx = (shape === 'circle') ? wPx : Math.round(wPx * RECT_ASPECT);
+        let wPx, hPx;
+        if (isCircle) {
+          const widthPct = spot.w ? spot.w : (spot.r ? spot.r * 2 : 12.0);
+          wPx = Math.round(pageW * (widthPct / 100));
+          hPx = wPx;
+        } else {
+          const widthPct = spot.w || 24.0;
+          const heightPct = spot.h ? spot.h : (widthPct * 0.58);
+          wPx = Math.round(pageW * (widthPct / 100));
+          hPx = Math.round(pageW * (heightPct / 100));
+        }
 
         btn.style.left = `${spot.x}%`; btn.style.top = `${spot.y}%`;
         btn.style.width = `${wPx}px`; btn.style.height = `${hPx}px`;
@@ -534,13 +571,17 @@
       if (pendingSpotContext.editIndex !== null) {
         songSpotsData[key][pendingSpotContext.editIndex].track = trackNum;
       } else {
-        songSpotsData[key].push({
+        const newSpot = {
           track: trackNum,
           x: pendingSpotContext.x,
           y: pendingSpotContext.y,
           shape: currentShape,
-          w: shapeSizes[currentShape]
-        });
+          w: (currentShape === 'circle') ? circleSize : rectW
+        };
+        if (currentShape === 'rect') {
+          newSpot.h = rectH;
+        }
+        songSpotsData[key].push(newSpot);
       }
       localStorage.setItem('dwe_song_circles', JSON.stringify(songSpotsData));
       closeSongModal();
