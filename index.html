@@ -571,34 +571,41 @@
       annotationLayer.style.height = `${viewport.height}px`;
 
       const annotations = await page.getAnnotations();
+      
+      const linkService = {
+        getDestinationHash: () => '#',
+        getAnchorUrl: () => '#',
+        setHash: () => {},
+        executeNamedAction: () => {},
+        addLinkAttributes: (link, url, newWindow) => {
+          link.href = url;
+          link.target = newWindow ? '_blank' : '_self';
+          link.rel = 'noopener noreferrer';
+        },
+        goToDestination: async (dest) => {
+          try {
+            let destArray = dest;
+            if (typeof dest === 'string') {
+              destArray = await pdfDoc.getDestination(dest);
+            }
+            if (Array.isArray(destArray) && destArray[0]) {
+              const targetPageIndex = await pdfDoc.getPageIndex(destArray[0]);
+              currentBookPage = targetPageIndex + 1;
+              renderBookPage(currentBookPage);
+            }
+          } catch (err) {
+            console.warn('페이지 점프 실패:', err);
+          }
+        }
+      };
+
       pdfjsLib.AnnotationLayer.render({
         viewport: viewport.clone({ dontFlip: true }),
         div: annotationLayer,
         annotations: annotations,
         page: page,
-        linkService: {
-          getDestinationHash: (dest) => '#',
-          getAnchorUrl: (hash) => hash,
-          setHash: () => {},
-          executeNamedAction: () => {},
-          addLinkAttributes: (link, url, newWindow) => {
-            link.href = url;
-            link.target = newWindow ? '_blank' : '_self';
-            link.rel = 'noopener noreferrer';
-          },
-          // PDF 내부 목차 링크(페이지 이동) 처리
-          goToDestination: async (dest) => {
-            let destRef = dest;
-            if (typeof dest === 'string') {
-              destRef = await pdfDoc.getDestination(dest);
-            }
-            if (Array.isArray(destRef)) {
-              const pageIndex = await pdfDoc.getPageIndex(destRef[0]);
-              currentBookPage = pageIndex + 1;
-              renderBookPage(currentBookPage);
-            }
-          }
-        }
+        linkService: linkService,
+        renderInteractiveForms: false
       });
 
   // 3. 커스텀 카드 음원 및 VOCA 핫스팟 레이어 렌더링
