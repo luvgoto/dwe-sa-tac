@@ -22,16 +22,24 @@
     .book-spine-left { box-shadow: inset -8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
     .book-spine-right { box-shadow: inset 8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
 
-    .link-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
+    /* PDF 내부 하이퍼링크 (z-index를 모드에 따라 동적 제어) */
+    .link-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 25; pointer-events: none; }
     .link-layer a {
       position: absolute; display: block; pointer-events: auto; cursor: pointer;
       background: transparent !important; outline: none !important;
       -webkit-tap-highlight-color: transparent !important; -webkit-touch-callout: none !important;
     }
+    /* 음원 듣기 모드이거나 편집 모드일 때는 하이퍼링크 클릭 일시 양보 */
+    .audio-priority .link-layer a,
+    .edit-active .link-layer a {
+      pointer-events: none !important;
+    }
 
+    /* 원형/사각형 음원 핫스팟 레이어 */
     .song-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; }
     .edit-active .song-layer { pointer-events: auto; cursor: crosshair; }
 
+    /* 마우스를 따라다니는 가상 가이드 */
     .ghost-guide {
       position: absolute; transform: translate(-50%, -50%);
       border: 2.5px dashed #ec4899;
@@ -42,6 +50,7 @@
     .ghost-guide.shape-circle { border-radius: 9999px; }
     .ghost-guide.shape-rect { border-radius: 10px; }
 
+    /* 배치된 핫스팟 버튼 */
     .song-spot {
       position: absolute; transform: translate(-50%, -50%);
       pointer-events: auto; cursor: pointer;
@@ -50,6 +59,11 @@
     }
     .song-spot.shape-circle { border-radius: 9999px; }
     .song-spot.shape-rect { border-radius: 10px; }
+
+    /* 하이퍼링크 우선(목차 이동) 모드일 때 음원 버튼은 하이퍼링크 뒤로 물러남 */
+    .link-priority .song-spot {
+      pointer-events: none;
+    }
 
     .song-spot:active { transform: translate(-50%, -50%) scale(0.94); background-color: rgba(37, 99, 235, 0.2); }
     .song-spot.playing {
@@ -64,6 +78,7 @@
     .edit-active .song-spot {
       background-color: rgba(37, 99, 235, 0.28);
       border: 2px solid #1d4ed8;
+      pointer-events: auto !important;
       cursor: pointer;
     }
 
@@ -85,15 +100,18 @@
     </div>
 
     <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- 목차 등 하이퍼링크+음원 공존 페이지 전용 토글 (자동 표시) -->
+      <button id="btn-toc-mode-toggle" onclick="toggleTocInteractionMode()" class="hidden px-2.5 py-1 rounded-lg bg-amber-500 text-white border border-amber-600 text-xs font-bold shadow-xs transition">
+        <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i><span>목차이동 중</span>
+      </button>
+
       <!-- 편집 모드 전용 도구 -->
       <div id="edit-controls" class="hidden flex items-center gap-1.5 bg-pink-50 border border-pink-200 rounded-lg px-2 py-0.5 mr-1">
-        <!-- 도형 선택 (원형 / 라운드 사각) -->
         <div class="flex items-center bg-white rounded border border-pink-200 p-0.5 text-[10px] font-bold">
           <button id="btn-shape-circle" onclick="setBrushShape('circle')" class="px-2 py-0.5 rounded bg-pink-600 text-white">원형</button>
           <button id="btn-shape-rect" onclick="setBrushShape('rect')" class="px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50">사각</button>
         </div>
 
-        <!-- 원형 크기 입력창 (기본값 12) -->
         <div id="circle-size-box" class="flex items-center gap-1">
           <span class="text-[11px] font-bold text-pink-800">크기</span>
           <input type="number" id="circle-size-input" step="0.5" min="1" max="60" value="12"
@@ -102,7 +120,6 @@
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
         </div>
 
-        <!-- 사각형 가로 / 세로 자유 입력창 -->
         <div id="rect-size-box" class="hidden flex items-center gap-1">
           <span class="text-[11px] font-bold text-pink-800">가로</span>
           <input type="number" id="rect-w-input" step="0.5" min="1" max="85" value="24"
@@ -116,7 +133,6 @@
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
         </div>
 
-        <!-- 실시간 클라우드 동기화 상태 표시 -->
         <span id="sync-status-badge" class="ml-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1">
           <i class="fa-solid fa-cloud-check"></i><span>자동저장 대기</span>
         </span>
@@ -203,8 +219,7 @@
                  onkeyup="filterSongList(this.value)"
                  onkeydown="if(event.key==='Enter') selectFirstFilteredSong()"
                  class="flex-1 px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500">
-          <!-- 인식한 우측 상단 모서리 미리보기 캔버스 -->
-          <canvas id="ocr-preview-canvas" width="44" height="34" title="인식한 우측 상단 영역" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
+          <canvas id="ocr-preview-canvas" width="44" height="36" title="인식한 우측 상단 영역" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
         </div>
         <div id="song-search-results" class="max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
       </div>
@@ -237,7 +252,6 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
 
-    // Worker 루트 주소 (https://dwe-songs.xxx.workers.dev)
     const WORKER_ROOT = (typeof R2_SONGS_BASE !== 'undefined')
       ? R2_SONGS_BASE.replace(/\/songs\/?$/, '')
       : '';
@@ -249,17 +263,56 @@
     let isSpreadMode = true, hasCoverPage = true, isRendering = false;
     let isFullscreenMode = false, isSpotEditMode = false;
 
+    // 목차(하이퍼링크+음원 공존 페이지) 상호작용 모드: false = 하이퍼링크 우선, true = 음원 재생 우선
+    let tocAudioMode = false;
+
     let currentShape = 'circle';
     let circleSize = 12.0;
     let rectW = 24.0;
     let rectH = 11.0;
 
     let currentLeftPageNum = null, currentRightPageNum = null;
-    let activePlayingTrack = null;
+    // 개별 카드 단위 재생 표시용 고유 키 ("페이지번호-인덱스", 예: "14-2")
+    let activePlayingSpotKey = null;
     let pendingSpotContext = null;
     let ocrWorker = null;
 
+    // 선로딩 완료 URL 캐시 (중복 요청 방지)
+    const preloadedAudioUrls = new Set();
+
     const audioEl = document.getElementById('r2-audio');
+
+    function getAudioUrlForTrack(trackId) {
+      const idStr = String(trackId);
+      if (/^v\d+$/i.test(idStr)) {
+        const numPart = idStr.slice(1).padStart(3, '0');
+        const audioBase = (typeof R2_AUDIO_BASE !== 'undefined')
+          ? R2_AUDIO_BASE
+          : R2_SONGS_BASE.replace(/\/songs\/?$/, '/audio');
+        return `${audioBase}/${numPart}.mp3`;
+      } else {
+        const fileName = (typeof SONGS_DB !== 'undefined') ? SONGS_DB[Number(idStr)] : null;
+        if (!fileName) return '';
+        return `${R2_SONGS_BASE}/${encodeURIComponent(fileName)}`;
+      }
+    }
+
+    /* ==========================================
+       현재 페이지 음원 백그라운드 선로딩 (Preload)
+       ========================================== */
+    function preloadPageTracks(pageNum) {
+      if (!pageNum) return;
+      const list = songSpotsData[String(pageNum)] || [];
+      list.forEach(spot => {
+        const url = getAudioUrlForTrack(spot.track);
+        if (url && !preloadedAudioUrls.has(url)) {
+          preloadedAudioUrls.add(url);
+          fetch(url, { mode: 'cors', cache: 'force-cache' }).catch(() => {
+            preloadedAudioUrls.delete(url);
+          });
+        }
+      });
+    }
 
     /* ==========================================
        클라우드(R2) 실시간 불러오기 & 자동 저장
@@ -295,12 +348,11 @@
             localStorage.setItem('dwe_song_circles', JSON.stringify(songSpotsData));
             updateSyncBadge('saved', '클라우드 동기화됨');
           } else if (Object.keys(songSpotsData).length > 0) {
-            // 클라우드가 비어있고 로컬 데이터가 있으면 최초 자동 업로드
             await saveSpotsToCloud();
           }
         }
       } catch (e) {
-        console.warn('클라우드 동기화 로드 실패 (로컬 데이터 사용):', e);
+        console.warn('클라우드 동기화 로드 실패:', e);
         updateSyncBadge('error', '로컬 모드');
       }
     }
@@ -328,7 +380,7 @@
     }
 
     /* ==========================================
-       OCR 워커 초기화 & 우측 상단 카드 번호 판독
+       정밀 OCR: 파란 원 안 흰색 숫자(1~510) -> v001~v510
        ========================================== */
     async function ensureOcrWorker() {
       if (ocrWorker) return ocrWorker;
@@ -336,7 +388,7 @@
       ocrWorker = await Tesseract.createWorker('eng');
       await ocrWorker.setParameters({
         tessedit_char_whitelist: '0123456789',
-        tessedit_pageseg_mode: '7' // 단일 텍스트 라인 인식 최적화
+        tessedit_pageseg_mode: '7'
       });
       return ocrWorker;
     }
@@ -346,46 +398,55 @@
         const srcCanvas = document.getElementById(`canvas-${side}`);
         if (!srcCanvas) return '';
 
-        // 찍은 사각형 영역의 우측 상단 모서리 좌표 계산 (카드 너비의 우측 22%, 카드 높이의 상단 35%)
-        const cardLeftPct = centerXPercent - (rectW / 2);
-        const cardTopPct = centerYPercent - (rectH / 2);
+        // 캔버스의 실제 가로/세로 비율 보정 (rectW, rectH는 둘 다 페이지 가로 폭 기준 %)
+        const pageAspect = srcCanvas.width / srcCanvas.height;
+        const rectHeightPctOfPageH = rectH * pageAspect;
 
-        const cornerLeftPct = cardLeftPct + rectW * 0.76;
-        const cornerTopPct = cardTopPct + rectH * 0.02;
-        const cornerWidthPct = rectW * 0.24;
-        const cornerHeightPct = rectH * 0.36;
+        const cardLeftPct = centerXPercent - (rectW / 2);
+        const cardTopPct = centerYPercent - (rectHeightPctOfPageH / 2);
+
+        // 카드의 우측 상단 모서리 영역 (가로 우측 26%, 세로 상단 38%)
+        const cornerLeftPct = cardLeftPct + rectW * 0.74;
+        const cornerTopPct = cardTopPct + rectHeightPctOfPageH * 0.02;
+        const cornerWidthPct = rectW * 0.26;
+        const cornerHeightPct = rectHeightPctOfPageH * 0.38;
 
         const sx = Math.max(0, (cornerLeftPct / 100) * srcCanvas.width);
         const sy = Math.max(0, (cornerTopPct / 100) * srcCanvas.height);
-        const sw = Math.max(10, (cornerWidthPct / 100) * srcCanvas.width);
-        const sh = Math.max(10, (cornerHeightPct / 100) * srcCanvas.height);
+        const sw = Math.max(12, (cornerWidthPct / 100) * srcCanvas.width);
+        const sh = Math.max(12, (cornerHeightPct / 100) * srcCanvas.height);
 
-        // 미리보기 캔버스에 잘라낸 부위 표시
+        // 미리보기 캔버스 표시
         const previewCanvas = document.getElementById('ocr-preview-canvas');
         previewCanvas.classList.remove('hidden');
         const pCtx = previewCanvas.getContext('2d');
         pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
         pCtx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, previewCanvas.width, previewCanvas.height);
 
-        // OCR 인식률 극대화를 위한 3배 확대 및 고대비 이진화 캔버스 생성
+        // 4배 확대 + 여백 패딩(Tesseract 인식률 대폭 향상)
+        const scale = 4;
+        const pad = 16;
         const procCanvas = document.createElement('canvas');
-        const scale = 3;
-        procCanvas.width = Math.round(sw * scale);
-        procCanvas.height = Math.round(sh * scale);
+        procCanvas.width = Math.round(sw * scale) + pad * 2;
+        procCanvas.height = Math.round(sh * scale) + pad * 2;
         const ctx = procCanvas.getContext('2d');
-        ctx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, procCanvas.width, procCanvas.height);
 
-        // 파란 원 안의 흰색 글씨 또는 밝은 배경의 어두운 글씨 대비 강화
-        const imgData = ctx.getImageData(0, 0, procCanvas.width, procCanvas.height);
+        // 전체 배경을 흰색으로 채움
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, procCanvas.width, procCanvas.height);
+        ctx.drawImage(srcCanvas, sx, sy, sw, sh, pad, pad, Math.round(sw * scale), Math.round(sh * scale));
+
+        // 파란 동그라미 안의 흰 숫자(R, G, B 모두 높음)만 검은 글씨(0)로 추출
+        const imgData = ctx.getImageData(pad, pad, Math.round(sw * scale), Math.round(sh * scale));
         const d = imgData.data;
         for (let i = 0; i < d.length; i += 4) {
-          // 밝기(Luminance) 계산: 파란 원(#0055aa)은 어둡게, 흰 숫자는 밝게 분리
-          const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-          // 흰 글씨(lum > 165)를 검은 글씨(0)로, 배경을 흰색(255)으로 반전해 Tesseract 인식률 극대화
-          const val = (lum > 165) ? 0 : 255;
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          // 파란 배경은 B가 높고 R, G가 낮음. 흰색 숫자는 R, G, B 모두 175 이상
+          const isWhiteDigit = (r > 170 && g > 170 && b > 170);
+          const val = isWhiteDigit ? 0 : 255;
           d[i] = d[i + 1] = d[i + 2] = val;
         }
-        ctx.putImageData(imgData, 0, 0);
+        ctx.putImageData(imgData, pad, pad);
 
         const worker = await ensureOcrWorker();
         if (!worker) return '';
@@ -447,16 +508,22 @@
         currentLeftPageNum = leftPageNum;
         currentRightPageNum = rightPageNum;
 
+        // 페이지 이동 시 목차 상호작용 모드는 기본값(하이퍼링크 우선)으로 초기화
+        tocAudioMode = false;
+
         const samplePage = await pdfDoc.getPage(leftPageNum || rightPageNum || 1);
         const baseVp = samplePage.getViewport({ scale: 1.0 });
         const scale = Math.min((isSpreadMode ? availW / 2 : availW) / baseVp.width, availH / baseVp.height);
         const renderedW = Math.floor(baseVp.width * scale);
         const renderedH = Math.floor(baseVp.height * scale);
 
+        let leftHasConflict = false, rightHasConflict = false;
+
         if (leftPageNum) {
           leftBox.style.display = 'block'; leftBox.style.visibility = 'visible';
           leftBox.className = isSpreadMode ? 'page-wrapper rounded-l-md overflow-hidden book-spine-left' : 'page-wrapper rounded-md overflow-hidden shadow-lg';
-          await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', 'songs-left', scale);
+          leftHasConflict = await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', 'songs-left', scale);
+          preloadPageTracks(leftPageNum);
         } else if (isSpreadMode && rightPageNum === 1) {
           leftBox.style.display = 'block'; leftBox.style.visibility = 'hidden';
           leftBox.style.width = `${renderedW}px`; leftBox.style.height = `${renderedH}px`;
@@ -469,10 +536,13 @@
           rightBox.className = (isSpreadMode && !leftPageNum)
             ? 'page-wrapper rounded-md overflow-hidden'
             : 'page-wrapper rounded-r-md overflow-hidden book-spine-right border-l border-slate-200';
-          await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', 'songs-right', scale);
+          rightHasConflict = await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', 'songs-right', scale);
+          preloadPageTracks(rightPageNum);
         } else {
           rightBox.style.display = 'none';
         }
+
+        updateTocModeUI(leftHasConflict || rightHasConflict);
         updateBottomNavUI();
       } finally {
         isRendering = false;
@@ -499,6 +569,7 @@
       linkLayer.innerHTML = '';
       linkLayer.style.width = `${floorW}px`; linkLayer.style.height = `${floorH}px`;
 
+      let hasValidLinks = false;
       const annotations = await page.getAnnotations();
       annotations.forEach(item => {
         if (item.subtype !== 'Link') return;
@@ -516,15 +587,52 @@
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             linkLayer.appendChild(a);
+            hasValidLinks = true;
           }
         } else if (item.dest) {
           a.href = 'javascript:void(0)';
           a.onclick = async (e) => { e.preventDefault(); e.stopPropagation(); await navigateToDestination(item.dest); };
           linkLayer.appendChild(a);
+          hasValidLinks = true;
         }
       });
 
       renderSongCircles(pageNum, songLayerId, floorW, floorH);
+
+      const hasSpots = (songSpotsData[String(pageNum)] || []).length > 0;
+      return hasValidLinks && hasSpots;
+    }
+
+    /* ==========================================
+       목차(하이퍼링크+음원 공존 페이지) 토글 UI 제어
+       ========================================== */
+    function updateTocModeUI(hasConflict) {
+      const toggleBtn = document.getElementById('btn-toc-mode-toggle');
+      const spread = document.getElementById('book-spread');
+
+      if (!hasConflict) {
+        toggleBtn.classList.add('hidden');
+        spread.classList.remove('link-priority', 'audio-priority');
+        return;
+      }
+
+      toggleBtn.classList.remove('hidden');
+      if (tocAudioMode) {
+        spread.classList.remove('link-priority');
+        spread.classList.add('audio-priority');
+        toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-blue-600 text-white border border-blue-700 text-xs font-bold shadow-xs transition';
+        toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high mr-1"></i><span>음원듣기 중</span>`;
+      } else {
+        spread.classList.remove('audio-priority');
+        spread.classList.add('link-priority');
+        toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-amber-500 text-white border border-amber-600 text-xs font-bold shadow-xs transition';
+        toggleBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square mr-1"></i><span>목차이동 중</span>`;
+      }
+    }
+
+    function toggleTocInteractionMode() {
+      tocAudioMode = !tocAudioMode;
+      updateTocModeUI(true);
     }
 
     function setBrushShape(shape) {
@@ -599,9 +707,14 @@
       const list = songSpotsData[String(pageNum)] || [];
       list.forEach((spot, idx) => {
         const isCircle = (spot.shape || 'circle') === 'circle';
+        const spotKey = `${pageNum}-${idx}`;
         const btn = document.createElement('div');
         btn.className = `song-spot ${isCircle ? 'shape-circle' : 'shape-rect'}`;
-        if (String(activePlayingTrack) === String(spot.track) && !audioEl.paused) btn.classList.add('playing');
+
+        // 오직 방금 클릭한 개별 카드(pageNum-idx)만 재생 중 표시
+        if (activePlayingSpotKey === spotKey && !audioEl.paused) {
+          btn.classList.add('playing');
+        }
 
         let wPx, hPx;
         if (isCircle) {
@@ -628,7 +741,7 @@
           e.preventDefault();
           e.stopPropagation();
           if (isSpotEditMode) openSpotModalEdit(pageNum, idx);
-          else playOrPauseR2Song(spot.track);
+          else playOrPauseR2Song(spot.track, spotKey);
         };
         layer.appendChild(btn);
       });
@@ -678,7 +791,6 @@
 
       showModalWithFilter('');
 
-      // 사각형 모드일 때 우측 상단 카드 번호 자동 OCR 실행
       if (currentShape === 'rect') {
         const ocrTag = document.getElementById('ocr-status-tag');
         ocrTag.classList.remove('hidden');
@@ -691,7 +803,8 @@
           const input = document.getElementById('song-search-input');
           input.value = detectedId;
           filterSongList(detectedId);
-          input.select(); // 바로 수정하거나 Enter 누르기 편하게 전체 선택
+          input.focus();
+          input.select();
         }
       }
     }
@@ -772,13 +885,13 @@
 
     function assignSongToSpot(trackId) {
       if (!pendingSpotContext) return;
-      const key = String(pendingSpotContext.pageNum);
-      if (!songSpotsData[key]) songSpotsData[key] = [];
+      const pageKey = String(pendingSpotContext.pageNum);
+      if (!songSpotsData[pageKey]) songSpotsData[pageKey] = [];
 
       const normalizedTrack = /^v\d+$/i.test(String(trackId)) ? String(trackId).toLowerCase() : Number(trackId);
 
       if (pendingSpotContext.editIndex !== null) {
-        songSpotsData[key][pendingSpotContext.editIndex].track = normalizedTrack;
+        songSpotsData[pageKey][pendingSpotContext.editIndex].track = normalizedTrack;
       } else {
         const newSpot = {
           track: normalizedTrack,
@@ -790,20 +903,21 @@
         if (currentShape === 'rect') {
           newSpot.h = rectH;
         }
-        songSpotsData[key].push(newSpot);
+        songSpotsData[pageKey].push(newSpot);
       }
+      preloadPageTracks(pendingSpotContext.pageNum);
       closeSongModal();
       refreshAllSongLayers();
-      saveSpotsToCloud(); // 즉시 클라우드 자동 저장
+      saveSpotsToCloud();
     }
 
     function deleteCurrentSpot() {
       if (!pendingSpotContext || pendingSpotContext.editIndex === null) return;
-      const key = String(pendingSpotContext.pageNum);
-      songSpotsData[key].splice(pendingSpotContext.editIndex, 1);
+      const pageKey = String(pendingSpotContext.pageNum);
+      songSpotsData[pageKey].splice(pendingSpotContext.editIndex, 1);
       closeSongModal();
       refreshAllSongLayers();
-      saveSpotsToCloud(); // 삭제 즉시 클라우드 자동 저장
+      saveSpotsToCloud();
     }
 
     function toggleSpotEditMode() {
@@ -819,7 +933,7 @@
         : 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition';
 
       if (isSpotEditMode) {
-        ensureOcrWorker(); // 편집 모드 켜는 순간 백그라운드에서 OCR 엔진 미리 준비
+        ensureOcrWorker();
       } else {
         hideGhost('left');
         hideGhost('right');
@@ -834,36 +948,27 @@
       if (currentRightPageNum) renderSongCircles(currentRightPageNum, 'songs-right', parseInt(rightC.style.width), parseInt(rightC.style.height));
     }
 
-    function playOrPauseR2Song(trackId) {
-      const idStr = String(trackId);
-      let targetUrl = '';
+    function playOrPauseR2Song(trackId, spotKey) {
+      const targetUrl = getAudioUrlForTrack(trackId);
+      if (!targetUrl) return;
 
-      if (/^v\d+$/i.test(idStr)) {
-        const numPart = idStr.slice(1).padStart(3, '0');
-        const audioBase = (typeof R2_AUDIO_BASE !== 'undefined')
-          ? R2_AUDIO_BASE
-          : R2_SONGS_BASE.replace(/\/songs\/?$/, '/audio');
-        targetUrl = `${audioBase}/${numPart}.mp3`;
-      } else {
-        const fileName = SONGS_DB[Number(idStr)];
-        if (!fileName) return;
-        targetUrl = `${R2_SONGS_BASE}/${encodeURIComponent(fileName)}`;
-      }
-
-      if (String(activePlayingTrack) === idStr && audioEl.src) {
+      if (activePlayingSpotKey === spotKey && audioEl.src) {
         if (audioEl.paused) audioEl.play();
         else audioEl.pause();
         refreshAllSongLayers();
         return;
       }
 
-      activePlayingTrack = idStr;
+      activePlayingSpotKey = spotKey;
       audioEl.src = targetUrl;
       audioEl.play().catch(err => console.warn('오디오 재생 오류:', err));
       refreshAllSongLayers();
     }
 
-    audioEl.addEventListener('ended', () => { refreshAllSongLayers(); });
+    audioEl.addEventListener('ended', () => {
+      activePlayingSpotKey = null;
+      refreshAllSongLayers();
+    });
 
     async function navigateToDestination(dest) {
       try {
