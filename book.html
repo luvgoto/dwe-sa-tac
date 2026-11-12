@@ -35,7 +35,7 @@
       pointer-events: none !important;
     }
 
-    /* 원형/사각형 음원 핫스팟 레이어 */
+    /* 원형/사각형/VOCA배지 핫스팟 레이어 */
     .song-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; }
     .edit-active .song-layer { pointer-events: auto; cursor: crosshair; }
 
@@ -49,16 +49,22 @@
     }
     .ghost-guide.shape-circle { border-radius: 9999px; }
     .ghost-guide.shape-rect { border-radius: 10px; }
+    .ghost-guide.shape-voca {
+      border-radius: 9999px;
+      border-color: #0284c7;
+      background-color: rgba(14, 165, 233, 0.22);
+    }
 
     /* 배치된 핫스팟 버튼 */
     .song-spot {
       position: absolute; transform: translate(-50%, -50%);
       pointer-events: auto; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: transform 0.15s ease, background-color 0.15s ease;
+      transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     }
     .song-spot.shape-circle { border-radius: 9999px; }
     .song-spot.shape-rect { border-radius: 10px; }
+    .song-spot.shape-voca { border-radius: 9999px; }
 
     /* 지정된 목차 페이지에서 '음원 OFF' 상태일 때만 음원 버튼 터치 투과 (하이퍼링크 우선) */
     .toc-audio-off .song-spot {
@@ -66,6 +72,10 @@
     }
 
     .song-spot:active { transform: translate(-50%, -50%) scale(0.94); background-color: rgba(37, 99, 235, 0.2); }
+    .song-spot.shape-voca:hover {
+      background-color: rgba(14, 165, 233, 0.14);
+      box-shadow: 0 0 0 2.5px rgba(14, 165, 233, 0.45);
+    }
     .song-spot.playing {
       background-color: rgba(37, 99, 235, 0.16);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.45);
@@ -89,6 +99,10 @@
       border: 2px solid #1d4ed8;
       pointer-events: auto !important;
       cursor: pointer;
+    }
+    .edit-active .song-spot.shape-voca {
+      background-color: rgba(14, 165, 233, 0.34);
+      border: 2px solid #0369a1;
     }
 
     #bottom-nav-trigger { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; z-index: 40; }
@@ -119,6 +133,7 @@
         <div class="flex items-center bg-white rounded border border-pink-200 p-0.5 text-[10px] font-bold">
           <button id="btn-shape-circle" onclick="setBrushShape('circle')" class="px-2 py-0.5 rounded bg-pink-600 text-white">원형</button>
           <button id="btn-shape-rect" onclick="setBrushShape('rect')" class="px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50">사각</button>
+          <button id="btn-shape-voca" onclick="setBrushShape('voca')" class="px-2 py-0.5 rounded text-sky-700 hover:bg-sky-50">VOCA</button>
         </div>
 
         <div id="circle-size-box" class="flex items-center gap-1">
@@ -142,6 +157,21 @@
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
           <button type="button" onclick="applyRectPreset(26, 12)" title="큰네모 (26 / 12)" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">대</button>
           <button type="button" onclick="applyRectPreset(19.5, 9)" title="작은네모 (19.5 / 9)" class="px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">소</button>
+        </div>
+
+        <div id="voca-size-box" class="hidden flex items-center gap-1">
+          <span class="text-[11px] font-bold text-sky-800">가로</span>
+          <input type="number" id="voca-w-input" step="0.5" min="1" max="85" value="20.5"
+                 onchange="updateVocaW(this.value)"
+                 oninput="updateVocaW(this.value)"
+                 class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-sky-300 rounded text-sky-900 focus:outline-none focus:border-sky-500">
+          <span class="text-[11px] font-bold text-sky-800 ml-0.5">세로</span>
+          <input type="number" id="voca-h-input" step="0.5" min="1" max="85" value="6"
+                 onchange="updateVocaH(this.value)"
+                 oninput="updateVocaH(this.value)"
+                 class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-sky-300 rounded text-sky-900 focus:outline-none focus:border-sky-500">
+          <button type="button" onclick="applyVocaPreset(20.5, 6)" title="기본 VOCA 배지 (20.5 / 6)" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-sky-100 border border-sky-300 text-[10px] font-bold text-sky-800">대</button>
+          <button type="button" onclick="applyVocaPreset(15.5, 4.5)" title="작은 VOCA 배지 (15.5 / 4.5)" class="px-1.5 py-0.5 rounded bg-white hover:bg-sky-100 border border-sky-300 text-[10px] font-bold text-sky-800">소</button>
         </div>
 
         <span id="sync-status-badge" class="ml-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1">
@@ -244,6 +274,53 @@
     </div>
   </div>
 
+  <!-- VOCA 배지 -> TAC PLAYER 연동 범위 설정 모달 -->
+  <div id="voca-link-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4" onclick="closeVocaLinkModal()">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden" onclick="event.stopPropagation()">
+      <div class="px-4 py-3 bg-sky-50 border-b border-sky-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px]">
+            <i class="fa-solid fa-layer-group"></i>
+          </span>
+          <span id="voca-modal-title" class="text-xs font-black text-sky-950">VOCA 단어앱 연동 설정</span>
+        </div>
+        <button onclick="closeVocaLinkModal()" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="p-4 space-y-3">
+        <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+          <span class="text-xs font-bold text-slate-700">포함 페이지 범위</span>
+          <div class="flex items-center gap-1.5 text-xs font-mono font-black">
+            <span id="voca-start-page-label" class="px-2 py-1 rounded bg-white border border-slate-200 text-slate-800">1P</span>
+            <span class="text-slate-400">~</span>
+            <input type="number" id="voca-end-page-input" min="1" max="500"
+                   oninput="updateVocaRangePreview()"
+                   onchange="updateVocaRangePreview()"
+                   class="w-14 px-1.5 py-1 text-center bg-white border border-sky-400 rounded text-sky-700 focus:outline-none">
+            <span class="text-slate-600 font-sans">P</span>
+          </div>
+        </div>
+
+        <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-sky-900">추출된 VOCA 카드 (지면 순서)</span>
+            <span id="voca-card-count-badge" class="px-2 py-0.5 rounded-full bg-sky-600 text-white font-mono font-black text-[11px]">총 0장</span>
+          </div>
+          <div id="voca-cards-preview-list" class="max-h-32 overflow-y-auto flex flex-wrap gap-1 pt-0.5 text-[11px] font-mono"></div>
+        </div>
+
+        <button type="button" onclick="saveVocaLinkSpot()" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs shadow-sm transition">
+          저장 및 클라우드 동기화
+        </button>
+      </div>
+
+      <div id="voca-modal-footer-delete" class="hidden px-4 py-2.5 bg-rose-50 border-t border-rose-100 flex justify-between items-center">
+        <span class="text-[11px] text-rose-700 font-bold">이 VOCA 링크 배지를 제거할까요?</span>
+        <button onclick="deleteCurrentVocaSpot()" class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold">삭제</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 하단 페이지 네비게이터 -->
   <div id="bottom-nav-trigger" onclick="toggleBottomNavActive()">
     <div id="bottom-nav-bar" class="w-full h-full flex items-center justify-center px-4 pb-2">
@@ -287,12 +364,15 @@
     let circleSize = 12.0;
     let rectW = 26.0;
     let rectH = 12.0;
+    // VOCA 배지 비율: 큰 카드(26x12) 대비 가로 약 78%(20.5%), 세로 약 50%(6.0%)
+    let vocaW = 20.5;
+    let vocaH = 6.0;
 
     let currentLeftPageNum = null, currentRightPageNum = null;
-    // 노래 재생 중인 개별 카드 키와 보카 재생 중인 개별 카드 키를 독립 관리
     let activeSongSpotKey = null;
     let activeVocaSpotKey = null;
     let pendingSpotContext = null;
+    let pendingVocaContext = null;
     let ocrWorker = null;
 
     const preloadedAudioUrls = new Set();
@@ -300,7 +380,7 @@
     const vocaAudioEl = document.getElementById('voca-audio');
 
     /* ==========================================
-       Web Audio API 기반 노래 볼륨 페이드 덕킹 (iOS/Android/PC 완벽 호환)
+       Web Audio API 기반 노래 볼륨 페이드 덕킹
        ========================================== */
     let audioCtx = null;
     let songGainNode = null;
@@ -341,19 +421,23 @@
     function duckSongForVoca() {
       if (!songAudioEl.paused && !isSongDucking) {
         isSongDucking = true;
-        fadeSongVolume(0.15, 0.25); // 0.25초 동안 15% 볼륨으로 부드럽게 페이드 아웃
+        fadeSongVolume(0.15, 0.25);
       }
     }
 
     function restoreSongAfterVoca() {
       if (isSongDucking) {
         isSongDucking = false;
-        fadeSongVolume(1.0, 0.4); // 0.4초 동안 100% 볼륨으로 부드럽게 페이드 인
+        fadeSongVolume(1.0, 0.4);
       }
     }
 
     function isVocaTrackId(trackId) {
       return /^v\d+$/i.test(String(trackId));
+    }
+
+    function isVocaLinkSpot(spot) {
+      return spot && (spot.shape === 'voca' || spot.type === 'voca-link');
     }
 
     function getAudioUrlForTrack(trackId) {
@@ -375,6 +459,7 @@
       if (!pageNum) return;
       const list = songSpotsData[String(pageNum)] || [];
       list.forEach(spot => {
+        if (isVocaLinkSpot(spot)) return;
         const url = getAudioUrlForTrack(spot.track);
         if (url && !preloadedAudioUrls.has(url)) {
           preloadedAudioUrls.add(url);
@@ -383,6 +468,82 @@
           });
         }
       });
+    }
+
+    /* ==========================================
+       VOCA 배지 범위 자동 탐색 & 지면 순서 카드 추출
+       ========================================== */
+    function detectDefaultVocaEndPage(startPage, anchorY = 0) {
+      let lastVocaPage = startPage;
+      const maxScan = Math.min(totalPages || 500, startPage + 12);
+
+      for (let p = startPage; p <= maxScan; p++) {
+        const spots = songSpotsData[String(p)] || [];
+        // 현재 배지 이후에 다른 VOCA 배지가 등장하면 그 직전 페이지까지만 포함
+        if (p > startPage) {
+          const hasNextVocaBadge = spots.some(s => isVocaLinkSpot(s));
+          if (hasNextVocaBadge) break;
+        } else {
+          const hasLowerVocaBadge = spots.some(s => isVocaLinkSpot(s) && s.y > anchorY + 4);
+          if (hasLowerVocaBadge) return startPage;
+        }
+
+        const hasVocaCards = spots.some(s => !isVocaLinkSpot(s) && isVocaTrackId(s.track));
+        if (hasVocaCards) {
+          lastVocaPage = p;
+        } else if (p > startPage) {
+          // 보카 카드가 없는 페이지가 나오면 연속 구간 종료
+          break;
+        }
+      }
+      return lastVocaPage;
+    }
+
+    function collectVocaCardsInRange(startPage, endPage, anchorY = 0) {
+      const fromP = Math.max(1, Number(startPage) || 1);
+      const toP = Math.max(fromP, Number(endPage) || fromP);
+      const collected = [];
+
+      for (let p = fromP; p <= toP; p++) {
+        const spots = songSpotsData[String(p)] || [];
+        // 시작 페이지에서는 VOCA 배지보다 아래(또는 같은 줄)에 배치된 카드만 대상
+        let pageVocaSpots = spots.filter(s => {
+          if (isVocaLinkSpot(s) || !isVocaTrackId(s.track)) return false;
+          if (p === fromP && anchorY > 0 && s.y < anchorY - 4) return false;
+          return true;
+        });
+
+        // 책 지면 순서 정렬: 위→아래(행 오차 5% 이내면 같은 줄), 같은 줄은 왼쪽→오른쪽
+        pageVocaSpots.sort((a, b) => {
+          if (Math.abs(a.y - b.y) > 5.0) {
+            return a.y - b.y;
+          }
+          return a.x - b.x;
+        });
+
+        pageVocaSpots.forEach(s => {
+          const normalized = String(s.track).toLowerCase();
+          if (!collected.includes(normalized)) {
+            collected.push(normalized);
+          }
+        });
+      }
+      return collected;
+    }
+
+    function launchTacWithVocaSpot(pageNum, spot) {
+      const endPage = spot.endPage || detectDefaultVocaEndPage(pageNum, spot.y);
+      const cards = collectVocaCardsInRange(pageNum, endPage, spot.y);
+
+      if (cards.length === 0) {
+        alert(`${pageNum}P ~ ${endPage}P 구간에 연결된 VOCA 카드(v001~v510)가 아직 없습니다.\n음원편집 모드에서 VOCA 카드를 먼저 배치해 주세요.`);
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('cards', cards.join(','));
+      params.set('fromPage', String(pageNum));
+      window.location.href = `tac.html?${params.toString()}`;
     }
 
     function updateSyncBadge(state, text) {
@@ -545,6 +706,15 @@
         document.getElementById('total-page-num').textContent = totalPages;
         document.getElementById('page-slider').max = totalPages;
         document.getElementById('direct-page-input').max = totalPages;
+        document.getElementById('voca-end-page-input').max = totalPages;
+
+        // tac.html에서 BOOK 복귀 버튼(?page=15)으로 돌아온 경우 해당 페이지 열기
+        const urlParams = new URLSearchParams(window.location.search);
+        const startPageParam = parseInt(urlParams.get('page'), 10);
+        if (!isNaN(startPageParam) && startPageParam >= 1 && startPageParam <= totalPages) {
+          currentPage = startPageParam;
+        }
+
         await renderCurrentView();
         document.getElementById('loading-box').classList.add('hidden');
         document.getElementById('book-spread').classList.remove('hidden');
@@ -558,7 +728,6 @@
       isRendering = true;
       try {
         const container = document.getElementById('viewer-container');
-        // 책 좌우에 밀착 배치된 넘김 버튼 공간(약 96px)을 고려해 여백 계산
         const availW = Math.max(100, container.clientWidth - (isFullscreenMode ? 88 : 112));
         const availH = Math.max(100, container.clientHeight - (isFullscreenMode ? 16 : 24));
         const leftBox = document.getElementById('left-page-box');
@@ -611,7 +780,6 @@
           rightBox.style.display = 'none';
         }
 
-        // 현재 펼쳐진 양면 중 지정 목차 페이지(TOC_PAGES)가 포함되어 있는지 확인
         const isTocView = (leftPageNum && TOC_PAGES.has(leftPageNum)) || (rightPageNum && TOC_PAGES.has(rightPageNum));
         updateTocModeUI(isTocView);
         updateBottomNavUI();
@@ -668,9 +836,6 @@
       renderSongCircles(pageNum, songLayerId, floorW, floorH);
     }
 
-    /* ==========================================
-       지정 목차 페이지(4-6, 74-76, 142-143, 216-217) 음원 ON/OFF 토글
-       ========================================== */
     function updateTocModeUI(isTocPage) {
       const toggleBtn = document.getElementById('btn-toc-mode-toggle');
       const spread = document.getElementById('book-spread');
@@ -704,19 +869,27 @@
       currentShape = shape;
       const btnCircle = document.getElementById('btn-shape-circle');
       const btnRect = document.getElementById('btn-shape-rect');
+      const btnVoca = document.getElementById('btn-shape-voca');
       const circleBox = document.getElementById('circle-size-box');
       const rectBox = document.getElementById('rect-size-box');
+      const vocaBox = document.getElementById('voca-size-box');
+
+      btnCircle.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
+      btnRect.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
+      btnVoca.className = 'px-2 py-0.5 rounded text-sky-700 hover:bg-sky-50';
+      circleBox.classList.add('hidden');
+      rectBox.classList.add('hidden');
+      vocaBox.classList.add('hidden');
 
       if (shape === 'circle') {
         btnCircle.className = 'px-2 py-0.5 rounded bg-pink-600 text-white';
-        btnRect.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
         circleBox.classList.remove('hidden');
-        rectBox.classList.add('hidden');
-      } else {
+      } else if (shape === 'rect') {
         btnRect.className = 'px-2 py-0.5 rounded bg-pink-600 text-white';
-        btnCircle.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
         rectBox.classList.remove('hidden');
-        circleBox.classList.add('hidden');
+      } else if (shape === 'voca') {
+        btnVoca.className = 'px-2 py-0.5 rounded bg-sky-600 text-white';
+        vocaBox.classList.remove('hidden');
       }
     }
 
@@ -725,6 +898,13 @@
       rectH = h;
       document.getElementById('rect-w-input').value = w;
       document.getElementById('rect-h-input').value = h;
+    }
+
+    function applyVocaPreset(w, h) {
+      vocaW = w;
+      vocaH = h;
+      document.getElementById('voca-w-input').value = w;
+      document.getElementById('voca-h-input').value = h;
     }
 
     function updateCircleSize(val) {
@@ -742,6 +922,16 @@
       if (!isNaN(num) && num >= 1 && num <= 85) rectH = num;
     }
 
+    function updateVocaW(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num >= 1 && num <= 85) vocaW = num;
+    }
+
+    function updateVocaH(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num >= 1 && num <= 85) vocaH = num;
+    }
+
     function moveGhost(e, side) {
       if (!isSpotEditMode) return;
       const ghost = document.getElementById(`ghost-${side}`);
@@ -753,6 +943,10 @@
         wPx = Math.round(rect.width * (circleSize / 100));
         hPx = wPx;
         ghost.className = 'ghost-guide shape-circle';
+      } else if (currentShape === 'voca') {
+        wPx = Math.round(rect.width * (vocaW / 100));
+        hPx = Math.round(rect.width * (vocaH / 100));
+        ghost.className = 'ghost-guide shape-voca';
       } else {
         wPx = Math.round(rect.width * (rectW / 100));
         hPx = Math.round(rect.width * (rectH / 100));
@@ -778,24 +972,33 @@
 
       const list = songSpotsData[String(pageNum)] || [];
       list.forEach((spot, idx) => {
-        const isCircle = (spot.shape || 'circle') === 'circle';
+        const isVocaBadge = isVocaLinkSpot(spot);
+        const shapeType = isVocaBadge ? 'voca' : (spot.shape || 'circle');
         const spotKey = `${pageNum}-${idx}`;
         const btn = document.createElement('div');
-        btn.className = `song-spot ${isCircle ? 'shape-circle' : 'shape-rect'}`;
+        btn.className = `song-spot shape-${shapeType}`;
 
-        // 노래 채널 재생 중 표시 vs 보카 채널 재생 중 표시 분리
-        if (activeSongSpotKey === spotKey && !songAudioEl.paused) {
-          btn.classList.add('playing');
-        }
-        if (activeVocaSpotKey === spotKey && !vocaAudioEl.paused) {
-          btn.classList.add('playing-voca');
+        if (!isVocaBadge) {
+          if (activeSongSpotKey === spotKey && !songAudioEl.paused) {
+            btn.classList.add('playing');
+          }
+          if (activeVocaSpotKey === spotKey && !vocaAudioEl.paused) {
+            btn.classList.add('playing-voca');
+          }
+        } else {
+          btn.title = 'VOCA 단어카드로 이동하여 학습하기';
         }
 
         let wPx, hPx;
-        if (isCircle) {
+        if (shapeType === 'circle') {
           const widthPct = spot.w ? spot.w : (spot.r ? spot.r * 2 : 12.0);
           wPx = Math.round(pageW * (widthPct / 100));
           hPx = wPx;
+        } else if (shapeType === 'voca') {
+          const widthPct = spot.w || 20.5;
+          const heightPct = spot.h || 6.0;
+          wPx = Math.round(pageW * (widthPct / 100));
+          hPx = Math.round(pageW * (heightPct / 100));
         } else {
           const widthPct = spot.w || 26.0;
           const heightPct = spot.h ? spot.h : (widthPct * 0.46);
@@ -807,19 +1010,131 @@
         btn.style.width = `${wPx}px`; btn.style.height = `${hPx}px`;
 
         if (isSpotEditMode) {
-          const isVoca = isVocaTrackId(spot.track);
-          const badgeColor = isVoca ? 'text-emerald-800' : 'text-blue-900';
-          btn.innerHTML = `<span class="text-[10px] font-mono font-black ${badgeColor} bg-white/95 px-1.5 rounded-full shadow-xs">${spot.track}</span>`;
+          if (isVocaBadge) {
+            const endP = spot.endPage || detectDefaultVocaEndPage(pageNum, spot.y);
+            const cnt = collectVocaCardsInRange(pageNum, endP, spot.y).length;
+            btn.innerHTML = `<span class="text-[10px] font-mono font-black text-sky-900 bg-white/95 px-1.5 rounded-full shadow-xs">VOCA ${pageNum}~${endP}P (${cnt}장)</span>`;
+          } else {
+            const isVoca = isVocaTrackId(spot.track);
+            const badgeColor = isVoca ? 'text-emerald-800' : 'text-blue-900';
+            btn.innerHTML = `<span class="text-[10px] font-mono font-black ${badgeColor} bg-white/95 px-1.5 rounded-full shadow-xs">${spot.track}</span>`;
+          }
         }
 
         btn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (isSpotEditMode) openSpotModalEdit(pageNum, idx);
-          else playOrPauseR2Song(spot.track, spotKey);
+          if (isSpotEditMode) {
+            if (isVocaBadge) openVocaLinkModal(pageNum, idx);
+            else openSpotModalEdit(pageNum, idx);
+          } else {
+            if (isVocaBadge) launchTacWithVocaSpot(pageNum, spot);
+            else playOrPauseR2Song(spot.track, spotKey);
+          }
         };
         layer.appendChild(btn);
       });
+    }
+
+    /* ==========================================
+       VOCA 배지 생성/수정/삭제 모달 제어
+       ========================================== */
+    function openVocaLinkModal(pageNum, editIndex = null, xPct = 0, yPct = 0) {
+      const modal = document.getElementById('voca-link-modal');
+      const titleEl = document.getElementById('voca-modal-title');
+      const startLabel = document.getElementById('voca-start-page-label');
+      const endInput = document.getElementById('voca-end-page-input');
+      const delFooter = document.getElementById('voca-modal-footer-delete');
+
+      let anchorY = yPct;
+      let defaultEnd = pageNum;
+
+      if (editIndex !== null) {
+        const existing = songSpotsData[String(pageNum)][editIndex];
+        anchorY = existing.y;
+        defaultEnd = existing.endPage || detectDefaultVocaEndPage(pageNum, anchorY);
+        pendingVocaContext = { pageNum, x: existing.x, y: existing.y, editIndex };
+        titleEl.textContent = `VOCA 링크 수정 (${pageNum}P 시작)`;
+        delFooter.classList.remove('hidden');
+      } else {
+        defaultEnd = detectDefaultVocaEndPage(pageNum, anchorY);
+        pendingVocaContext = { pageNum, x: xPct, y: yPct, editIndex: null };
+        titleEl.textContent = `VOCA 단어앱 링크 연결 (${pageNum}P 시작)`;
+        delFooter.classList.add('hidden');
+      }
+
+      startLabel.textContent = `${pageNum}P`;
+      endInput.min = pageNum;
+      endInput.max = totalPages || 500;
+      endInput.value = defaultEnd;
+
+      modal.classList.remove('hidden');
+      updateVocaRangePreview();
+    }
+
+    function updateVocaRangePreview() {
+      if (!pendingVocaContext) return;
+      const startPage = pendingVocaContext.pageNum;
+      const endInput = document.getElementById('voca-end-page-input');
+      let endPage = parseInt(endInput.value, 10);
+      if (isNaN(endPage) || endPage < startPage) endPage = startPage;
+
+      const cards = collectVocaCardsInRange(startPage, endPage, pendingVocaContext.y);
+      const countBadge = document.getElementById('voca-card-count-badge');
+      const listEl = document.getElementById('voca-cards-preview-list');
+
+      const pageSpan = endPage - startPage + 1;
+      countBadge.textContent = `${pageSpan}페이지 · 총 ${cards.length}장`;
+
+      if (cards.length === 0) {
+        listEl.innerHTML = `<span class="text-slate-400 font-sans">선택된 범위에 배치된 VOCA 카드(v001~v510)가 없습니다.</span>`;
+      } else {
+        listEl.innerHTML = cards.map((cid, idx) =>
+          `<span class="px-1.5 py-0.5 rounded bg-white border border-sky-200 text-sky-900 font-bold"><span class="text-slate-400 mr-0.5">${idx + 1}.</span>${cid}</span>`
+        ).join('');
+      }
+    }
+
+    function saveVocaLinkSpot() {
+      if (!pendingVocaContext) return;
+      const pageKey = String(pendingVocaContext.pageNum);
+      if (!songSpotsData[pageKey]) songSpotsData[pageKey] = [];
+
+      const startPage = pendingVocaContext.pageNum;
+      let endPage = parseInt(document.getElementById('voca-end-page-input').value, 10);
+      if (isNaN(endPage) || endPage < startPage) endPage = startPage;
+
+      if (pendingVocaContext.editIndex !== null) {
+        songSpotsData[pageKey][pendingVocaContext.editIndex].endPage = endPage;
+      } else {
+        songSpotsData[pageKey].push({
+          shape: 'voca',
+          type: 'voca-link',
+          x: pendingVocaContext.x,
+          y: pendingVocaContext.y,
+          w: vocaW,
+          h: vocaH,
+          endPage
+        });
+      }
+
+      closeVocaLinkModal();
+      refreshAllSongLayers();
+      saveSpotsToCloud();
+    }
+
+    function deleteCurrentVocaSpot() {
+      if (!pendingVocaContext || pendingVocaContext.editIndex === null) return;
+      const pageKey = String(pendingVocaContext.pageNum);
+      songSpotsData[pageKey].splice(pendingVocaContext.editIndex, 1);
+      closeVocaLinkModal();
+      refreshAllSongLayers();
+      saveSpotsToCloud();
+    }
+
+    function closeVocaLinkModal() {
+      document.getElementById('voca-link-modal').classList.add('hidden');
+      pendingVocaContext = null;
     }
 
     function getAllAudioItems() {
@@ -854,6 +1169,12 @@
       const xPct = Number((((e.clientX - rect.left) / rect.width) * 100).toFixed(2));
       const yPct = Number((((e.clientY - rect.top) / rect.height) * 100).toFixed(2));
 
+      // VOCA 배지 브러시인 경우 전용 범위 설정 모달 오픈
+      if (currentShape === 'voca') {
+        openVocaLinkModal(pageNum, null, xPct, yPct);
+        return;
+      }
+
       pendingSpotContext = {
         pageNum,
         x: xPct,
@@ -886,6 +1207,10 @@
 
     function openSpotModalEdit(pageNum, idx) {
       const spot = songSpotsData[String(pageNum)][idx];
+      if (isVocaLinkSpot(spot)) {
+        openVocaLinkModal(pageNum, idx);
+        return;
+      }
       pendingSpotContext = { pageNum, x: spot.x, y: spot.y, editIndex: idx };
       document.getElementById('modal-title').textContent = `수정/삭제 (현재: ${spot.track})`;
       document.getElementById('modal-footer-delete').classList.remove('hidden');
@@ -1031,7 +1356,6 @@
       if (!targetUrl) return;
 
       if (isVocaTrackId(trackId)) {
-        // 보카(VOCA) 채널 제어
         if (activeVocaSpotKey === spotKey && vocaAudioEl.src) {
           if (vocaAudioEl.paused) {
             duckSongForVoca();
@@ -1053,7 +1377,6 @@
         });
         refreshAllSongLayers();
       } else {
-        // 노래(SA) 채널 제어
         initSongGainDucking();
         if (activeSongSpotKey === spotKey && songAudioEl.src) {
           if (songAudioEl.paused) {
@@ -1066,7 +1389,6 @@
         }
 
         activeSongSpotKey = spotKey;
-        // 보카가 동시에 재생 중이면 덕킹 상태 유지, 아니면 100% 볼륨으로 시작
         if (!vocaAudioEl.paused) {
           isSongDucking = true;
           fadeSongVolume(0.15, 0.1);
@@ -1179,6 +1501,10 @@
     }
 
     window.addEventListener('keydown', (e) => {
+      if (!document.getElementById('voca-link-modal').classList.contains('hidden')) {
+        if (e.key === 'Escape') closeVocaLinkModal();
+        return;
+      }
       if (!document.getElementById('song-modal').classList.contains('hidden')) {
         if (e.key === 'Escape') closeSongModal();
         return;

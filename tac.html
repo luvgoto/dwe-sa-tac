@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -373,6 +373,8 @@
       };
     });
 
+    const CARD_MAP = new Map(CARDS.map(c => [c.id, c]));
+
     let selectedSet = new Set(CARDS.map(c => c.id));
     let currentPlaylist = [...CARDS];
     let currentIndex = 0;
@@ -546,7 +548,6 @@
 
       fallbackBox.classList.add('hidden');
       imgElement.src = `images/${card.id}.jpg`;
-      // R2 버킷(/audio/001.mp3) 경로 사용
       audioPlayer.src = getR2VocaUrl(card.id);
     }
 
@@ -1213,9 +1214,33 @@
     }, { passive: true });
 
     window.onload = () => {
-      // URL 파라미터(?card=v025 또는 ?card=25)가 있으면 해당 카드로 즉시 점프
       const params = new URLSearchParams(window.location.search);
+      const cardsParam = params.get('cards');
       const targetCard = params.get('card');
+
+      // 1) book.html의 VOCA 배지에서 여러 카드 목록(?cards=v008,v010,...)이 전달된 경우: 지면 순서 그대로 유지
+      if (cardsParam) {
+        const orderedCards = [];
+        const idSet = new Set();
+
+        cardsParam.split(',').forEach(token => {
+          const numId = parseInt(String(token).replace(/\D/g, ''), 10);
+          if (!isNaN(numId) && CARD_MAP.has(numId) && !idSet.has(numId)) {
+            idSet.add(numId);
+            orderedCards.push(CARD_MAP.get(numId));
+          }
+        });
+
+        if (orderedCards.length > 0) {
+          currentPlaylist = orderedCards;
+          selectedSet = idSet;
+          currentIndex = 0;
+          updateCardView();
+          return;
+        }
+      }
+
+      // 2) 단일 카드(?card=v025) 지정 시 해당 카드로 점프
       if (targetCard) {
         goToSpecificCardId(targetCard, false);
       } else {
