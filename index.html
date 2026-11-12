@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="songs-data.js"></script>
   <style>
     body {
@@ -21,7 +22,6 @@
     .book-spine-left { box-shadow: inset -8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
     .book-spine-right { box-shadow: inset 8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
 
-    /* PDF 내부 하이퍼링크 */
     .link-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
     .link-layer a {
       position: absolute; display: block; pointer-events: auto; cursor: pointer;
@@ -29,28 +29,30 @@
       -webkit-tap-highlight-color: transparent !important; -webkit-touch-callout: none !important;
     }
 
-    /* 원형 음원 핫스팟 레이어 */
-    .song-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 25; pointer-events: none; }
+    .song-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; }
     .edit-active .song-layer { pointer-events: auto; cursor: crosshair; }
 
-    /* 마우스를 따라다니는 가상 원형 가이드 (독립 요소) */
-    .ghost-circle {
+    .ghost-guide {
       position: absolute; transform: translate(-50%, -50%);
-      border-radius: 9999px; border: 2.5px dashed #ec4899;
+      border: 2.5px dashed #ec4899;
       background-color: rgba(236, 72, 153, 0.18);
       pointer-events: none; z-index: 35; display: none;
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
     }
+    .ghost-guide.shape-circle { border-radius: 9999px; }
+    .ghost-guide.shape-rect { border-radius: 10px; }
 
-    /* 배치된 원형 버튼 */
-    .song-circle {
+    .song-spot {
       position: absolute; transform: translate(-50%, -50%);
-      border-radius: 9999px; pointer-events: auto; cursor: pointer;
+      pointer-events: auto; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: transform 0.15s ease, background-color 0.15s ease;
     }
-    .song-circle:active { transform: translate(-50%, -50%) scale(0.92); background-color: rgba(37, 99, 235, 0.2); }
-    .song-circle.playing {
+    .song-spot.shape-circle { border-radius: 9999px; }
+    .song-spot.shape-rect { border-radius: 10px; }
+
+    .song-spot:active { transform: translate(-50%, -50%) scale(0.94); background-color: rgba(37, 99, 235, 0.2); }
+    .song-spot.playing {
       background-color: rgba(37, 99, 235, 0.16);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.45);
       animation: pulseRing 1.8s infinite;
@@ -59,13 +61,12 @@
       0%, 100% { box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5); }
       50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15); }
     }
-    .edit-active .song-circle {
+    .edit-active .song-spot {
       background-color: rgba(37, 99, 235, 0.28);
       border: 2px solid #1d4ed8;
       cursor: pointer;
     }
 
-    /* 하단 숨김형 네비게이터 */
     #bottom-nav-trigger { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; z-index: 40; }
     #bottom-nav-bar { transition: transform 0.25s ease, opacity 0.25s ease; transform: translateY(100%); opacity: 0; pointer-events: none; }
     #bottom-nav-trigger:hover #bottom-nav-bar, #bottom-nav-bar.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
@@ -85,14 +86,40 @@
 
     <div class="flex items-center gap-1.5 sm:gap-2">
       <!-- 편집 모드 전용 도구 -->
-      <div id="edit-controls" class="hidden flex items-center gap-1 bg-pink-50 border border-pink-200 rounded-lg px-2 py-0.5 mr-1">
-        <span class="text-[11px] font-bold text-pink-800 mr-0.5">크기:</span>
-        <button onclick="changeDefaultRadius(-0.5)" class="w-5 h-5 rounded bg-white border border-pink-300 text-pink-800 font-black text-xs flex items-center justify-center">-</button>
-        <span id="radius-display" class="text-[11px] font-mono font-bold text-pink-900 w-7 text-center">4.0%</span>
-        <button onclick="changeDefaultRadius(0.5)" class="w-5 h-5 rounded bg-white border border-pink-300 text-pink-800 font-black text-xs flex items-center justify-center">+</button>
-        <button onclick="copySpotsJSON()" class="ml-1.5 px-2 py-0.5 rounded bg-pink-600 hover:bg-pink-700 text-white font-bold text-[11px]">
-          <i class="fa-regular fa-copy mr-1"></i>데이터 복사
-        </button>
+      <div id="edit-controls" class="hidden flex items-center gap-1.5 bg-pink-50 border border-pink-200 rounded-lg px-2 py-0.5 mr-1">
+        <!-- 도형 선택 (원형 / 라운드 사각) -->
+        <div class="flex items-center bg-white rounded border border-pink-200 p-0.5 text-[10px] font-bold">
+          <button id="btn-shape-circle" onclick="setBrushShape('circle')" class="px-2 py-0.5 rounded bg-pink-600 text-white">원형</button>
+          <button id="btn-shape-rect" onclick="setBrushShape('rect')" class="px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50">사각</button>
+        </div>
+
+        <!-- 원형 크기 입력창 (기본값 12) -->
+        <div id="circle-size-box" class="flex items-center gap-1">
+          <span class="text-[11px] font-bold text-pink-800">크기</span>
+          <input type="number" id="circle-size-input" step="0.5" min="1" max="60" value="12"
+                 onchange="updateCircleSize(this.value)"
+                 oninput="updateCircleSize(this.value)"
+                 class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+        </div>
+
+        <!-- 사각형 가로 / 세로 자유 입력창 -->
+        <div id="rect-size-box" class="hidden flex items-center gap-1">
+          <span class="text-[11px] font-bold text-pink-800">가로</span>
+          <input type="number" id="rect-w-input" step="0.5" min="1" max="85" value="24"
+                 onchange="updateRectW(this.value)"
+                 oninput="updateRectW(this.value)"
+                 class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+          <span class="text-[11px] font-bold text-pink-800 ml-0.5">세로</span>
+          <input type="number" id="rect-h-input" step="0.5" min="1" max="85" value="11"
+                 onchange="updateRectH(this.value)"
+                 oninput="updateRectH(this.value)"
+                 class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+        </div>
+
+        <!-- 실시간 클라우드 동기화 상태 표시 -->
+        <span id="sync-status-badge" class="ml-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1">
+          <i class="fa-solid fa-cloud-check"></i><span>자동저장 대기</span>
+        </span>
       </div>
 
       <button id="btn-edit-spots" onclick="toggleSpotEditMode()" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition">
@@ -123,7 +150,7 @@
   <main id="viewer-container" class="flex-1 w-full h-full relative flex items-center justify-center p-2 sm:p-4 overflow-hidden">
     <div id="loading-box" class="flex flex-col items-center justify-center text-slate-500">
       <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-      <p class="text-xs font-bold">송북 문서를 준비하고 있습니다...</p>
+      <p class="text-xs font-bold">송북 문서 및 클라우드 데이터를 불러오고 있습니다...</p>
     </div>
 
     <div id="book-spread" class="hidden flex items-center justify-center">
@@ -135,7 +162,7 @@
              onmousemove="moveGhost(event, 'left')"
              onmouseleave="hideGhost('left')"
              onclick="openSpotModalNew(event, 'left')"></div>
-        <div id="ghost-left" class="ghost-circle"></div>
+        <div id="ghost-left" class="ghost-guide shape-circle"></div>
       </div>
 
       <!-- 오른쪽 페이지 -->
@@ -146,7 +173,7 @@
              onmousemove="moveGhost(event, 'right')"
              onmouseleave="hideGhost('right')"
              onclick="openSpotModalNew(event, 'right')"></div>
-        <div id="ghost-right" class="ghost-circle"></div>
+        <div id="ghost-right" class="ghost-guide shape-circle"></div>
       </div>
     </div>
 
@@ -163,19 +190,26 @@
   <div id="song-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4" onclick="closeSongModal()">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden" onclick="event.stopPropagation()">
       <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-        <span id="modal-title" class="text-xs font-black text-slate-800">음원 연결</span>
+        <div class="flex items-center gap-2">
+          <span id="modal-title" class="text-xs font-black text-slate-800">음원 연결</span>
+          <span id="ocr-status-tag" class="hidden px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">번호 읽는 중...</span>
+        </div>
         <button onclick="closeSongModal()" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="p-3">
-        <input type="text" id="song-search-input" placeholder="번호(1~143) 또는 곡 제목 일부 검색..."
-               oninput="filterSongList(this.value)"
-               onkeyup="filterSongList(this.value)"
-               onkeydown="if(event.key==='Enter') selectFirstFilteredSong()"
-               class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500">
-        <div id="song-search-results" class="mt-2 max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
+        <div class="flex items-center gap-2 mb-2">
+          <input type="text" id="song-search-input" placeholder="노래(1~143) 또는 단어(v001~v510) 검색..."
+                 oninput="filterSongList(this.value)"
+                 onkeyup="filterSongList(this.value)"
+                 onkeydown="if(event.key==='Enter') selectFirstFilteredSong()"
+                 class="flex-1 px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500">
+          <!-- 인식한 우측 상단 모서리 미리보기 캔버스 -->
+          <canvas id="ocr-preview-canvas" width="44" height="34" title="인식한 우측 상단 영역" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
+        </div>
+        <div id="song-search-results" class="max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
       </div>
       <div id="modal-footer-delete" class="hidden px-4 py-2.5 bg-rose-50 border-t border-rose-100 flex justify-between items-center">
-        <span class="text-[11px] text-rose-700 font-bold">이 원형 영역을 제거할까요?</span>
+        <span class="text-[11px] text-rose-700 font-bold">이 음원 영역을 제거할까요?</span>
         <button onclick="deleteCurrentSpot()" class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold">삭제</button>
       </div>
     </div>
@@ -203,21 +237,176 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
 
-    const savedLocal = JSON.parse(localStorage.getItem('dwe_song_circles') || 'null');
-    let songSpotsData = savedLocal || (typeof DEFAULT_SONG_SPOTS !== 'undefined' ? JSON.parse(JSON.stringify(DEFAULT_SONG_SPOTS)) : {});
+    // Worker 루트 주소 (https://dwe-songs.xxx.workers.dev)
+    const WORKER_ROOT = (typeof R2_SONGS_BASE !== 'undefined')
+      ? R2_SONGS_BASE.replace(/\/songs\/?$/, '')
+      : '';
+    const SPOTS_SYNC_URL = WORKER_ROOT ? `${WORKER_ROOT}/spots-data.json` : '';
+
+    let songSpotsData = (typeof DEFAULT_SONG_SPOTS !== 'undefined' ? JSON.parse(JSON.stringify(DEFAULT_SONG_SPOTS)) : {});
 
     let pdfDoc = null, currentPage = 1, totalPages = 1;
     let isSpreadMode = true, hasCoverPage = true, isRendering = false;
     let isFullscreenMode = false, isSpotEditMode = false;
-    let defaultCircleRadiusPct = 4.0;
+
+    let currentShape = 'circle';
+    let circleSize = 12.0;
+    let rectW = 24.0;
+    let rectH = 11.0;
+
     let currentLeftPageNum = null, currentRightPageNum = null;
     let activePlayingTrack = null;
     let pendingSpotContext = null;
+    let ocrWorker = null;
 
     const audioEl = document.getElementById('r2-audio');
 
+    /* ==========================================
+       클라우드(R2) 실시간 불러오기 & 자동 저장
+       ========================================== */
+    function updateSyncBadge(state, text) {
+      const badge = document.getElementById('sync-status-badge');
+      if (!badge) return;
+      if (state === 'saving') {
+        badge.className = 'ml-1 px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px] flex items-center gap-1';
+        badge.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i><span>${text || '저장 중...'}</span>`;
+      } else if (state === 'error') {
+        badge.className = 'ml-1 px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-[10px] flex items-center gap-1';
+        badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>${text || '오프라인 저장됨'}</span>`;
+      } else {
+        badge.className = 'ml-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1';
+        badge.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i><span>${text || '클라우드 동기화됨'}</span>`;
+      }
+    }
+
+    async function loadSpotsFromCloud() {
+      const localBackup = JSON.parse(localStorage.getItem('dwe_song_circles') || 'null');
+      if (localBackup) {
+        songSpotsData = { ...songSpotsData, ...localBackup };
+      }
+      if (!SPOTS_SYNC_URL) return;
+
+      try {
+        const res = await fetch(`${SPOTS_SYNC_URL}?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const cloudData = await res.json();
+          if (cloudData && typeof cloudData === 'object' && Object.keys(cloudData).length > 0) {
+            songSpotsData = cloudData;
+            localStorage.setItem('dwe_song_circles', JSON.stringify(songSpotsData));
+            updateSyncBadge('saved', '클라우드 동기화됨');
+          } else if (Object.keys(songSpotsData).length > 0) {
+            // 클라우드가 비어있고 로컬 데이터가 있으면 최초 자동 업로드
+            await saveSpotsToCloud();
+          }
+        }
+      } catch (e) {
+        console.warn('클라우드 동기화 로드 실패 (로컬 데이터 사용):', e);
+        updateSyncBadge('error', '로컬 모드');
+      }
+    }
+
+    async function saveSpotsToCloud() {
+      localStorage.setItem('dwe_song_circles', JSON.stringify(songSpotsData));
+      if (!SPOTS_SYNC_URL) return;
+
+      updateSyncBadge('saving', '클라우드 저장 중...');
+      try {
+        const res = await fetch(SPOTS_SYNC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(songSpotsData)
+        });
+        if (res.ok) {
+          updateSyncBadge('saved', '클라우드 저장 완료');
+        } else {
+          updateSyncBadge('error', '서버 응답 오류');
+        }
+      } catch (e) {
+        console.warn('클라우드 자동 저장 실패:', e);
+        updateSyncBadge('error', '로컬 임시저장됨');
+      }
+    }
+
+    /* ==========================================
+       OCR 워커 초기화 & 우측 상단 카드 번호 판독
+       ========================================== */
+    async function ensureOcrWorker() {
+      if (ocrWorker) return ocrWorker;
+      if (typeof Tesseract === 'undefined') return null;
+      ocrWorker = await Tesseract.createWorker('eng');
+      await ocrWorker.setParameters({
+        tessedit_char_whitelist: '0123456789',
+        tessedit_pageseg_mode: '7' // 단일 텍스트 라인 인식 최적화
+      });
+      return ocrWorker;
+    }
+
+    async function detectCardNumberFromCorner(side, centerXPercent, centerYPercent) {
+      try {
+        const srcCanvas = document.getElementById(`canvas-${side}`);
+        if (!srcCanvas) return '';
+
+        // 찍은 사각형 영역의 우측 상단 모서리 좌표 계산 (카드 너비의 우측 22%, 카드 높이의 상단 35%)
+        const cardLeftPct = centerXPercent - (rectW / 2);
+        const cardTopPct = centerYPercent - (rectH / 2);
+
+        const cornerLeftPct = cardLeftPct + rectW * 0.76;
+        const cornerTopPct = cardTopPct + rectH * 0.02;
+        const cornerWidthPct = rectW * 0.24;
+        const cornerHeightPct = rectH * 0.36;
+
+        const sx = Math.max(0, (cornerLeftPct / 100) * srcCanvas.width);
+        const sy = Math.max(0, (cornerTopPct / 100) * srcCanvas.height);
+        const sw = Math.max(10, (cornerWidthPct / 100) * srcCanvas.width);
+        const sh = Math.max(10, (cornerHeightPct / 100) * srcCanvas.height);
+
+        // 미리보기 캔버스에 잘라낸 부위 표시
+        const previewCanvas = document.getElementById('ocr-preview-canvas');
+        previewCanvas.classList.remove('hidden');
+        const pCtx = previewCanvas.getContext('2d');
+        pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        pCtx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, previewCanvas.width, previewCanvas.height);
+
+        // OCR 인식률 극대화를 위한 3배 확대 및 고대비 이진화 캔버스 생성
+        const procCanvas = document.createElement('canvas');
+        const scale = 3;
+        procCanvas.width = Math.round(sw * scale);
+        procCanvas.height = Math.round(sh * scale);
+        const ctx = procCanvas.getContext('2d');
+        ctx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, procCanvas.width, procCanvas.height);
+
+        // 파란 원 안의 흰색 글씨 또는 밝은 배경의 어두운 글씨 대비 강화
+        const imgData = ctx.getImageData(0, 0, procCanvas.width, procCanvas.height);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          // 밝기(Luminance) 계산: 파란 원(#0055aa)은 어둡게, 흰 숫자는 밝게 분리
+          const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          // 흰 글씨(lum > 165)를 검은 글씨(0)로, 배경을 흰색(255)으로 반전해 Tesseract 인식률 극대화
+          const val = (lum > 165) ? 0 : 255;
+          d[i] = d[i + 1] = d[i + 2] = val;
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        const worker = await ensureOcrWorker();
+        if (!worker) return '';
+        const { data: { text } } = await worker.recognize(procCanvas);
+        const digits = (text || '').replace(/\D/g, '');
+        if (!digits) return '';
+
+        const num = parseInt(digits, 10);
+        if (num >= 1 && num <= 510) {
+          return `v${String(num).padStart(3, '0')}`;
+        }
+        return '';
+      } catch (e) {
+        console.warn('카드 번호 OCR 실패:', e);
+        return '';
+      }
+    }
+
     async function init() {
       try {
+        await loadSpotsFromCloud();
         pdfDoc = await pdfjsLib.getDocument(PDF_URL).promise;
         totalPages = pdfDoc.numPages;
         document.getElementById('total-page-num').textContent = totalPages;
@@ -320,29 +509,79 @@
         a.style.top = `${Math.min(viewRect[1], viewRect[3])}px`;
         a.style.width = `${Math.abs(viewRect[2] - viewRect[0])}px`;
         a.style.height = `${Math.abs(viewRect[3] - viewRect[1])}px`;
-        if (item.url) { a.href = item.url; a.target = '_blank'; }
-        else if (item.dest) {
+
+        if (item.url) {
+          if (/^https?:\/\//i.test(item.url)) {
+            a.href = item.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            linkLayer.appendChild(a);
+          }
+        } else if (item.dest) {
           a.href = 'javascript:void(0)';
           a.onclick = async (e) => { e.preventDefault(); e.stopPropagation(); await navigateToDestination(item.dest); };
+          linkLayer.appendChild(a);
         }
-        linkLayer.appendChild(a);
       });
 
       renderSongCircles(pageNum, songLayerId, floorW, floorH);
     }
 
-    /* ==========================================
-       가상 원형 가이드 (Ghost Circle)
-       ========================================== */
+    function setBrushShape(shape) {
+      currentShape = shape;
+      const btnCircle = document.getElementById('btn-shape-circle');
+      const btnRect = document.getElementById('btn-shape-rect');
+      const circleBox = document.getElementById('circle-size-box');
+      const rectBox = document.getElementById('rect-size-box');
+
+      if (shape === 'circle') {
+        btnCircle.className = 'px-2 py-0.5 rounded bg-pink-600 text-white';
+        btnRect.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
+        circleBox.classList.remove('hidden');
+        rectBox.classList.add('hidden');
+      } else {
+        btnRect.className = 'px-2 py-0.5 rounded bg-pink-600 text-white';
+        btnCircle.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
+        rectBox.classList.remove('hidden');
+        circleBox.classList.add('hidden');
+      }
+    }
+
+    function updateCircleSize(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num >= 1 && num <= 60) circleSize = num;
+    }
+
+    function updateRectW(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num >= 1 && num <= 85) rectW = num;
+    }
+
+    function updateRectH(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num >= 1 && num <= 85) rectH = num;
+    }
+
     function moveGhost(e, side) {
       if (!isSpotEditMode) return;
       const ghost = document.getElementById(`ghost-${side}`);
       if (!ghost) return;
       const rect = e.currentTarget.getBoundingClientRect();
-      const d = Math.round(rect.width * (defaultCircleRadiusPct * 2 / 100));
+
+      let wPx, hPx;
+      if (currentShape === 'circle') {
+        wPx = Math.round(rect.width * (circleSize / 100));
+        hPx = wPx;
+        ghost.className = 'ghost-guide shape-circle';
+      } else {
+        wPx = Math.round(rect.width * (rectW / 100));
+        hPx = Math.round(rect.width * (rectH / 100));
+        ghost.className = 'ghost-guide shape-rect';
+      }
+
       ghost.style.display = 'block';
-      ghost.style.width = `${d}px`;
-      ghost.style.height = `${d}px`;
+      ghost.style.width = `${wPx}px`;
+      ghost.style.height = `${hPx}px`;
       ghost.style.left = `${e.clientX - rect.left}px`;
       ghost.style.top = `${e.clientY - rect.top}px`;
     }
@@ -359,19 +598,34 @@
 
       const list = songSpotsData[String(pageNum)] || [];
       list.forEach((spot, idx) => {
+        const isCircle = (spot.shape || 'circle') === 'circle';
         const btn = document.createElement('div');
-        btn.className = 'song-circle';
-        if (activePlayingTrack === spot.track && !audioEl.paused) btn.classList.add('playing');
+        btn.className = `song-spot ${isCircle ? 'shape-circle' : 'shape-rect'}`;
+        if (String(activePlayingTrack) === String(spot.track) && !audioEl.paused) btn.classList.add('playing');
 
-        const diameterPx = Math.round(pageW * (spot.r * 2 / 100));
+        let wPx, hPx;
+        if (isCircle) {
+          const widthPct = spot.w ? spot.w : (spot.r ? spot.r * 2 : 12.0);
+          wPx = Math.round(pageW * (widthPct / 100));
+          hPx = wPx;
+        } else {
+          const widthPct = spot.w || 24.0;
+          const heightPct = spot.h ? spot.h : (widthPct * 0.58);
+          wPx = Math.round(pageW * (widthPct / 100));
+          hPx = Math.round(pageW * (heightPct / 100));
+        }
+
         btn.style.left = `${spot.x}%`; btn.style.top = `${spot.y}%`;
-        btn.style.width = `${diameterPx}px`; btn.style.height = `${diameterPx}px`;
+        btn.style.width = `${wPx}px`; btn.style.height = `${hPx}px`;
 
         if (isSpotEditMode) {
-          btn.innerHTML = `<span class="text-[10px] font-mono font-black text-blue-900 bg-white/95 px-1.5 rounded-full shadow-xs">${spot.track}</span>`;
+          const isVoca = /^v\d+$/i.test(String(spot.track));
+          const badgeColor = isVoca ? 'text-emerald-800' : 'text-blue-900';
+          btn.innerHTML = `<span class="text-[10px] font-mono font-black ${badgeColor} bg-white/95 px-1.5 rounded-full shadow-xs">${spot.track}</span>`;
         }
 
         btn.onclick = (e) => {
+          e.preventDefault();
           e.stopPropagation();
           if (isSpotEditMode) openSpotModalEdit(pageNum, idx);
           else playOrPauseR2Song(spot.track);
@@ -380,28 +634,75 @@
       });
     }
 
-    /* 검색/선택/삭제 모달 로직 */
-    function openSpotModalNew(e, side) {
+    function getAllAudioItems() {
+      const items = [];
+      if (typeof SONGS_DB !== 'undefined') {
+        Object.entries(SONGS_DB).forEach(([num, fileName]) => {
+          items.push({
+            id: String(num),
+            type: 'song',
+            label: `#${num}`,
+            title: fileName.replace(/\.mp3$/i, '')
+          });
+        });
+      }
+      for (let i = 1; i <= 510; i++) {
+        const padded = String(i).padStart(3, '0');
+        items.push({
+          id: `v${padded}`,
+          type: 'voca',
+          label: `v${padded}`,
+          title: `VOCA 카드 ${padded}번 (${padded}.mp3)`
+        });
+      }
+      return items;
+    }
+
+    async function openSpotModalNew(e, side) {
       if (!isSpotEditMode) return;
       const pageNum = (side === 'left') ? currentLeftPageNum : currentRightPageNum;
       if (!pageNum) return;
       const rect = e.currentTarget.getBoundingClientRect();
+      const xPct = Number((((e.clientX - rect.left) / rect.width) * 100).toFixed(2));
+      const yPct = Number((((e.clientY - rect.top) / rect.height) * 100).toFixed(2));
+
       pendingSpotContext = {
         pageNum,
-        x: Number((((e.clientX - rect.left) / rect.width) * 100).toFixed(2)),
-        y: Number((((e.clientY - rect.top) / rect.height) * 100).toFixed(2)),
+        x: xPct,
+        y: yPct,
         editIndex: null
       };
       document.getElementById('modal-title').textContent = `${pageNum}페이지 - 새 음원 연결`;
       document.getElementById('modal-footer-delete').classList.add('hidden');
+      document.getElementById('ocr-preview-canvas').classList.add('hidden');
+
       showModalWithFilter('');
+
+      // 사각형 모드일 때 우측 상단 카드 번호 자동 OCR 실행
+      if (currentShape === 'rect') {
+        const ocrTag = document.getElementById('ocr-status-tag');
+        ocrTag.classList.remove('hidden');
+        ocrTag.textContent = '카드 번호 읽는 중...';
+
+        const detectedId = await detectCardNumberFromCorner(side, xPct, yPct);
+        ocrTag.classList.add('hidden');
+
+        if (detectedId && pendingSpotContext) {
+          const input = document.getElementById('song-search-input');
+          input.value = detectedId;
+          filterSongList(detectedId);
+          input.select(); // 바로 수정하거나 Enter 누르기 편하게 전체 선택
+        }
+      }
     }
 
     function openSpotModalEdit(pageNum, idx) {
       const spot = songSpotsData[String(pageNum)][idx];
       pendingSpotContext = { pageNum, x: spot.x, y: spot.y, editIndex: idx };
-      document.getElementById('modal-title').textContent = `수정/삭제 (현재: #${spot.track})`;
+      document.getElementById('modal-title').textContent = `수정/삭제 (현재: ${spot.track})`;
       document.getElementById('modal-footer-delete').classList.remove('hidden');
+      document.getElementById('ocr-preview-canvas').classList.add('hidden');
+      document.getElementById('ocr-status-tag').classList.add('hidden');
       showModalWithFilter('');
     }
 
@@ -421,72 +722,88 @@
 
     function filterSongList(query) {
       const container = document.getElementById('song-search-results');
-      if (!container || typeof SONGS_DB === 'undefined') return;
+      if (!container) return;
       const rawQ = String(query || '').trim().toLowerCase();
       const compactQ = rawQ.replace(/\s+/g, '');
       container.innerHTML = '';
 
+      const allItems = getAllAudioItems();
       let matchCount = 0;
-      Object.entries(SONGS_DB).forEach(([num, fileName]) => {
-        const cleanTitle = fileName.replace(/\.mp3$/i, '');
-        const lowerTitle = cleanTitle.toLowerCase();
+
+      for (const item of allItems) {
+        const lowerId = item.id.toLowerCase();
+        const lowerTitle = item.title.toLowerCase();
         const compactTitle = lowerTitle.replace(/\s+/g, '');
 
         const isMatch = !rawQ
-          || num === rawQ
-          || num.includes(rawQ)
+          || lowerId === rawQ
+          || lowerId.includes(rawQ)
           || lowerTitle.includes(rawQ)
           || compactTitle.includes(compactQ);
 
         if (isMatch) {
           matchCount++;
-          const item = document.createElement('button');
-          item.type = 'button';
-          item.className = 'w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center gap-2 transition';
-          item.dataset.track = num;
-          item.innerHTML = `<span class="font-mono font-black text-blue-600 w-8 shrink-0">#${num}</span><span class="truncate text-slate-700 font-medium">${cleanTitle}</span>`;
-          item.onclick = () => assignSongToSpot(Number(num));
-          container.appendChild(item);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center gap-2 transition';
+          btn.dataset.track = item.id;
+
+          const badge = item.type === 'voca'
+            ? `<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-mono font-black text-[10px] shrink-0">${item.label}</span>`
+            : `<span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-mono font-black text-[10px] shrink-0">${item.label}</span>`;
+
+          btn.innerHTML = `${badge}<span class="truncate text-slate-700 font-medium">${item.title}</span>`;
+          btn.onclick = () => assignSongToSpot(item.id);
+          container.appendChild(btn);
+
+          if (matchCount >= 60) break;
         }
-      });
+      }
 
       if (matchCount === 0) {
-        container.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">일치하는 곡이 없습니다.</div>`;
+        container.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">일치하는 음원이 없습니다.</div>`;
       }
     }
 
     function selectFirstFilteredSong() {
       const first = document.querySelector('#song-search-results button');
-      if (first) assignSongToSpot(Number(first.dataset.track));
+      if (first) assignSongToSpot(first.dataset.track);
     }
 
-    function assignSongToSpot(trackNum) {
+    function assignSongToSpot(trackId) {
       if (!pendingSpotContext) return;
       const key = String(pendingSpotContext.pageNum);
       if (!songSpotsData[key]) songSpotsData[key] = [];
 
+      const normalizedTrack = /^v\d+$/i.test(String(trackId)) ? String(trackId).toLowerCase() : Number(trackId);
+
       if (pendingSpotContext.editIndex !== null) {
-        songSpotsData[key][pendingSpotContext.editIndex].track = trackNum;
+        songSpotsData[key][pendingSpotContext.editIndex].track = normalizedTrack;
       } else {
-        songSpotsData[key].push({
-          track: trackNum,
+        const newSpot = {
+          track: normalizedTrack,
           x: pendingSpotContext.x,
           y: pendingSpotContext.y,
-          r: defaultCircleRadiusPct
-        });
+          shape: currentShape,
+          w: (currentShape === 'circle') ? circleSize : rectW
+        };
+        if (currentShape === 'rect') {
+          newSpot.h = rectH;
+        }
+        songSpotsData[key].push(newSpot);
       }
-      localStorage.setItem('dwe_song_circles', JSON.stringify(songSpotsData));
       closeSongModal();
       refreshAllSongLayers();
+      saveSpotsToCloud(); // 즉시 클라우드 자동 저장
     }
 
     function deleteCurrentSpot() {
       if (!pendingSpotContext || pendingSpotContext.editIndex === null) return;
       const key = String(pendingSpotContext.pageNum);
       songSpotsData[key].splice(pendingSpotContext.editIndex, 1);
-      localStorage.setItem('dwe_song_circles', JSON.stringify(songSpotsData));
       closeSongModal();
       refreshAllSongLayers();
+      saveSpotsToCloud(); // 삭제 즉시 클라우드 자동 저장
     }
 
     function toggleSpotEditMode() {
@@ -501,23 +818,13 @@
         ? 'px-2.5 py-1 rounded-lg bg-pink-600 text-white border border-pink-600 text-xs font-bold transition'
         : 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition';
 
-      if (!isSpotEditMode) {
+      if (isSpotEditMode) {
+        ensureOcrWorker(); // 편집 모드 켜는 순간 백그라운드에서 OCR 엔진 미리 준비
+      } else {
         hideGhost('left');
         hideGhost('right');
       }
       refreshAllSongLayers();
-    }
-
-    function changeDefaultRadius(delta) {
-      defaultCircleRadiusPct = Math.max(1.5, Math.min(12.0, Number((defaultCircleRadiusPct + delta).toFixed(1))));
-      document.getElementById('radius-display').textContent = `${defaultCircleRadiusPct}%`;
-    }
-
-    function copySpotsJSON() {
-      const jsonStr = JSON.stringify(songSpotsData);
-      navigator.clipboard.writeText(jsonStr).then(() => {
-        alert('좌표 데이터가 클립보드에 복사되었습니다!\n나중에 songs-data.js의 DEFAULT_SONG_SPOTS에 붙여넣으시면 영구 보존됩니다.');
-      });
     }
 
     function refreshAllSongLayers() {
@@ -527,27 +834,37 @@
       if (currentRightPageNum) renderSongCircles(currentRightPageNum, 'songs-right', parseInt(rightC.style.width), parseInt(rightC.style.height));
     }
 
-    /* 백그라운드 재생 및 재클릭 일시정지(Pause) 토글 */
-    function playOrPauseR2Song(trackNum) {
-      const fileName = SONGS_DB[trackNum];
-      if (!fileName) return;
+    function playOrPauseR2Song(trackId) {
+      const idStr = String(trackId);
+      let targetUrl = '';
 
-      if (activePlayingTrack === trackNum && audioEl.src) {
+      if (/^v\d+$/i.test(idStr)) {
+        const numPart = idStr.slice(1).padStart(3, '0');
+        const audioBase = (typeof R2_AUDIO_BASE !== 'undefined')
+          ? R2_AUDIO_BASE
+          : R2_SONGS_BASE.replace(/\/songs\/?$/, '/audio');
+        targetUrl = `${audioBase}/${numPart}.mp3`;
+      } else {
+        const fileName = SONGS_DB[Number(idStr)];
+        if (!fileName) return;
+        targetUrl = `${R2_SONGS_BASE}/${encodeURIComponent(fileName)}`;
+      }
+
+      if (String(activePlayingTrack) === idStr && audioEl.src) {
         if (audioEl.paused) audioEl.play();
         else audioEl.pause();
         refreshAllSongLayers();
         return;
       }
 
-      activePlayingTrack = trackNum;
-      audioEl.src = `${R2_SONGS_BASE}/${encodeURIComponent(fileName)}`;
+      activePlayingTrack = idStr;
+      audioEl.src = targetUrl;
       audioEl.play().catch(err => console.warn('오디오 재생 오류:', err));
       refreshAllSongLayers();
     }
 
     audioEl.addEventListener('ended', () => { refreshAllSongLayers(); });
 
-    /* 페이지 탐색 & 전체화면 */
     async function navigateToDestination(dest) {
       try {
         const destArray = (typeof dest === 'string') ? await pdfDoc.getDestination(dest) : dest;
