@@ -29,7 +29,6 @@
       background: transparent !important; outline: none !important;
       -webkit-tap-highlight-color: transparent !important; -webkit-touch-callout: none !important;
     }
-    /* 음원 ON 모드이거나 편집 모드일 때는 하이퍼링크 클릭 비활성화 */
     .audio-priority .link-layer a,
     .edit-active .link-layer a {
       pointer-events: none !important;
@@ -60,7 +59,6 @@
     .song-spot.shape-circle { border-radius: 9999px; }
     .song-spot.shape-rect { border-radius: 10px; }
 
-    /* 음원 OFF(하이퍼링크 우선) 모드일 때 음원 버튼은 터치 투과 */
     .link-priority .song-spot {
       pointer-events: none;
     }
@@ -122,15 +120,18 @@
 
         <div id="rect-size-box" class="hidden flex items-center gap-1">
           <span class="text-[11px] font-bold text-pink-800">가로</span>
-          <input type="number" id="rect-w-input" step="0.5" min="1" max="85" value="24"
+          <input type="number" id="rect-w-input" step="0.5" min="1" max="85" value="26"
                  onchange="updateRectW(this.value)"
                  oninput="updateRectW(this.value)"
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
           <span class="text-[11px] font-bold text-pink-800 ml-0.5">세로</span>
-          <input type="number" id="rect-h-input" step="0.5" min="1" max="85" value="11"
+          <input type="number" id="rect-h-input" step="0.5" min="1" max="85" value="12"
                  onchange="updateRectH(this.value)"
                  oninput="updateRectH(this.value)"
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+          <!-- 큰네모(26/12) & 작은네모(19.5/9) 원클릭 프리셋 -->
+          <button type="button" onclick="applyRectPreset(26, 12)" title="큰네모 (26 / 12)" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">대</button>
+          <button type="button" onclick="applyRectPreset(19.5, 9)" title="작은네모 (19.5 / 9)" class="px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">소</button>
         </div>
 
         <span id="sync-status-badge" class="ml-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1">
@@ -219,7 +220,8 @@
                  onkeyup="filterSongList(this.value)"
                  onkeydown="if(event.key==='Enter') selectFirstFilteredSong()"
                  class="flex-1 px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500">
-          <canvas id="ocr-preview-canvas" width="52" height="40" title="인식한 우측 상단 영역" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
+          <!-- 1:1 정사각형 고해상도 크롭 미리보기 -->
+          <canvas id="ocr-preview-canvas" width="44" height="44" title="인식한 우측 상단 파란 원" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
         </div>
         <div id="song-search-results" class="max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
       </div>
@@ -262,14 +264,12 @@
     let pdfDoc = null, currentPage = 1, totalPages = 1;
     let isSpreadMode = true, hasCoverPage = true, isRendering = false;
     let isFullscreenMode = false, isSpotEditMode = false;
-
-    // 목차(하이퍼링크+음원 공존 페이지) 음원 ON/OFF 상태: false = 음원 OFF(하이퍼링크 우선), true = 음원 ON
     let tocAudioMode = false;
 
     let currentShape = 'circle';
     let circleSize = 12.0;
-    let rectW = 24.0;
-    let rectH = 11.0;
+    let rectW = 26.0; // 큰네모 기본 가로 26
+    let rectH = 12.0; // 큰네모 기본 세로 12 (작은네모: 19.5 / 9)
 
     let currentLeftPageNum = null, currentRightPageNum = null;
     let activePlayingSpotKey = null;
@@ -371,7 +371,7 @@
     }
 
     /* ==========================================
-       다중 임계값 고배율 OCR (카드 우측 상단 1~510 -> v001~v510)
+       초고해상도 원본 PDF 크롭 + 1:1 정사각형 파란원 OCR
        ========================================== */
     async function ensureOcrWorker() {
       if (ocrWorker) return ocrWorker;
@@ -379,62 +379,72 @@
       ocrWorker = await Tesseract.createWorker('eng');
       await ocrWorker.setParameters({
         tessedit_char_whitelist: '0123456789',
-        tessedit_pageseg_mode: '6'
+        tessedit_pageseg_mode: '7'
       });
       return ocrWorker;
     }
 
-    async function detectCardNumberFromCorner(side, centerXPercent, centerYPercent) {
+    async function detectCardNumberFromCorner(pageNum, centerXPercent, centerYPercent) {
       try {
-        const srcCanvas = document.getElementById(`canvas-${side}`);
-        if (!srcCanvas) return '';
+        if (!pdfDoc) return '';
+        const page = await pdfDoc.getPage(pageNum);
+        // 화면 축소 캔버스가 아닌 원본 PDF를 3.5배 고해상도로 직접 렌더링
+        const hiViewport = page.getViewport({ scale: 3.5 });
+        const hiCanvas = document.createElement('canvas');
+        hiCanvas.width = Math.floor(hiViewport.width);
+        hiCanvas.height = Math.floor(hiViewport.height);
+        const hiCtx = hiCanvas.getContext('2d');
+        await page.render({ canvasContext: hiCtx, viewport: hiViewport }).promise;
 
-        const pageAspect = srcCanvas.width / srcCanvas.height;
-        const rectHeightPctOfPageH = rectH * pageAspect;
+        // 렌더링된 카드의 실제 픽셀 위치 및 크기 계산
+        // (centerXPercent는 페이지 가로 %, centerYPercent는 페이지 세로 %, rectW와 rectH는 모두 페이지 가로 기준 %)
+        const cardCenterX = (centerXPercent / 100) * hiCanvas.width;
+        const cardCenterY = (centerYPercent / 100) * hiCanvas.height;
+        const cardWidthPx = (rectW / 100) * hiCanvas.width;
+        const cardHeightPx = (rectH / 100) * hiCanvas.width;
 
-        const cardLeftPct = centerXPercent - (rectW / 2);
-        const cardTopPct = centerYPercent - (rectHeightPctOfPageH / 2);
+        const cardRightX = cardCenterX + (cardWidthPx / 2);
+        const cardTopY = cardCenterY - (cardHeightPx / 2);
 
-        // 우측 상단 모서리 부위를 여유 있게 크롭 (가로 우측 36%, 세로 상단 48%)
-        const cornerLeftPct = cardLeftPct + rectW * 0.64;
-        const cornerTopPct = cardTopPct;
-        const cornerWidthPct = rectW * 0.36;
-        const cornerHeightPct = rectHeightPctOfPageH * 0.48;
+        // 큰네모(26/12)와 작은네모(19.5/9) 모두 우측 상단 파란 원의 절대 크기가 동일함
+        // 페이지 가로 폭 기준 약 3.6% 크기의 1:1 정사각형으로 우측 상단 모서리 안쪽 크롭
+        const badgeBoxPx = Math.round(hiCanvas.width * 0.036);
+        const marginRightPx = Math.round(hiCanvas.width * 0.002);
+        const marginTopPx = Math.round(hiCanvas.width * 0.002);
 
-        const sx = Math.max(0, (cornerLeftPct / 100) * srcCanvas.width);
-        const sy = Math.max(0, (cornerTopPct / 100) * srcCanvas.height);
-        const sw = Math.max(14, (cornerWidthPct / 100) * srcCanvas.width);
-        const sh = Math.max(14, (cornerHeightPct / 100) * srcCanvas.height);
+        const sx = Math.max(0, Math.round(cardRightX - badgeBoxPx - marginRightPx));
+        const sy = Math.max(0, Math.round(cardTopY + marginTopPx));
+        const sw = Math.min(hiCanvas.width - sx, badgeBoxPx);
+        const sh = Math.min(hiCanvas.height - sy, badgeBoxPx);
 
+        // 1:1 정사각형 미리보기 캔버스에 선명하게 출력
         const previewCanvas = document.getElementById('ocr-preview-canvas');
         previewCanvas.classList.remove('hidden');
         const pCtx = previewCanvas.getContext('2d');
         pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-        pCtx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, previewCanvas.width, previewCanvas.height);
+        pCtx.drawImage(hiCanvas, sx, sy, sw, sh, 0, 0, previewCanvas.width, previewCanvas.height);
 
         const worker = await ensureOcrWorker();
         if (!worker) return '';
 
-        // 6배 확대 캔버스 준비
-        const scale = 6;
+        const scale = 4;
         const pad = 24;
         const procCanvas = document.createElement('canvas');
         procCanvas.width = Math.round(sw * scale) + pad * 2;
         procCanvas.height = Math.round(sh * scale) + pad * 2;
         const ctx = procCanvas.getContext('2d');
 
-        // 3단계 밝기 임계값으로 순차 판독 (하나라도 1~510 숫자가 잡히면 즉시 성공)
-        const thresholds = [165, 135, 195];
+        // 파란 배경(B가 R,G보다 높음)과 흰 글씨(R,G,B 모두 높음)를 정확히 분리
+        const thresholds = [165, 140, 190];
         for (const thresh of thresholds) {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, procCanvas.width, procCanvas.height);
-          ctx.drawImage(srcCanvas, sx, sy, sw, sh, pad, pad, Math.round(sw * scale), Math.round(sh * scale));
+          ctx.drawImage(hiCanvas, sx, sy, sw, sh, pad, pad, Math.round(sw * scale), Math.round(sh * scale));
 
           const imgData = ctx.getImageData(pad, pad, Math.round(sw * scale), Math.round(sh * scale));
           const d = imgData.data;
           for (let i = 0; i < d.length; i += 4) {
             const r = d[i], g = d[i + 1], b = d[i + 2];
-            // 파란 원(B가 높고 R,G 낮음) 내부의 밝은 흰색 숫자만 검은 글씨(0)로 변환
             const isWhiteDigit = (r > thresh && g > thresh && b > thresh);
             const val = isWhiteDigit ? 0 : 255;
             d[i] = d[i + 1] = d[i + 2] = val;
@@ -442,13 +452,11 @@
           ctx.putImageData(imgData, pad, pad);
 
           const { data: { text } } = await worker.recognize(procCanvas);
-          const matches = (text || '').match(/\d{1,3}/g);
-          if (matches && matches.length > 0) {
-            for (const m of matches) {
-              const num = parseInt(m, 10);
-              if (num >= 1 && num <= 510) {
-                return `v${String(num).padStart(3, '0')}`;
-              }
+          const digits = (text || '').replace(/\D/g, '');
+          if (digits) {
+            const num = parseInt(digits, 10);
+            if (num >= 1 && num <= 510) {
+              return `v${String(num).padStart(3, '0')}`;
             }
           }
         }
@@ -501,8 +509,6 @@
 
         currentLeftPageNum = leftPageNum;
         currentRightPageNum = rightPageNum;
-
-        // 페이지 이동 시 기본값은 음원 OFF (하이퍼링크 우선)
         tocAudioMode = false;
 
         const samplePage = await pdfDoc.getPage(leftPageNum || rightPageNum || 1);
@@ -597,9 +603,6 @@
       return hasValidLinks && hasSpots;
     }
 
-    /* ==========================================
-       목차(하이퍼링크+음원 공존 페이지) 음원 ON/OFF 토글
-       ========================================== */
     function updateTocModeUI(hasConflict) {
       const toggleBtn = document.getElementById('btn-toc-mode-toggle');
       const spread = document.getElementById('book-spread');
@@ -647,6 +650,13 @@
         rectBox.classList.remove('hidden');
         circleBox.classList.add('hidden');
       }
+    }
+
+    function applyRectPreset(w, h) {
+      rectW = w;
+      rectH = h;
+      document.getElementById('rect-w-input').value = w;
+      document.getElementById('rect-h-input').value = h;
     }
 
     function updateCircleSize(val) {
@@ -715,8 +725,8 @@
           wPx = Math.round(pageW * (widthPct / 100));
           hPx = wPx;
         } else {
-          const widthPct = spot.w || 24.0;
-          const heightPct = spot.h ? spot.h : (widthPct * 0.58);
+          const widthPct = spot.w || 26.0;
+          const heightPct = spot.h ? spot.h : (widthPct * 0.46);
           wPx = Math.round(pageW * (widthPct / 100));
           hPx = Math.round(pageW * (heightPct / 100));
         }
@@ -789,7 +799,7 @@
         ocrTag.classList.remove('hidden');
         ocrTag.textContent = '카드 번호 읽는 중...';
 
-        const detectedId = await detectCardNumberFromCorner(side, xPct, yPct);
+        const detectedId = await detectCardNumberFromCorner(pageNum, xPct, yPct);
         ocrTag.classList.add('hidden');
 
         if (detectedId && pendingSpotContext) {
