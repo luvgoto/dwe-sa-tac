@@ -22,14 +22,14 @@
     .book-spine-left { box-shadow: inset -8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
     .book-spine-right { box-shadow: inset 8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
 
-    /* PDF 내부 하이퍼링크 (z-index를 모드에 따라 동적 제어) */
+    /* PDF 내부 하이퍼링크 */
     .link-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 25; pointer-events: none; }
     .link-layer a {
       position: absolute; display: block; pointer-events: auto; cursor: pointer;
       background: transparent !important; outline: none !important;
       -webkit-tap-highlight-color: transparent !important; -webkit-touch-callout: none !important;
     }
-    /* 음원 듣기 모드이거나 편집 모드일 때는 하이퍼링크 클릭 일시 양보 */
+    /* 음원 ON 모드이거나 편집 모드일 때는 하이퍼링크 클릭 비활성화 */
     .audio-priority .link-layer a,
     .edit-active .link-layer a {
       pointer-events: none !important;
@@ -60,7 +60,7 @@
     .song-spot.shape-circle { border-radius: 9999px; }
     .song-spot.shape-rect { border-radius: 10px; }
 
-    /* 하이퍼링크 우선(목차 이동) 모드일 때 음원 버튼은 하이퍼링크 뒤로 물러남 */
+    /* 음원 OFF(하이퍼링크 우선) 모드일 때 음원 버튼은 터치 투과 */
     .link-priority .song-spot {
       pointer-events: none;
     }
@@ -100,9 +100,9 @@
     </div>
 
     <div class="flex items-center gap-1.5 sm:gap-2">
-      <!-- 목차 등 하이퍼링크+음원 공존 페이지 전용 토글 (자동 표시) -->
-      <button id="btn-toc-mode-toggle" onclick="toggleTocInteractionMode()" class="hidden px-2.5 py-1 rounded-lg bg-amber-500 text-white border border-amber-600 text-xs font-bold shadow-xs transition">
-        <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i><span>목차이동 중</span>
+      <!-- 하이퍼링크+음원 공존 페이지 전용 음원 ON/OFF 토글 -->
+      <button id="btn-toc-mode-toggle" onclick="toggleTocInteractionMode()" class="hidden px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition">
+        <i class="fa-solid fa-volume-xmark mr-1"></i><span>음원 OFF</span>
       </button>
 
       <!-- 편집 모드 전용 도구 -->
@@ -219,7 +219,7 @@
                  onkeyup="filterSongList(this.value)"
                  onkeydown="if(event.key==='Enter') selectFirstFilteredSong()"
                  class="flex-1 px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500">
-          <canvas id="ocr-preview-canvas" width="44" height="36" title="인식한 우측 상단 영역" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
+          <canvas id="ocr-preview-canvas" width="52" height="40" title="인식한 우측 상단 영역" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
         </div>
         <div id="song-search-results" class="max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
       </div>
@@ -263,7 +263,7 @@
     let isSpreadMode = true, hasCoverPage = true, isRendering = false;
     let isFullscreenMode = false, isSpotEditMode = false;
 
-    // 목차(하이퍼링크+음원 공존 페이지) 상호작용 모드: false = 하이퍼링크 우선, true = 음원 재생 우선
+    // 목차(하이퍼링크+음원 공존 페이지) 음원 ON/OFF 상태: false = 음원 OFF(하이퍼링크 우선), true = 음원 ON
     let tocAudioMode = false;
 
     let currentShape = 'circle';
@@ -272,14 +272,11 @@
     let rectH = 11.0;
 
     let currentLeftPageNum = null, currentRightPageNum = null;
-    // 개별 카드 단위 재생 표시용 고유 키 ("페이지번호-인덱스", 예: "14-2")
     let activePlayingSpotKey = null;
     let pendingSpotContext = null;
     let ocrWorker = null;
 
-    // 선로딩 완료 URL 캐시 (중복 요청 방지)
     const preloadedAudioUrls = new Set();
-
     const audioEl = document.getElementById('r2-audio');
 
     function getAudioUrlForTrack(trackId) {
@@ -297,9 +294,6 @@
       }
     }
 
-    /* ==========================================
-       현재 페이지 음원 백그라운드 선로딩 (Preload)
-       ========================================== */
     function preloadPageTracks(pageNum) {
       if (!pageNum) return;
       const list = songSpotsData[String(pageNum)] || [];
@@ -314,9 +308,6 @@
       });
     }
 
-    /* ==========================================
-       클라우드(R2) 실시간 불러오기 & 자동 저장
-       ========================================== */
     function updateSyncBadge(state, text) {
       const badge = document.getElementById('sync-status-badge');
       if (!badge) return;
@@ -380,7 +371,7 @@
     }
 
     /* ==========================================
-       정밀 OCR: 파란 원 안 흰색 숫자(1~510) -> v001~v510
+       다중 임계값 고배율 OCR (카드 우측 상단 1~510 -> v001~v510)
        ========================================== */
     async function ensureOcrWorker() {
       if (ocrWorker) return ocrWorker;
@@ -388,7 +379,7 @@
       ocrWorker = await Tesseract.createWorker('eng');
       await ocrWorker.setParameters({
         tessedit_char_whitelist: '0123456789',
-        tessedit_pageseg_mode: '7'
+        tessedit_pageseg_mode: '6'
       });
       return ocrWorker;
     }
@@ -398,65 +389,68 @@
         const srcCanvas = document.getElementById(`canvas-${side}`);
         if (!srcCanvas) return '';
 
-        // 캔버스의 실제 가로/세로 비율 보정 (rectW, rectH는 둘 다 페이지 가로 폭 기준 %)
         const pageAspect = srcCanvas.width / srcCanvas.height;
         const rectHeightPctOfPageH = rectH * pageAspect;
 
         const cardLeftPct = centerXPercent - (rectW / 2);
         const cardTopPct = centerYPercent - (rectHeightPctOfPageH / 2);
 
-        // 카드의 우측 상단 모서리 영역 (가로 우측 26%, 세로 상단 38%)
-        const cornerLeftPct = cardLeftPct + rectW * 0.74;
-        const cornerTopPct = cardTopPct + rectHeightPctOfPageH * 0.02;
-        const cornerWidthPct = rectW * 0.26;
-        const cornerHeightPct = rectHeightPctOfPageH * 0.38;
+        // 우측 상단 모서리 부위를 여유 있게 크롭 (가로 우측 36%, 세로 상단 48%)
+        const cornerLeftPct = cardLeftPct + rectW * 0.64;
+        const cornerTopPct = cardTopPct;
+        const cornerWidthPct = rectW * 0.36;
+        const cornerHeightPct = rectHeightPctOfPageH * 0.48;
 
         const sx = Math.max(0, (cornerLeftPct / 100) * srcCanvas.width);
         const sy = Math.max(0, (cornerTopPct / 100) * srcCanvas.height);
-        const sw = Math.max(12, (cornerWidthPct / 100) * srcCanvas.width);
-        const sh = Math.max(12, (cornerHeightPct / 100) * srcCanvas.height);
+        const sw = Math.max(14, (cornerWidthPct / 100) * srcCanvas.width);
+        const sh = Math.max(14, (cornerHeightPct / 100) * srcCanvas.height);
 
-        // 미리보기 캔버스 표시
         const previewCanvas = document.getElementById('ocr-preview-canvas');
         previewCanvas.classList.remove('hidden');
         const pCtx = previewCanvas.getContext('2d');
         pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
         pCtx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, previewCanvas.width, previewCanvas.height);
 
-        // 4배 확대 + 여백 패딩(Tesseract 인식률 대폭 향상)
-        const scale = 4;
-        const pad = 16;
+        const worker = await ensureOcrWorker();
+        if (!worker) return '';
+
+        // 6배 확대 캔버스 준비
+        const scale = 6;
+        const pad = 24;
         const procCanvas = document.createElement('canvas');
         procCanvas.width = Math.round(sw * scale) + pad * 2;
         procCanvas.height = Math.round(sh * scale) + pad * 2;
         const ctx = procCanvas.getContext('2d');
 
-        // 전체 배경을 흰색으로 채움
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, procCanvas.width, procCanvas.height);
-        ctx.drawImage(srcCanvas, sx, sy, sw, sh, pad, pad, Math.round(sw * scale), Math.round(sh * scale));
+        // 3단계 밝기 임계값으로 순차 판독 (하나라도 1~510 숫자가 잡히면 즉시 성공)
+        const thresholds = [165, 135, 195];
+        for (const thresh of thresholds) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, procCanvas.width, procCanvas.height);
+          ctx.drawImage(srcCanvas, sx, sy, sw, sh, pad, pad, Math.round(sw * scale), Math.round(sh * scale));
 
-        // 파란 동그라미 안의 흰 숫자(R, G, B 모두 높음)만 검은 글씨(0)로 추출
-        const imgData = ctx.getImageData(pad, pad, Math.round(sw * scale), Math.round(sh * scale));
-        const d = imgData.data;
-        for (let i = 0; i < d.length; i += 4) {
-          const r = d[i], g = d[i + 1], b = d[i + 2];
-          // 파란 배경은 B가 높고 R, G가 낮음. 흰색 숫자는 R, G, B 모두 175 이상
-          const isWhiteDigit = (r > 170 && g > 170 && b > 170);
-          const val = isWhiteDigit ? 0 : 255;
-          d[i] = d[i + 1] = d[i + 2] = val;
-        }
-        ctx.putImageData(imgData, pad, pad);
+          const imgData = ctx.getImageData(pad, pad, Math.round(sw * scale), Math.round(sh * scale));
+          const d = imgData.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const r = d[i], g = d[i + 1], b = d[i + 2];
+            // 파란 원(B가 높고 R,G 낮음) 내부의 밝은 흰색 숫자만 검은 글씨(0)로 변환
+            const isWhiteDigit = (r > thresh && g > thresh && b > thresh);
+            const val = isWhiteDigit ? 0 : 255;
+            d[i] = d[i + 1] = d[i + 2] = val;
+          }
+          ctx.putImageData(imgData, pad, pad);
 
-        const worker = await ensureOcrWorker();
-        if (!worker) return '';
-        const { data: { text } } = await worker.recognize(procCanvas);
-        const digits = (text || '').replace(/\D/g, '');
-        if (!digits) return '';
-
-        const num = parseInt(digits, 10);
-        if (num >= 1 && num <= 510) {
-          return `v${String(num).padStart(3, '0')}`;
+          const { data: { text } } = await worker.recognize(procCanvas);
+          const matches = (text || '').match(/\d{1,3}/g);
+          if (matches && matches.length > 0) {
+            for (const m of matches) {
+              const num = parseInt(m, 10);
+              if (num >= 1 && num <= 510) {
+                return `v${String(num).padStart(3, '0')}`;
+              }
+            }
+          }
         }
         return '';
       } catch (e) {
@@ -508,7 +502,7 @@
         currentLeftPageNum = leftPageNum;
         currentRightPageNum = rightPageNum;
 
-        // 페이지 이동 시 목차 상호작용 모드는 기본값(하이퍼링크 우선)으로 초기화
+        // 페이지 이동 시 기본값은 음원 OFF (하이퍼링크 우선)
         tocAudioMode = false;
 
         const samplePage = await pdfDoc.getPage(leftPageNum || rightPageNum || 1);
@@ -604,7 +598,7 @@
     }
 
     /* ==========================================
-       목차(하이퍼링크+음원 공존 페이지) 토글 UI 제어
+       목차(하이퍼링크+음원 공존 페이지) 음원 ON/OFF 토글
        ========================================== */
     function updateTocModeUI(hasConflict) {
       const toggleBtn = document.getElementById('btn-toc-mode-toggle');
@@ -621,12 +615,12 @@
         spread.classList.remove('link-priority');
         spread.classList.add('audio-priority');
         toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-blue-600 text-white border border-blue-700 text-xs font-bold shadow-xs transition';
-        toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high mr-1"></i><span>음원듣기 중</span>`;
+        toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high mr-1"></i><span>음원 ON</span>`;
       } else {
         spread.classList.remove('audio-priority');
         spread.classList.add('link-priority');
-        toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-amber-500 text-white border border-amber-600 text-xs font-bold shadow-xs transition';
-        toggleBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square mr-1"></i><span>목차이동 중</span>`;
+        toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition';
+        toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark mr-1"></i><span>음원 OFF</span>`;
       }
     }
 
@@ -711,7 +705,6 @@
         const btn = document.createElement('div');
         btn.className = `song-spot ${isCircle ? 'shape-circle' : 'shape-rect'}`;
 
-        // 오직 방금 클릭한 개별 카드(pageNum-idx)만 재생 중 표시
         if (activePlayingSpotKey === spotKey && !audioEl.paused) {
           btn.classList.add('playing');
         }
