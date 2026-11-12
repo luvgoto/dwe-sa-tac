@@ -29,7 +29,8 @@
       background: transparent !important; outline: none !important;
       -webkit-tap-highlight-color: transparent !important; -webkit-touch-callout: none !important;
     }
-    .audio-priority .link-layer a,
+    /* 목차 페이지에서 '음원 ON' 상태이거나 편집 모드일 때만 하이퍼링크 비활성화 */
+    .toc-audio-on .link-layer a,
     .edit-active .link-layer a {
       pointer-events: none !important;
     }
@@ -59,7 +60,8 @@
     .song-spot.shape-circle { border-radius: 9999px; }
     .song-spot.shape-rect { border-radius: 10px; }
 
-    .link-priority .song-spot {
+    /* 지정된 목차 페이지에서 '음원 OFF' 상태일 때만 음원 버튼 터치 투과 (하이퍼링크 우선) */
+    .toc-audio-off .song-spot {
       pointer-events: none;
     }
 
@@ -69,9 +71,18 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.45);
       animation: pulseRing 1.8s infinite;
     }
+    .song-spot.playing-voca {
+      background-color: rgba(16, 185, 129, 0.16);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.55);
+      animation: pulseVoca 1.5s infinite;
+    }
     @keyframes pulseRing {
       0%, 100% { box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5); }
       50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15); }
+    }
+    @keyframes pulseVoca {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.6); }
+      50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.15); }
     }
     .edit-active .song-spot {
       background-color: rgba(37, 99, 235, 0.28);
@@ -98,7 +109,7 @@
     </div>
 
     <div class="flex items-center gap-1.5 sm:gap-2">
-      <!-- 하이퍼링크+음원 공존 페이지 전용 음원 ON/OFF 토글 -->
+      <!-- 지정 목차 페이지(4-6, 74-76, 142-143, 216-217) 전용 음원 ON/OFF 토글 -->
       <button id="btn-toc-mode-toggle" onclick="toggleTocInteractionMode()" class="hidden px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition">
         <i class="fa-solid fa-volume-xmark mr-1"></i><span>음원 OFF</span>
       </button>
@@ -129,7 +140,6 @@
                  onchange="updateRectH(this.value)"
                  oninput="updateRectH(this.value)"
                  class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
-          <!-- 큰네모(26/12) & 작은네모(19.5/9) 원클릭 프리셋 -->
           <button type="button" onclick="applyRectPreset(26, 12)" title="큰네모 (26 / 12)" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">대</button>
           <button type="button" onclick="applyRectPreset(19.5, 9)" title="작은네모 (19.5 / 9)" class="px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">소</button>
         </div>
@@ -170,7 +180,13 @@
       <p class="text-xs font-bold">송북 문서 및 클라우드 데이터를 불러오고 있습니다...</p>
     </div>
 
+    <!-- 책 바로 양옆에 밀착된 좌/우 페이지 넘김 버튼 + 펼쳐진 책 -->
     <div id="book-spread" class="hidden flex items-center justify-center">
+      <!-- 왼쪽 페이지 바로 옆 이전 버튼 -->
+      <button onclick="prevPage()" title="이전 페이지" class="mr-1.5 sm:mr-2.5 w-8 sm:w-9 h-14 rounded-xl bg-white/90 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center shrink-0 z-30 active:scale-90 transition">
+        <i class="fa-solid fa-chevron-left text-xs sm:text-sm"></i>
+      </button>
+
       <!-- 왼쪽 페이지 -->
       <div id="left-page-box" class="page-wrapper rounded-l-md overflow-hidden">
         <canvas id="canvas-left" class="block"></canvas>
@@ -192,15 +208,12 @@
              onclick="openSpotModalNew(event, 'right')"></div>
         <div id="ghost-right" class="ghost-guide shape-circle"></div>
       </div>
-    </div>
 
-    <!-- 좌우 넘김 버튼 -->
-    <button onclick="prevPage()" class="fixed left-3 top-1/2 -translate-y-1/2 w-10 h-14 rounded-2xl bg-white/85 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center z-30 active:scale-90 transition">
-      <i class="fa-solid fa-chevron-left text-sm"></i>
-    </button>
-    <button onclick="nextPage()" class="fixed right-3 top-1/2 -translate-y-1/2 w-10 h-14 rounded-2xl bg-white/85 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center z-30 active:scale-90 transition">
-      <i class="fa-solid fa-chevron-right text-sm"></i>
-    </button>
+      <!-- 오른쪽 페이지 바로 옆 다음 버튼 -->
+      <button onclick="nextPage()" title="다음 페이지" class="ml-1.5 sm:ml-2.5 w-8 sm:w-9 h-14 rounded-xl bg-white/90 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center shrink-0 z-30 active:scale-90 transition">
+        <i class="fa-solid fa-chevron-right text-xs sm:text-sm"></i>
+      </button>
+    </div>
   </main>
 
   <!-- 음원 검색 및 선택/삭제 모달 -->
@@ -220,7 +233,6 @@
                  onkeyup="filterSongList(this.value)"
                  onkeydown="if(event.key==='Enter') selectFirstFilteredSong()"
                  class="flex-1 px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500">
-          <!-- 1:1 정사각형 고해상도 크롭 미리보기 -->
           <canvas id="ocr-preview-canvas" width="44" height="44" title="인식한 우측 상단 파란 원" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
         </div>
         <div id="song-search-results" class="max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
@@ -248,11 +260,16 @@
     </div>
   </div>
 
-  <audio id="r2-audio" preload="auto"></audio>
+  <!-- 2채널 오디오: 노래 전용 채널 + 보카(단어) 전용 채널 -->
+  <audio id="song-audio" crossorigin="anonymous" preload="auto"></audio>
+  <audio id="voca-audio" crossorigin="anonymous" preload="auto"></audio>
 
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
+
+    // 음원 ON/OFF 토글을 표시할 목차 전용 페이지 목록
+    const TOC_PAGES = new Set([4, 5, 6, 74, 75, 76, 142, 143, 216, 217]);
 
     const WORKER_ROOT = (typeof R2_SONGS_BASE !== 'undefined')
       ? R2_SONGS_BASE.replace(/\/songs\/?$/, '')
@@ -268,20 +285,80 @@
 
     let currentShape = 'circle';
     let circleSize = 12.0;
-    let rectW = 26.0; // 큰네모 기본 가로 26
-    let rectH = 12.0; // 큰네모 기본 세로 12 (작은네모: 19.5 / 9)
+    let rectW = 26.0;
+    let rectH = 12.0;
 
     let currentLeftPageNum = null, currentRightPageNum = null;
-    let activePlayingSpotKey = null;
+    // 노래 재생 중인 개별 카드 키와 보카 재생 중인 개별 카드 키를 독립 관리
+    let activeSongSpotKey = null;
+    let activeVocaSpotKey = null;
     let pendingSpotContext = null;
     let ocrWorker = null;
 
     const preloadedAudioUrls = new Set();
-    const audioEl = document.getElementById('r2-audio');
+    const songAudioEl = document.getElementById('song-audio');
+    const vocaAudioEl = document.getElementById('voca-audio');
+
+    /* ==========================================
+       Web Audio API 기반 노래 볼륨 페이드 덕킹 (iOS/Android/PC 완벽 호환)
+       ========================================== */
+    let audioCtx = null;
+    let songGainNode = null;
+    let isSongDucking = false;
+
+    function initSongGainDucking() {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          audioCtx = new AudioContextClass();
+          const source = audioCtx.createMediaElementSource(songAudioEl);
+          songGainNode = audioCtx.createGain();
+          songGainNode.gain.value = 1.0;
+          source.connect(songGainNode);
+          songGainNode.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      } catch (e) {
+        console.warn('Web Audio Gain 초기화 폴백:', e);
+      }
+    }
+
+    function fadeSongVolume(targetLevel, durationSec) {
+      initSongGainDucking();
+      if (songGainNode && audioCtx) {
+        const now = audioCtx.currentTime;
+        songGainNode.gain.cancelScheduledValues(now);
+        songGainNode.gain.setValueAtTime(songGainNode.gain.value, now);
+        songGainNode.gain.linearRampToValueAtTime(targetLevel, now + durationSec);
+      } else {
+        songAudioEl.volume = targetLevel;
+      }
+    }
+
+    function duckSongForVoca() {
+      if (!songAudioEl.paused && !isSongDucking) {
+        isSongDucking = true;
+        fadeSongVolume(0.15, 0.25); // 0.25초 동안 15% 볼륨으로 부드럽게 페이드 아웃
+      }
+    }
+
+    function restoreSongAfterVoca() {
+      if (isSongDucking) {
+        isSongDucking = false;
+        fadeSongVolume(1.0, 0.4); // 0.4초 동안 100% 볼륨으로 부드럽게 페이드 인
+      }
+    }
+
+    function isVocaTrackId(trackId) {
+      return /^v\d+$/i.test(String(trackId));
+    }
 
     function getAudioUrlForTrack(trackId) {
       const idStr = String(trackId);
-      if (/^v\d+$/i.test(idStr)) {
+      if (isVocaTrackId(idStr)) {
         const numPart = idStr.slice(1).padStart(3, '0');
         const audioBase = (typeof R2_AUDIO_BASE !== 'undefined')
           ? R2_AUDIO_BASE
@@ -388,7 +465,6 @@
       try {
         if (!pdfDoc) return '';
         const page = await pdfDoc.getPage(pageNum);
-        // 화면 축소 캔버스가 아닌 원본 PDF를 3.5배 고해상도로 직접 렌더링
         const hiViewport = page.getViewport({ scale: 3.5 });
         const hiCanvas = document.createElement('canvas');
         hiCanvas.width = Math.floor(hiViewport.width);
@@ -396,8 +472,6 @@
         const hiCtx = hiCanvas.getContext('2d');
         await page.render({ canvasContext: hiCtx, viewport: hiViewport }).promise;
 
-        // 렌더링된 카드의 실제 픽셀 위치 및 크기 계산
-        // (centerXPercent는 페이지 가로 %, centerYPercent는 페이지 세로 %, rectW와 rectH는 모두 페이지 가로 기준 %)
         const cardCenterX = (centerXPercent / 100) * hiCanvas.width;
         const cardCenterY = (centerYPercent / 100) * hiCanvas.height;
         const cardWidthPx = (rectW / 100) * hiCanvas.width;
@@ -406,8 +480,6 @@
         const cardRightX = cardCenterX + (cardWidthPx / 2);
         const cardTopY = cardCenterY - (cardHeightPx / 2);
 
-        // 큰네모(26/12)와 작은네모(19.5/9) 모두 우측 상단 파란 원의 절대 크기가 동일함
-        // 페이지 가로 폭 기준 약 3.6% 크기의 1:1 정사각형으로 우측 상단 모서리 안쪽 크롭
         const badgeBoxPx = Math.round(hiCanvas.width * 0.036);
         const marginRightPx = Math.round(hiCanvas.width * 0.002);
         const marginTopPx = Math.round(hiCanvas.width * 0.002);
@@ -417,7 +489,6 @@
         const sw = Math.min(hiCanvas.width - sx, badgeBoxPx);
         const sh = Math.min(hiCanvas.height - sy, badgeBoxPx);
 
-        // 1:1 정사각형 미리보기 캔버스에 선명하게 출력
         const previewCanvas = document.getElementById('ocr-preview-canvas');
         previewCanvas.classList.remove('hidden');
         const pCtx = previewCanvas.getContext('2d');
@@ -434,7 +505,6 @@
         procCanvas.height = Math.round(sh * scale) + pad * 2;
         const ctx = procCanvas.getContext('2d');
 
-        // 파란 배경(B가 R,G보다 높음)과 흰 글씨(R,G,B 모두 높음)를 정확히 분리
         const thresholds = [165, 140, 190];
         for (const thresh of thresholds) {
           ctx.fillStyle = '#ffffff';
@@ -488,7 +558,8 @@
       isRendering = true;
       try {
         const container = document.getElementById('viewer-container');
-        const availW = Math.max(100, container.clientWidth - (isFullscreenMode ? 16 : 40));
+        // 책 좌우에 밀착 배치된 넘김 버튼 공간(약 96px)을 고려해 여백 계산
+        const availW = Math.max(100, container.clientWidth - (isFullscreenMode ? 88 : 112));
         const availH = Math.max(100, container.clientHeight - (isFullscreenMode ? 16 : 24));
         const leftBox = document.getElementById('left-page-box');
         const rightBox = document.getElementById('right-page-box');
@@ -517,12 +588,10 @@
         const renderedW = Math.floor(baseVp.width * scale);
         const renderedH = Math.floor(baseVp.height * scale);
 
-        let leftHasConflict = false, rightHasConflict = false;
-
         if (leftPageNum) {
           leftBox.style.display = 'block'; leftBox.style.visibility = 'visible';
           leftBox.className = isSpreadMode ? 'page-wrapper rounded-l-md overflow-hidden book-spine-left' : 'page-wrapper rounded-md overflow-hidden shadow-lg';
-          leftHasConflict = await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', 'songs-left', scale);
+          await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', 'songs-left', scale);
           preloadPageTracks(leftPageNum);
         } else if (isSpreadMode && rightPageNum === 1) {
           leftBox.style.display = 'block'; leftBox.style.visibility = 'hidden';
@@ -536,13 +605,15 @@
           rightBox.className = (isSpreadMode && !leftPageNum)
             ? 'page-wrapper rounded-md overflow-hidden'
             : 'page-wrapper rounded-r-md overflow-hidden book-spine-right border-l border-slate-200';
-          rightHasConflict = await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', 'songs-right', scale);
+          await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', 'songs-right', scale);
           preloadPageTracks(rightPageNum);
         } else {
           rightBox.style.display = 'none';
         }
 
-        updateTocModeUI(leftHasConflict || rightHasConflict);
+        // 현재 펼쳐진 양면 중 지정 목차 페이지(TOC_PAGES)가 포함되어 있는지 확인
+        const isTocView = (leftPageNum && TOC_PAGES.has(leftPageNum)) || (rightPageNum && TOC_PAGES.has(rightPageNum));
+        updateTocModeUI(isTocView);
         updateBottomNavUI();
       } finally {
         isRendering = false;
@@ -569,7 +640,6 @@
       linkLayer.innerHTML = '';
       linkLayer.style.width = `${floorW}px`; linkLayer.style.height = `${floorH}px`;
 
-      let hasValidLinks = false;
       const annotations = await page.getAnnotations();
       annotations.forEach(item => {
         if (item.subtype !== 'Link') return;
@@ -587,41 +657,39 @@
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             linkLayer.appendChild(a);
-            hasValidLinks = true;
           }
         } else if (item.dest) {
           a.href = 'javascript:void(0)';
           a.onclick = async (e) => { e.preventDefault(); e.stopPropagation(); await navigateToDestination(item.dest); };
           linkLayer.appendChild(a);
-          hasValidLinks = true;
         }
       });
 
       renderSongCircles(pageNum, songLayerId, floorW, floorH);
-
-      const hasSpots = (songSpotsData[String(pageNum)] || []).length > 0;
-      return hasValidLinks && hasSpots;
     }
 
-    function updateTocModeUI(hasConflict) {
+    /* ==========================================
+       지정 목차 페이지(4-6, 74-76, 142-143, 216-217) 음원 ON/OFF 토글
+       ========================================== */
+    function updateTocModeUI(isTocPage) {
       const toggleBtn = document.getElementById('btn-toc-mode-toggle');
       const spread = document.getElementById('book-spread');
 
-      if (!hasConflict) {
+      if (!isTocPage) {
         toggleBtn.classList.add('hidden');
-        spread.classList.remove('link-priority', 'audio-priority');
+        spread.classList.remove('toc-audio-off', 'toc-audio-on');
         return;
       }
 
       toggleBtn.classList.remove('hidden');
       if (tocAudioMode) {
-        spread.classList.remove('link-priority');
-        spread.classList.add('audio-priority');
+        spread.classList.remove('toc-audio-off');
+        spread.classList.add('toc-audio-on');
         toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-blue-600 text-white border border-blue-700 text-xs font-bold shadow-xs transition';
         toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high mr-1"></i><span>음원 ON</span>`;
       } else {
-        spread.classList.remove('audio-priority');
-        spread.classList.add('link-priority');
+        spread.classList.remove('toc-audio-on');
+        spread.classList.add('toc-audio-off');
         toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition';
         toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark mr-1"></i><span>음원 OFF</span>`;
       }
@@ -715,8 +783,12 @@
         const btn = document.createElement('div');
         btn.className = `song-spot ${isCircle ? 'shape-circle' : 'shape-rect'}`;
 
-        if (activePlayingSpotKey === spotKey && !audioEl.paused) {
+        // 노래 채널 재생 중 표시 vs 보카 채널 재생 중 표시 분리
+        if (activeSongSpotKey === spotKey && !songAudioEl.paused) {
           btn.classList.add('playing');
+        }
+        if (activeVocaSpotKey === spotKey && !vocaAudioEl.paused) {
+          btn.classList.add('playing-voca');
         }
 
         let wPx, hPx;
@@ -735,7 +807,7 @@
         btn.style.width = `${wPx}px`; btn.style.height = `${hPx}px`;
 
         if (isSpotEditMode) {
-          const isVoca = /^v\d+$/i.test(String(spot.track));
+          const isVoca = isVocaTrackId(spot.track);
           const badgeColor = isVoca ? 'text-emerald-800' : 'text-blue-900';
           btn.innerHTML = `<span class="text-[10px] font-mono font-black ${badgeColor} bg-white/95 px-1.5 rounded-full shadow-xs">${spot.track}</span>`;
         }
@@ -891,7 +963,7 @@
       const pageKey = String(pendingSpotContext.pageNum);
       if (!songSpotsData[pageKey]) songSpotsData[pageKey] = [];
 
-      const normalizedTrack = /^v\d+$/i.test(String(trackId)) ? String(trackId).toLowerCase() : Number(trackId);
+      const normalizedTrack = isVocaTrackId(trackId) ? String(trackId).toLowerCase() : Number(trackId);
 
       if (pendingSpotContext.editIndex !== null) {
         songSpotsData[pageKey][pendingSpotContext.editIndex].track = normalizedTrack;
@@ -951,25 +1023,72 @@
       if (currentRightPageNum) renderSongCircles(currentRightPageNum, 'songs-right', parseInt(rightC.style.width), parseInt(rightC.style.height));
     }
 
+    /* ==========================================
+       2채널 오디오 재생 (노래 + 보카 동시 송출 & 볼륨 덕킹)
+       ========================================== */
     function playOrPauseR2Song(trackId, spotKey) {
       const targetUrl = getAudioUrlForTrack(trackId);
       if (!targetUrl) return;
 
-      if (activePlayingSpotKey === spotKey && audioEl.src) {
-        if (audioEl.paused) audioEl.play();
-        else audioEl.pause();
-        refreshAllSongLayers();
-        return;
-      }
+      if (isVocaTrackId(trackId)) {
+        // 보카(VOCA) 채널 제어
+        if (activeVocaSpotKey === spotKey && vocaAudioEl.src) {
+          if (vocaAudioEl.paused) {
+            duckSongForVoca();
+            vocaAudioEl.play();
+          } else {
+            vocaAudioEl.pause();
+            restoreSongAfterVoca();
+          }
+          refreshAllSongLayers();
+          return;
+        }
 
-      activePlayingSpotKey = spotKey;
-      audioEl.src = targetUrl;
-      audioEl.play().catch(err => console.warn('오디오 재생 오류:', err));
-      refreshAllSongLayers();
+        activeVocaSpotKey = spotKey;
+        duckSongForVoca();
+        vocaAudioEl.src = targetUrl;
+        vocaAudioEl.play().catch(err => {
+          console.warn('보카 재생 오류:', err);
+          restoreSongAfterVoca();
+        });
+        refreshAllSongLayers();
+      } else {
+        // 노래(SA) 채널 제어
+        initSongGainDucking();
+        if (activeSongSpotKey === spotKey && songAudioEl.src) {
+          if (songAudioEl.paused) {
+            songAudioEl.play();
+          } else {
+            songAudioEl.pause();
+          }
+          refreshAllSongLayers();
+          return;
+        }
+
+        activeSongSpotKey = spotKey;
+        // 보카가 동시에 재생 중이면 덕킹 상태 유지, 아니면 100% 볼륨으로 시작
+        if (!vocaAudioEl.paused) {
+          isSongDucking = true;
+          fadeSongVolume(0.15, 0.1);
+        } else {
+          isSongDucking = false;
+          fadeSongVolume(1.0, 0.1);
+        }
+        songAudioEl.src = targetUrl;
+        songAudioEl.play().catch(err => console.warn('노래 재생 오류:', err));
+        refreshAllSongLayers();
+      }
     }
 
-    audioEl.addEventListener('ended', () => {
-      activePlayingSpotKey = null;
+    songAudioEl.addEventListener('ended', () => {
+      activeSongSpotKey = null;
+      isSongDucking = false;
+      refreshAllSongLayers();
+    });
+
+    vocaAudioEl.addEventListener('ended', () => {
+      activeVocaSpotKey = null;
+      restoreSongAfterVoca();
       refreshAllSongLayers();
     });
 
