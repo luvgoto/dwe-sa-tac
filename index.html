@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <!-- 1번 데이터 파일 로드 -->
   <script src="songs-data.js"></script>
   <style>
     body {
@@ -22,7 +21,7 @@
     .book-spine-left { box-shadow: inset -8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
     .book-spine-right { box-shadow: inset 8px 0 14px -6px rgba(0, 0, 0, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
 
-    /* PDF 내부 하이퍼링크 (투명화 유지) */
+    /* PDF 내부 하이퍼링크 */
     .link-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
     .link-layer a {
       position: absolute; display: block; pointer-events: auto; cursor: pointer;
@@ -32,14 +31,15 @@
 
     /* 원형 음원 핫스팟 레이어 */
     .song-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 25; pointer-events: none; }
-    .edit-active .song-layer { pointer-events: auto; cursor: none; }
+    .edit-active .song-layer { pointer-events: auto; cursor: crosshair; }
 
-    /* 마우스를 따라다니는 가상 원형 가이드 */
+    /* 마우스를 따라다니는 가상 원형 가이드 (독립 요소) */
     .ghost-circle {
       position: absolute; transform: translate(-50%, -50%);
-      border-radius: 9999px; border: 2px dashed #ec4899;
-      background-color: rgba(236, 72, 153, 0.15);
+      border-radius: 9999px; border: 2.5px dashed #ec4899;
+      background-color: rgba(236, 72, 153, 0.18);
       pointer-events: none; z-index: 35; display: none;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
     }
 
     /* 배치된 원형 버튼 */
@@ -60,7 +60,7 @@
       50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15); }
     }
     .edit-active .song-circle {
-      background-color: rgba(37, 99, 235, 0.25);
+      background-color: rgba(37, 99, 235, 0.28);
       border: 2px solid #1d4ed8;
       cursor: pointer;
     }
@@ -134,9 +134,8 @@
         <div id="songs-left" class="song-layer"
              onmousemove="moveGhost(event, 'left')"
              onmouseleave="hideGhost('left')"
-             onclick="openSpotModalNew(event, 'left')">
-          <div id="ghost-left" class="ghost-circle"></div>
-        </div>
+             onclick="openSpotModalNew(event, 'left')"></div>
+        <div id="ghost-left" class="ghost-circle"></div>
       </div>
 
       <!-- 오른쪽 페이지 -->
@@ -146,9 +145,8 @@
         <div id="songs-right" class="song-layer"
              onmousemove="moveGhost(event, 'right')"
              onmouseleave="hideGhost('right')"
-             onclick="openSpotModalNew(event, 'right')">
-          <div id="ghost-right" class="ghost-circle"></div>
-        </div>
+             onclick="openSpotModalNew(event, 'right')"></div>
+        <div id="ghost-right" class="ghost-circle"></div>
       </div>
     </div>
 
@@ -169,11 +167,12 @@
         <button onclick="closeSongModal()" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="p-3">
-        <input type="text" id="song-search-input" placeholder="번호(1~143) 또는 곡 제목 검색..."
+        <input type="text" id="song-search-input" placeholder="번호(1~143) 또는 곡 제목 일부 검색..."
                oninput="filterSongList(this.value)"
+               onkeyup="filterSongList(this.value)"
                onkeydown="if(event.key==='Enter') selectFirstFilteredSong()"
                class="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500">
-        <div id="song-search-results" class="mt-2 max-h-52 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
+        <div id="song-search-results" class="mt-2 max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
       </div>
       <div id="modal-footer-delete" class="hidden px-4 py-2.5 bg-rose-50 border-t border-rose-100 flex justify-between items-center">
         <span class="text-[11px] text-rose-700 font-bold">이 원형 영역을 제거할까요?</span>
@@ -204,7 +203,6 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
 
-    // 기본 데이터(songs-data.js) + 브라우저 임시 저장 데이터 병합
     const savedLocal = JSON.parse(localStorage.getItem('dwe_song_circles') || 'null');
     let songSpotsData = savedLocal || (typeof DEFAULT_SONG_SPOTS !== 'undefined' ? JSON.parse(JSON.stringify(DEFAULT_SONG_SPOTS)) : {});
 
@@ -214,7 +212,7 @@
     let defaultCircleRadiusPct = 4.0;
     let currentLeftPageNum = null, currentRightPageNum = null;
     let activePlayingTrack = null;
-    let pendingSpotContext = null; // { pageNum, x, y, editIndex }
+    let pendingSpotContext = null;
 
     const audioEl = document.getElementById('r2-audio');
 
@@ -334,13 +332,13 @@
     }
 
     /* ==========================================
-       가상 원형 가이드 & 원형 버튼 관리
+       가상 원형 가이드 (Ghost Circle)
        ========================================== */
     function moveGhost(e, side) {
       if (!isSpotEditMode) return;
-      const layer = e.currentTarget;
       const ghost = document.getElementById(`ghost-${side}`);
-      const rect = layer.getBoundingClientRect();
+      if (!ghost) return;
+      const rect = e.currentTarget.getBoundingClientRect();
       const d = Math.round(rect.width * (defaultCircleRadiusPct * 2 / 100));
       ghost.style.display = 'block';
       ghost.style.width = `${d}px`;
@@ -350,14 +348,13 @@
     }
 
     function hideGhost(side) {
-      document.getElementById(`ghost-${side}`).style.display = 'none';
+      const ghost = document.getElementById(`ghost-${side}`);
+      if (ghost) ghost.style.display = 'none';
     }
 
     function renderSongCircles(pageNum, layerId, pageW, pageH) {
       const layer = document.getElementById(layerId);
-      const ghost = layer.querySelector('.ghost-circle');
       layer.innerHTML = '';
-      if (ghost) layer.appendChild(ghost);
       layer.style.width = `${pageW}px`; layer.style.height = `${pageH}px`;
 
       const list = songSpotsData[String(pageNum)] || [];
@@ -424,20 +421,38 @@
 
     function filterSongList(query) {
       const container = document.getElementById('song-search-results');
-      const q = query.trim().toLowerCase();
+      if (!container || typeof SONGS_DB === 'undefined') return;
+      const rawQ = String(query || '').trim().toLowerCase();
+      const compactQ = rawQ.replace(/\s+/g, '');
       container.innerHTML = '';
 
+      let matchCount = 0;
       Object.entries(SONGS_DB).forEach(([num, fileName]) => {
-        const cleanTitle = fileName.replace('.mp3', '');
-        if (!q || num === q || num.includes(q) || cleanTitle.toLowerCase().includes(q)) {
+        const cleanTitle = fileName.replace(/\.mp3$/i, '');
+        const lowerTitle = cleanTitle.toLowerCase();
+        const compactTitle = lowerTitle.replace(/\s+/g, '');
+
+        const isMatch = !rawQ
+          || num === rawQ
+          || num.includes(rawQ)
+          || lowerTitle.includes(rawQ)
+          || compactTitle.includes(compactQ);
+
+        if (isMatch) {
+          matchCount++;
           const item = document.createElement('button');
+          item.type = 'button';
           item.className = 'w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center gap-2 transition';
           item.dataset.track = num;
-          item.innerHTML = `<span class="font-mono font-black text-blue-600 w-7 shrink-0">#${num}</span><span class="truncate text-slate-700 font-medium">${cleanTitle}</span>`;
+          item.innerHTML = `<span class="font-mono font-black text-blue-600 w-8 shrink-0">#${num}</span><span class="truncate text-slate-700 font-medium">${cleanTitle}</span>`;
           item.onclick = () => assignSongToSpot(Number(num));
           container.appendChild(item);
         }
       });
+
+      if (matchCount === 0) {
+        container.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">일치하는 곡이 없습니다.</div>`;
+      }
     }
 
     function selectFirstFilteredSong() {
@@ -485,6 +500,11 @@
       btn.className = isSpotEditMode
         ? 'px-2.5 py-1 rounded-lg bg-pink-600 text-white border border-pink-600 text-xs font-bold transition'
         : 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition';
+
+      if (!isSpotEditMode) {
+        hideGhost('left');
+        hideGhost('right');
+      }
       refreshAllSongLayers();
     }
 
