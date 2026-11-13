@@ -6,9 +6,25 @@ export const R2_VOCA_BASE = 'https://dwe-songs.luvgoto.workers.dev/audio';
 export const WORKER_ROOT = 'https://dwe-songs.luvgoto.workers.dev';
 export const SPOTS_SYNC_URL = `${WORKER_ROOT}/spots-data.json`;
 
-// songs-data.js에 const로 선언된 전역 식별자(SONGS_DB, DEFAULT_SONG_SPOTS)를 안전하게 참조
-export const SONGS_DB = (typeof SONGS_DB !== 'undefined') ? SONGS_DB : (window.SONGS_DB || {});
-export const DEFAULT_SONG_SPOTS = (typeof DEFAULT_SONG_SPOTS !== 'undefined') ? DEFAULT_SONG_SPOTS : (window.DEFAULT_SONG_SPOTS || {});
+// 전역 스코프(songs-data.js)에 const로 선언된 변수를 자기 참조 없이 안전하게 읽기
+const _globalSongsDb = (() => {
+  try {
+    return (0, eval)('typeof SONGS_DB !== "undefined" ? SONGS_DB : {}');
+  } catch {
+    return window.SONGS_DB || {};
+  }
+})();
+
+const _globalDefaultSpots = (() => {
+  try {
+    return (0, eval)('typeof DEFAULT_SONG_SPOTS !== "undefined" ? DEFAULT_SONG_SPOTS : {}');
+  } catch {
+    return window.DEFAULT_SONG_SPOTS || {};
+  }
+})();
+
+export const SONGS_DB = _globalSongsDb;
+export const DEFAULT_SONG_SPOTS = _globalDefaultSpots;
 
 export function isVocaTrackId(trackId) {
   return /^v\d+$/i.test(String(trackId));
