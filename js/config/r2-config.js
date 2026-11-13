@@ -6,25 +6,22 @@ export const R2_VOCA_BASE = 'https://dwe-songs.luvgoto.workers.dev/audio';
 export const WORKER_ROOT = 'https://dwe-songs.luvgoto.workers.dev';
 export const SPOTS_SYNC_URL = `${WORKER_ROOT}/spots-data.json`;
 
-// 전역 스코프(songs-data.js)에 const로 선언된 변수를 자기 참조 없이 안전하게 읽기
-const _globalSongsDb = (() => {
-  try {
-    return (0, eval)('typeof SONGS_DB !== "undefined" ? SONGS_DB : {}');
-  } catch {
-    return window.SONGS_DB || {};
+// songs-data.js에 선언된 노래 목록 객체와 기본 좌표 객체를 변수명 후보에서 자동 탐색
+function readGlobalVar(candidates) {
+  for (const name of candidates) {
+    try {
+      const val = (0, eval)(`typeof ${name} !== "undefined" ? ${name} : undefined`);
+      if (val && typeof val === 'object') return val;
+    } catch {}
+    if (window[name] && typeof window[name] === 'object') {
+      return window[name];
+    }
   }
-})();
+  return {};
+}
 
-const _globalDefaultSpots = (() => {
-  try {
-    return (0, eval)('typeof DEFAULT_SONG_SPOTS !== "undefined" ? DEFAULT_SONG_SPOTS : {}');
-  } catch {
-    return window.DEFAULT_SONG_SPOTS || {};
-  }
-})();
-
-export const SONGS_DB = _globalSongsDb;
-export const DEFAULT_SONG_SPOTS = _globalDefaultSpots;
+export const SONGS_DB = readGlobalVar(['SONGS_DB', 'SONG_FILES', 'SONGS_LIST', 'SONGS']);
+export const DEFAULT_SONG_SPOTS = readGlobalVar(['DEFAULT_SONG_SPOTS', 'DEFAULT_SPOTS']);
 
 export function isVocaTrackId(trackId) {
   return /^v\d+$/i.test(String(trackId));
@@ -36,8 +33,11 @@ export function getAudioUrlForTrack(trackId) {
     const numPart = idStr.slice(1).padStart(3, '0');
     return `${R2_VOCA_BASE}/${numPart}.mp3`;
   }
-  const fileName = SONGS_DB[Number(idStr)];
-  if (!fileName) return '';
+  const fileName = SONGS_DB[Number(idStr)] || SONGS_DB[idStr];
+  if (!fileName) {
+    console.warn('[Audio] 노래 파일명을 찾을 수 없습니다:', trackId, 'SONGS_DB 키 개수:', Object.keys(SONGS_DB).length);
+    return '';
+  }
   return `${R2_SONGS_BASE}/${encodeURIComponent(fileName)}`;
 }
 
