@@ -4,9 +4,8 @@ const songAudioEl = document.getElementById('song-audio');
 const vocaAudioEl = document.getElementById('voca-audio');
 const preloadedAudioUrls = new Set();
 
-let audioCtx = null;
-let songGainNode = null;
 let isSongDucking = false;
+let volumeFadeTimer = null;
 let activeSongSpotKey = null;
 let activeVocaSpotKey = null;
 let onPlaybackStateChange = null;
@@ -22,49 +21,35 @@ export function getActiveAudioKeys() {
   };
 }
 
-function initSongGainDucking() {
-  try {
-    if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-      audioCtx = new AudioContextClass();
-      const source = audioCtx.createMediaElementSource(songAudioEl);
-      songGainNode = audioCtx.createGain();
-      songGainNode.gain.value = 1.0;
-      source.connect(songGainNode);
-      songGainNode.connect(audioCtx.destination);
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-  } catch (e) {
-    console.warn('Web Audio Gain 초기화 폴백:', e);
-  }
-}
+function fadeSongVolume(targetLevel, durationMs) {
+  clearInterval(volumeFadeTimer);
+  const startVol = songAudioEl.volume;
+  const steps = 10;
+  const stepTime = Math.max(15, Math.floor(durationMs / steps));
+  let currentStep = 0;
 
-function fadeSongVolume(targetLevel, durationSec) {
-  initSongGainDucking();
-  if (songGainNode && audioCtx) {
-    const now = audioCtx.currentTime;
-    songGainNode.gain.cancelScheduledValues(now);
-    songGainNode.gain.setValueAtTime(songGainNode.gain.value, now);
-    songGainNode.gain.linearRampToValueAtTime(targetLevel, now + durationSec);
-  } else {
-    songAudioEl.volume = targetLevel;
-  }
+  volumeFadeTimer = setInterval(() => {
+    currentStep++;
+    const nextVol = startVol + ((targetLevel - startVol) * (currentStep / steps));
+    songAudioEl.volume = Math.max(0, Math.min(1, nextVol));
+    if (currentStep >= steps) {
+      clearInterval(volumeFadeTimer);
+      songAudioEl.volume = targetLevel;
+    }
+  }, stepTime);
 }
 
 function duckSongForVoca() {
   if (!songAudioEl.paused && !isSongDucking) {
     isSongDucking = true;
-    fadeSongVolume(0.15, 0.25);
+    fadeSongVolume(0.15, 250);
   }
 }
 
 function restoreSongAfterVoca() {
   if (isSongDucking) {
     isSongDucking = false;
-    fadeSongVolume(1.0, 0.4);
+    fadeSongVolume(1.0, 400);
   }
 }
 
@@ -74,16 +59,19 @@ export function preloadTrackList(spotsList) {
     const url = getAudioUrlForTrack(spot.track);
     if (url && !preloadedAudioUrls.has(url)) {
       preloadedAudioUrls.add(url);
-      fetch(url, { mode: 'cors', cache: 'force-cache' }).catch(() => {
-        preloadedAudioUrls.delete(url);
-      });
+      const tempAudio = new Audio();
+      tempAudio.preload = 'metadata';
+      tempAudio.src = url;
     }
   });
 }
 
 export function playOrPauseR2Song(trackId, spotKey) {
   const targetUrl = getAudioUrlForTrack(trackId);
-  if (!targetUrl) return;
+  if (!targetUrl) {
+    console.warn('[Audio] 재생할 URL이 비어 있습니다:', trackId);
+    return;
+  }
 
   if (isVocaTrackId(trackId)) {
     if (activeVocaSpotKey === spotKey && vocaAudioEl.src) {
@@ -101,10 +89,12 @@ export function playOrPauseR2Song(trackId, spotKey) {
     activeVocaSpotKey = spotKey;
     duckSongForVoca();
     vocaAudioEl.src = targetUrl;
-    vocaAudioEl.play().catch(() => restoreSongAfterVoca());
+    vocaAudioEl.play().catch(err => {
+      console.warn('보카 재생 오류:', err);
+      restoreSongAfterVoca();
+    });
     if (onPlaybackStateChange) onPlaybackStateChange();
   } else {
-    initSongGainDucking();
     if (activeSongSpotKey === spotKey && songAudioEl.src) {
       if (songAudioEl.paused) {
         songAudioEl.play();
@@ -118,10 +108,10 @@ export function playOrPauseR2Song(trackId, spotKey) {
     activeSongSpotKey = spotKey;
     if (!vocaAudioEl.paused) {
       isSongDucking = true;
-      fadeSongVolume(0.15, 0.1);
+      fadeSongVolume(0.15, 100);
     } else {
       isSongDucking = false;
-      fadeSongVolume(1.0, 0.1);
+      fadeSongVolume(1.0, 100);
     }
     songAudioEl.src = targetUrl;
     songAudioEl.play().catch(err => console.warn('노래 재생 오류:', err));
@@ -130,8 +120,10 @@ export function playOrPauseR2Song(trackId, spotKey) {
 }
 
 export function stopAllBookAudio() {
+  clearInterval(volumeFadeTimer);
   songAudioEl.pause();
   vocaAudioEl.pause();
+  songAudioEl.volume = 1.0;
   activeSongSpotKey = null;
   activeVocaSpotKey = null;
   isSongDucking = false;
@@ -141,6 +133,7 @@ export function stopAllBookAudio() {
 songAudioEl.addEventListener('ended', () => {
   activeSongSpotKey = null;
   isSongDucking = false;
+  songAudioEl.volume = 1.0;
   if (onPlaybackStateChange) onPlaybackStateChange();
 });
 
