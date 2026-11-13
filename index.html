@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DWE VIEWER & TAC PLAYER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="songs-data.js"></script>
+
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/book.css">
+  <link rel="stylesheet" href="css/tac.css">
+</head>
+<body class="h-screen w-screen flex flex-col bg-slate-100 text-slate-800 antialiased overflow-hidden">
+
+  <!-- ================= 공유 상단 헤더 (높이 h-12 = 48px 통일) ================= -->
+  <header id="top-panel" class="h-12 bg-white border-b border-slate-200 px-3 sm:px-4 flex items-center justify-between shrink-0 z-30">
+    <!-- 좌측 영역: 모드 전환 & 앱 타이틀 -->
+    <div class="flex items-center gap-2 shrink-0">
+      <!-- TAC 모드일 때만 나타나는 BOOK 복귀 버튼 -->
+      <button id="btn-switch-to-book" type="button" title="송북으로 이동" class="hidden px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold flex items-center gap-1 transition btn-jelly">
+        <i class="fa-solid fa-book-open text-blue-600"></i>
+        <span>BOOK</span>
+      </button>
+
+      <!-- BOOK 모드일 때 표시되는 브랜드 배지 & 타이틀 -->
+      <div id="brand-book" class="flex items-center gap-2">
+        <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs shadow-xs">
+          <i class="fa-solid fa-book-open"></i>
+        </span>
+        <span class="font-black text-slate-800 text-sm tracking-tight">DWE VIEWER</span>
+      </div>
+
+      <!-- TAC 모드일 때 표시되는 타이틀 -->
+      <div id="brand-tac" class="hidden flex items-center gap-2 cursor-pointer">
+        <span class="font-black text-slate-900 text-sm tracking-tight">TAC PLAYER</span>
+      </div>
+    </div>
+
+    <!-- 우측 영역: 활성 모드에 따라 동적으로 바뀌는 컨트롤 그룹 -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+
+      <!-- [A] BOOK 모드 전용 상단 컨트롤 -->
+      <div id="header-controls-book" class="flex items-center gap-1.5 sm:gap-2">
+        <button id="btn-toc-mode-toggle" type="button" class="hidden px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition">
+          <i class="fa-solid fa-volume-xmark mr-1"></i><span>음원 OFF</span>
+        </button>
+
+        <!-- 음원편집 모드 전용 도구 -->
+        <div id="edit-controls" class="hidden flex items-center gap-1.5 bg-pink-50 border border-pink-200 rounded-lg px-2 py-0.5 mr-1">
+          <div class="flex items-center bg-white rounded border border-pink-200 p-0.5 text-[10px] font-bold">
+            <button id="btn-shape-circle" type="button" class="px-2 py-0.5 rounded bg-pink-600 text-white">원형</button>
+            <button id="btn-shape-rect" type="button" class="px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50">사각</button>
+            <button id="btn-shape-voca" type="button" class="px-2 py-0.5 rounded text-sky-700 hover:bg-sky-50">VOCA</button>
+          </div>
+
+          <div id="circle-size-box" class="flex items-center gap-1">
+            <span class="text-[11px] font-bold text-pink-800">크기</span>
+            <input type="number" id="circle-size-input" step="0.5" min="1" max="60" value="12"
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+          </div>
+
+          <div id="rect-size-box" class="hidden flex items-center gap-1">
+            <span class="text-[11px] font-bold text-pink-800">가로</span>
+            <input type="number" id="rect-w-input" step="0.5" min="1" max="85" value="26"
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+            <span class="text-[11px] font-bold text-pink-800 ml-0.5">세로</span>
+            <input type="number" id="rect-h-input" step="0.5" min="1" max="85" value="12"
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+            <button id="btn-rect-large" type="button" title="큰네모 (26 / 12)" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">대</button>
+            <button id="btn-rect-small" type="button" title="작은네모 (19.5 / 9)" class="px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">소</button>
+          </div>
+
+          <div id="voca-size-box" class="hidden flex items-center gap-1">
+            <span class="text-[11px] font-bold text-sky-800">가로</span>
+            <input type="number" id="voca-w-input" step="0.5" min="1" max="85" value="20.5"
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-sky-300 rounded text-sky-900 focus:outline-none focus:border-sky-500">
+            <span class="text-[11px] font-bold text-sky-800 ml-0.5">세로</span>
+            <input type="number" id="voca-h-input" step="0.5" min="1" max="85" value="6"
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-sky-300 rounded text-sky-900 focus:outline-none focus:border-sky-500">
+            <button id="btn-voca-large" type="button" title="기본 VOCA 배지 (20.5 / 6)" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-sky-100 border border-sky-300 text-[10px] font-bold text-sky-800">대</button>
+            <button id="btn-voca-small" type="button" title="작은 VOCA 배지 (15.5 / 4.5)" class="px-1.5 py-0.5 rounded bg-white hover:bg-sky-100 border border-sky-300 text-[10px] font-bold text-sky-800">소</button>
+          </div>
+
+          <span id="sync-status-badge" class="ml-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1">
+            <i class="fa-solid fa-cloud-check"></i><span>자동저장 대기</span>
+          </span>
+        </div>
+
+        <button id="btn-edit-spots" type="button" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition">
+          <i class="fa-solid fa-music mr-1 text-pink-600"></i><span>음원편집</span>
+        </button>
+
+        <button id="btn-toggle-spread" type="button" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition">
+          <i class="fa-solid fa-columns mr-1"></i><span id="label-spread">2쪽보기</span>
+        </button>
+
+        <button id="btn-toggle-cover" type="button" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition">
+          <i class="fa-solid fa-bookmark mr-1 text-blue-600"></i><span id="label-cover">표지포함</span>
+        </button>
+
+        <button id="btn-switch-to-tac" type="button" title="TAC 단어앱 열기" class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold transition">
+          <i class="fa-solid fa-layer-group mr-1"></i><span>TAC</span>
+        </button>
+      </div>
+
+      <!-- [B] TAC 모드 전용 상단 컨트롤 (BOOK과 동일한 h-12 규격) -->
+      <div id="header-controls-tac" class="hidden flex items-center gap-1.5">
+        <button id="nav-btn-card" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly">
+          <span>CARD</span>
+        </button>
+        <button id="nav-btn-quiz" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly">
+          <span>QUIZ</span>
+        </button>
+        <button id="nav-btn-filter" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly">
+          <span>SELECT CARD</span>
+        </button>
+      </div>
+
+      <!-- 공통 전체화면 버튼 -->
+      <button id="btn-fullscreen" type="button" title="전체화면" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center text-xs font-bold transition">
+        <i id="fs-icon" class="fa-solid fa-expand"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 전체화면 복귀 핫스팟 & 플로팅 버튼 -->
+  <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-6 z-50 cursor-pointer"></div>
+  <button id="btn-floating-exit" type="button" class="hidden fixed top-3 right-3 z-50 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-white/20 transition">
+    <i class="fa-solid fa-compress mr-1"></i> 복귀
+  </button>
+
+  <!-- =========================================================================
+       SECTION 1. 송북 뷰어 (BOOK) 하단 영역
+       ========================================================================= -->
+  <div id="section-book" class="flex-1 w-full h-full flex flex-col overflow-hidden">
+    <main id="viewer-container" class="flex-1 w-full h-full relative flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+      <div id="loading-box" class="flex flex-col items-center justify-center text-slate-500">
+        <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <p class="text-xs font-bold">송북 문서 및 클라우드 데이터를 불러오고 있습니다...</p>
+      </div>
+
+      <div id="book-spread" class="hidden flex items-center justify-center">
+        <button id="btn-prev-page" type="button" title="이전 페이지" class="mr-1.5 sm:mr-2.5 w-8 sm:w-9 h-14 rounded-xl bg-white/90 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center shrink-0 z-30 active:scale-90 transition">
+          <i class="fa-solid fa-chevron-left text-xs sm:text-sm"></i>
+        </button>
+
+        <div id="left-page-box" class="page-wrapper rounded-l-md overflow-hidden">
+          <canvas id="canvas-left" class="block"></canvas>
+          <div id="links-left" class="link-layer"></div>
+          <div id="songs-left" class="song-layer"></div>
+          <div id="ghost-left" class="ghost-guide shape-circle"></div>
+        </div>
+
+        <div id="right-page-box" class="page-wrapper rounded-r-md overflow-hidden">
+          <canvas id="canvas-right" class="block"></canvas>
+          <div id="links-right" class="link-layer"></div>
+          <div id="songs-right" class="song-layer"></div>
+          <div id="ghost-right" class="ghost-guide shape-circle"></div>
+        </div>
+
+        <button id="btn-next-page" type="button" title="다음 페이지" class="ml-1.5 sm:ml-2.5 w-8 sm:w-9 h-14 rounded-xl bg-white/90 hover:bg-white text-slate-700 shadow-md border border-slate-200 flex items-center justify-center shrink-0 z-30 active:scale-90 transition">
+          <i class="fa-solid fa-chevron-right text-xs sm:text-sm"></i>
+        </button>
+      </div>
+    </main>
+
+    <!-- 음원 검색 및 선택/삭제 모달 -->
+    <div id="song-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div id="song-modal-box" class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden">
+        <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="modal-title" class="text-xs font-black text-slate-800">음원 연결</span>
+            <span id="ocr-status-tag" class="hidden px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">번호 읽는 중...</span>
+          </div>
+          <button id="btn-close-song-modal" type="button" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3">
+          <div class="flex items-center gap-2 mb-2">
+            <input type="text" id="song-search-input" placeholder="노래(1~143) 또는 단어(v001~v510) 검색..."
+                   class="flex-1 px-3 py-2 text-xs font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500">
+            <canvas id="ocr-preview-canvas" width="44" height="44" title="인식한 우측 상단 파란 원" class="hidden rounded-lg border border-slate-300 bg-slate-100 shrink-0"></canvas>
+          </div>
+          <div id="song-search-results" class="max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
+        </div>
+        <div id="modal-footer-delete" class="hidden px-4 py-2.5 bg-rose-50 border-t border-rose-100 flex justify-between items-center">
+          <span class="text-[11px] text-rose-700 font-bold">이 음원 영역을 제거할까요?</span>
+          <button id="btn-delete-spot" type="button" class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold">삭제</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOCA 배지 -> TAC PLAYER 연동 범위 설정 모달 -->
+    <div id="voca-link-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div id="voca-modal-box" class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden">
+        <div class="px-4 py-3 bg-sky-50 border-b border-sky-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px]">
+              <i class="fa-solid fa-layer-group"></i>
+            </span>
+            <span id="voca-modal-title" class="text-xs font-black text-sky-950">VOCA 단어앱 연동 설정</span>
+          </div>
+          <button id="btn-close-voca-modal" type="button" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="p-4 space-y-3">
+          <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+            <span class="text-xs font-bold text-slate-700">포함 페이지 범위</span>
+            <div class="flex items-center gap-1.5 text-xs font-mono font-black">
+              <span id="voca-start-page-label" class="px-2 py-1 rounded bg-white border border-slate-200 text-slate-800">1P</span>
+              <span class="text-slate-400">~</span>
+              <input type="number" id="voca-end-page-input" min="1" max="500"
+                     class="w-14 px-1.5 py-1 text-center bg-white border border-sky-400 rounded text-sky-700 focus:outline-none">
+              <span class="text-slate-600 font-sans">P</span>
+            </div>
+          </div>
+
+          <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-sky-900">추출된 VOCA 카드 (지면 순서)</span>
+              <span id="voca-card-count-badge" class="px-2 py-0.5 rounded-full bg-sky-600 text-white font-mono font-black text-[11px]">총 0장</span>
+            </div>
+            <div id="voca-cards-preview-list" class="max-h-32 overflow-y-auto flex flex-wrap gap-1 pt-0.5 text-[11px] font-mono"></div>
+          </div>
+
+          <button id="btn-save-voca-spot" type="button" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs shadow-sm transition">
+            저장 및 클라우드 동기화
+          </button>
+        </div>
+
+        <div id="voca-modal-footer-delete" class="hidden px-4 py-2.5 bg-rose-50 border-t border-rose-100 flex justify-between items-center">
+          <span class="text-[11px] text-rose-700 font-bold">이 VOCA 링크 배지를 제거할까요?</span>
+          <button id="btn-delete-voca-spot" type="button" class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold">삭제</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 페이지 네비게이터 -->
+    <div id="bottom-nav-trigger">
+      <div id="bottom-nav-bar" class="w-full h-full flex items-center justify-center px-4 pb-2">
+        <div id="bottom-nav-inner" class="bg-slate-900/85 backdrop-blur-md border border-white/20 text-white rounded-2xl px-5 py-2 shadow-2xl flex items-center gap-4 max-w-lg w-full">
+          <span class="font-mono text-xs font-black shrink-0 text-white/90">
+            <span id="current-page-num" class="text-blue-400 text-sm">1</span> / <span id="total-page-num">1</span>
+          </span>
+          <input type="range" id="page-slider" min="1" max="1" value="1" class="flex-1 h-1.5 bg-white/20 rounded-lg cursor-pointer">
+          <div class="flex items-center bg-white/10 rounded-lg px-2 py-0.5 border border-white/20 shrink-0">
+            <input type="number" id="direct-page-input" min="1" value="1" class="w-10 bg-transparent text-center text-xs font-bold text-white focus:outline-none">
+            <span class="text-white/40 text-xs">P</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       SECTION 2. 단어카드 플레이어 (TAC) 하단 영역
+       ========================================================================= -->
+  <div id="section-tac" class="hidden flex-1 w-full bg-white overflow-y-auto flex flex-col justify-start sm:justify-between">
+
+    <!-- 2-1. 메인 카드 놀이 뷰 -->
+    <main id="view-card" class="flex-1 max-w-xl md:max-w-3xl lg:max-w-4xl w-full mx-auto px-3 py-2 sm:py-3 flex flex-col justify-center items-center gap-1 sm:gap-2 my-auto">
+      <div class="w-full flex items-center justify-between px-1 py-0.5 text-xs">
+        <div class="flex items-center gap-2">
+          <span id="card-stage-badge" class="px-3 py-1 rounded-full font-black text-white text-[11px] sm:text-xs shadow-xs bg-blue-600 tracking-wider">
+            BLUE
+          </span>
+          <span id="card-indicator" class="font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200 text-[11px] sm:text-xs">
+            1 / 510
+          </span>
+          <!-- 현재 카드 즐겨찾기 토글 버튼 -->
+          <button id="btn-card-fav" type="button" title="즐겨찾기 등록/해제" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-amber-50 border border-slate-200 text-slate-400 flex items-center justify-center transition btn-jelly">
+            <i id="card-fav-icon" class="fa-regular fa-star text-xs"></i>
+          </button>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="btn-autoplay" type="button" class="px-3.5 py-1 font-black rounded-full bg-white border border-pink-500 text-pink-600 hover:bg-pink-50 transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs">
+            <i id="autoplay-icon" class="fa-solid fa-play text-xs"></i>
+            <span id="autoplay-text">PLAY ALL</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="w-full my-0 py-0.5 sm:py-1">
+        <div id="card-touch-area" class="w-full aspect-[2.1/1] bg-slate-100 rounded-2xl sm:rounded-3xl shadow-lg border-2 sm:border-3 border-slate-200 overflow-hidden relative cursor-pointer flex items-center justify-center">
+          <img id="card-image" src="" alt="Card" loading="eager" class="w-full h-full object-cover">
+          <canvas id="filter-canvas" class="hidden w-full h-full object-cover absolute inset-0 pointer-events-none"></canvas>
+
+          <div id="magic-filter-controls" class="hidden absolute bottom-2 right-2 sm:bottom-3 sm:right-3 flex items-center gap-1.5 sm:gap-2.5 z-20">
+            <button id="btn-filter-orig" type="button" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly">
+              ORIG
+            </button>
+            <button id="btn-filter-red" type="button" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly">
+              RED
+            </button>
+            <button id="btn-filter-green" type="button" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full font-black text-xs sm:text-sm tracking-tight transition shadow-lg flex items-center justify-center border-2 border-white/90 btn-jelly">
+              GREEN
+            </button>
+          </div>
+
+          <div id="image-fallback" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-50 text-slate-400 p-4 text-center">
+            <i class="fa-regular fa-image text-4xl mb-2 text-slate-300"></i>
+            <p class="text-base font-bold text-slate-800" id="fallback-word"></p>
+            <p class="text-xs text-slate-400 mt-1" id="fallback-text"></p>
+          </div>
+
+          <div id="touch-ripple" class="absolute inset-0 bg-blue-500/10 opacity-0 pointer-events-none transition-opacity duration-200"></div>
+        </div>
+
+        <div class="mt-2 sm:mt-2.5 flex items-start justify-between px-1 gap-2">
+          <span id="card-word-title" class="gothic-font text-lg sm:text-2xl font-black text-slate-900 tracking-tight break-words flex-1"></span>
+          <div id="card-tags-box" class="flex flex-wrap gap-1 justify-end shrink-0"></div>
+        </div>
+      </div>
+
+      <footer class="w-full flex flex-col items-center gap-1.5 sm:gap-2 pt-0.5">
+        <div class="w-full flex items-center justify-between gap-2.5 sm:gap-6">
+          <button id="btn-prev-card" type="button" class="flex-1 py-3 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-2xl border border-slate-200 shadow-xs text-sm sm:text-base btn-jelly flex items-center justify-center gap-1.5 sm:gap-2">
+            <i class="fa-solid fa-chevron-left text-xs sm:text-sm"></i>
+            <span>PRE</span>
+          </button>
+
+          <button id="btn-speaker" type="button" class="w-14 h-14 min-w-[56px] min-h-[56px] sm:w-20 sm:h-16 sm:min-w-[80px] sm:min-h-[64px] bg-amber-400 hover:bg-amber-300 text-slate-900 font-black rounded-2xl shadow-md flex items-center justify-center text-xl sm:text-2xl btn-jelly transform active:scale-95 transition shrink-0">
+            <i id="speaker-icon" class="fa-solid fa-volume-high"></i>
+          </button>
+
+          <button id="btn-next-card" type="button" class="flex-1 py-3 sm:py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-sm text-sm sm:text-base btn-jelly flex items-center justify-center gap-1.5 sm:gap-2">
+            <span>NEXT</span>
+            <i class="fa-solid fa-chevron-right text-xs sm:text-sm"></i>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+          <span class="font-bold">Jump to:</span>
+          <input type="number" id="jump-input" min="1" max="510" placeholder="1~510" class="w-20 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-center text-slate-900 font-bold focus:outline-none focus:border-blue-500 text-xs sm:text-sm">
+          <button id="btn-jump-card" type="button" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-black text-xs sm:text-sm">Go</button>
+        </div>
+      </footer>
+    </main>
+
+    <!-- 2-2. 소리 퀴즈 놀이 뷰 -->
+    <main id="view-quiz" class="hidden flex-1 max-w-xl md:max-w-4xl lg:max-w-5xl w-full mx-auto p-4 sm:p-8 flex flex-col space-y-4 sm:space-y-6 my-auto">
+      <div class="w-full flex items-center justify-between px-1">
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1 rounded-full text-xs font-black text-amber-800 bg-amber-100 border border-amber-200 tracking-wide">
+            QUIZ
+          </span>
+          <span id="quiz-progress-badge" class="text-xs font-mono font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200">
+            1 / 10
+          </span>
+          <span id="quiz-score-badge" class="text-xs font-black bg-slate-100 text-green-700 px-3 py-1 rounded-full border border-slate-200">
+            SCORE: 0 / 10
+          </span>
+        </div>
+        <button id="btn-quiz-reset" type="button" title="다시 시작" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center border border-slate-200 btn-jelly">
+          <i class="fa-solid fa-rotate text-xs"></i>
+        </button>
+      </div>
+
+      <div id="quiz-speaker-banner" class="w-full bg-slate-50 hover:bg-slate-100 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition group">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl sm:text-2xl shadow-xs group-hover:scale-105 transition">
+            <i class="fa-solid fa-volume-high animate-pulse"></i>
+          </div>
+          <div class="text-left">
+            <p class="text-xs sm:text-base font-black text-slate-900 leading-tight">Listen carefully and choose the correct card.</p>
+            <p class="text-[11px] sm:text-xs text-blue-600 font-bold mt-0.5">Tap to listen again.</p>
+          </div>
+        </div>
+        <span class="px-3.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-black rounded-xl shrink-0 uppercase tracking-wider">
+          repeat
+        </span>
+      </div>
+
+      <div id="quiz-options-grid" class="w-full grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1"></div>
+
+      <div id="quiz-complete-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border-2 border-slate-100">
+          <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+            🎉
+          </div>
+          <h3 class="text-xl font-black text-slate-900">GREAT JOB!</h3>
+          <p class="text-slate-500 text-xs mt-1">10문제를 모두 완료했습니다.</p>
+
+          <div class="my-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl">
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Total Score</span>
+            <p class="text-3xl font-black text-blue-700 mt-0.5"><span id="quiz-final-score">0</span> / 10</p>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="btn-quiz-play-again" type="button" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-xs text-sm btn-jelly">
+              PLAY AGAIN
+            </button>
+            <button id="btn-quiz-to-card" type="button" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm btn-jelly">
+              CARD
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 2-3. 부모 모드 & 카드 선택/연속재생 뷰 -->
+    <main id="view-filter" class="hidden flex-1 max-w-3xl lg:max-w-5xl w-full mx-auto p-4 sm:p-7 flex flex-col space-y-4 sm:space-y-5 my-auto">
+      <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div>
+          <h2 class="text-sm sm:text-lg font-black text-slate-900">
+            카드 선택 & 연속 재생
+          </h2>
+          <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+            원하는 카드를 선택하거나 즐겨찾기(★)로 모아 연속 재생 및 퀴즈에 반영하세요.
+          </p>
+        </div>
+        <button id="btn-play-selected" type="button" class="px-4 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 btn-jelly transition">
+          <i class="fa-solid fa-play text-xs"></i>
+          <span><span id="btn-selected-count" class="underline">510</span>장 연속재생 시작</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col justify-between">
+          <span class="font-bold text-slate-700 mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-magnifying-glass text-blue-600"></i> 단어 / 번호 / 인덱스 찾기
+          </span>
+          <div class="relative">
+            <input type="text" id="parent-search-input" placeholder="예: book, cat, 25, MAGIC" class="w-full px-2.5 py-1.5 pl-7 bg-white border border-slate-300 rounded-lg text-slate-900 font-bold placeholder-slate-400 text-xs focus:outline-none focus:border-blue-600 shadow-xs">
+            <i class="fa-solid fa-search absolute left-2 top-2 text-slate-400 text-xs"></i>
+            <button id="btn-clear-search" type="button" class="hidden absolute right-2.5 top-1.5 text-slate-400 hover:text-slate-700 font-bold text-xs">✕</button>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col justify-between">
+          <span class="font-bold text-slate-700 mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-list-ol text-blue-600"></i> 카드 범위
+          </span>
+          <div class="flex items-center gap-1.5">
+            <input type="text" id="parent-range-input" placeholder="예: 1-20 또는 3, 7, 15" class="flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-bold placeholder-slate-400 text-xs focus:outline-none focus:border-blue-600 shadow-xs">
+            <button id="btn-apply-range" type="button" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shrink-0 text-xs">담기</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 flex-1 pr-1">
+            <span class="font-black text-slate-400 mr-0.5 text-[11px] shrink-0">단계:</span>
+            <button type="button" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-slate-700 btn-jelly" data-stage="all">ALL</button>
+            <button type="button" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-blue-600 btn-jelly" data-stage="1단계">BLUE</button>
+            <button type="button" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-green-600 btn-jelly" data-stage="2단계">GREEN</button>
+            <button type="button" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-lime-600 btn-jelly" data-stage="3단계">LIME</button>
+            <button type="button" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-yellow-500 btn-jelly" data-stage="4단계">YELLOW</button>
+            <button type="button" class="stage-tab-btn shrink-0 px-3 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-xs transition bg-purple-600 btn-jelly" data-stage="스토리">STORY</button>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-select-visible" type="button" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold border border-slate-200 text-[11px]">화면선택</button>
+            <button id="btn-deselect-all" type="button" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-rose-600 font-bold border border-slate-200 text-[11px]">전체해제</button>
+          </div>
+        </div>
+
+        <div id="filter-tags-container" class="flex items-start gap-2 py-0.5 text-[11px]"></div>
+      </div>
+
+      <div class="bg-white p-3 rounded-2xl border-2 border-slate-200 flex-1 flex flex-col min-h-[340px] max-h-[480px] shadow-xs">
+        <div class="flex items-center justify-between text-xs text-slate-500 px-1 pb-2 border-b border-slate-100">
+          <span class="font-bold">카드를 터치하면 담기/빼기, 별(★)을 누르면 즐겨찾기 됩니다:</span>
+          <span class="text-blue-600 font-bold">선택됨: <span id="current-selected-stat" class="font-mono text-sm font-black">510</span> / 510</span>
+        </div>
+
+        <div id="parent-card-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 pt-2.5 overflow-y-auto custom-scroll pr-1 flex-1 content-start"></div>
+
+        <div id="parent-load-more" class="hidden text-center py-1 text-xs text-slate-400 font-bold">
+          스크롤하면 더 많은 카드가 나타납니다...
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+        <span>음원이 끝나고 1.2초 후 다음 카드가 자동 재생됩니다.</span>
+        <button id="btn-close-filter" type="button" class="text-slate-600 font-bold underline hover:text-slate-900">닫기</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- 오디오 채널: 송북 노래 / 송북 보카 / TAC 플레이어 -->
+  <audio id="song-audio" crossorigin="anonymous" preload="auto"></audio>
+  <audio id="voca-audio" crossorigin="anonymous" preload="auto"></audio>
+  <audio id="audio-player" crossorigin="anonymous" preload="auto"></audio>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

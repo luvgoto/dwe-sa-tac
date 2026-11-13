@@ -1,0 +1,10 @@
+#section-tac {
+  touch-action: manipulation;
+}
+
+@media screen and (min-width: 1300px) and (min-height: 850px) and (hover: hover) {
+  #view-card {
+    transform: scale(1.22);
+    transform-origin: center center;
+  }
+}
