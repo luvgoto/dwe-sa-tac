@@ -1,4 +1,5 @@
 import { getR2VocaUrl } from '../config/r2-config.js';
+import { getPlayableVocaUrl, prefetchVocaUrlsSequentially, abortPrefetch } from '../config/audio-cache.js';
 import { CARDS, CARD_MAP, STAGE_THEMES } from './cards-data.js';
 import { isFavoriteCard, toggleFavoriteCard } from './favorites.js';
 import { captureMagicImageData, resetMagicFilterUI, applyMagicFilter } from './magic-filter.js';
@@ -19,53 +20,9 @@ let imageLoadToken = 0;
 let activeCardLoaderImg = null;
 let loadedAudioCardId = null;
 
-// 이미지 프리로드 풀 (앞뒤 2장씩 미리 디코딩) 및 캐시 확인용 Set
 const imgPreloadPool = [new Image(), new Image(), new Image(), new Image()];
 const loadedImageIds = new Set();
 
-// 경량 메모리 Blob 캐시 (최근 25곡 유지 - 단일 audioPlayer 전용)
-const vocaBlobCache = new Map();
-const MAX_VOCA_CACHE = 25;
-
-async function fetchVocaPlayableUrl(cardId, signal, timeoutMs = 3000) {
-  const rawUrl = getR2VocaUrl(cardId);
-  if (vocaBlobCache.has(cardId)) {
-    const cached = vocaBlobCache.get(cardId);
-    vocaBlobCache.delete(cardId);
-    vocaBlobCache.set(cardId, cached);
-    return cached;
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  if (signal) {
-    signal.addEventListener('abort', () => controller.abort(), { once: true });
-  }
-
-  try {
-    const res = await fetch(rawUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (!res.ok) return rawUrl;
-
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-
-    if (vocaBlobCache.size >= MAX_VOCA_CACHE) {
-      const oldestKey = vocaBlobCache.keys().next().value;
-      const oldestUrl = vocaBlobCache.get(oldestKey);
-      vocaBlobCache.delete(oldestKey);
-      URL.revokeObjectURL(oldestUrl);
-    }
-    vocaBlobCache.set(cardId, blobUrl);
-    return blobUrl;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (signal && signal.aborted) throw err;
-    return rawUrl;
-  }
-}
-
-// 모바일 오디오 하드웨어 절전 방지 (앞 1초 잘림 방지)
 let tacAudioCtx = null;
 function wakeTacAudioHardware() {
   try {
@@ -258,6 +215,7 @@ export function stopAllTacPlayback() {
     activeCardLoaderImg.onerror = null;
   }
   if (activeFetchController) activeFetchController.abort();
+  abortPrefetch();
   if (audioPlayer) {
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
@@ -318,13 +276,16 @@ function scheduleNeighborPrefetch() {
       if (img.decode) img.decode().catch(() => {});
     });
 
+    // 디스크 Cache Storage에 다음/이전 카드 1개씩 순차 저장
     const nextCardItem = currentPlaylist[(currentIndex + 1) % len];
     const prevCardItem = currentPlaylist[(currentIndex - 1 + len) % len];
-    if (nextCardItem) fetchVocaPlayableUrl(nextCardItem.id, null, 2500).catch(() => {});
+    const audioUrls = [];
+    if (nextCardItem) audioUrls.push(getR2VocaUrl(nextCardItem.id));
     if (prevCardItem && prevCardItem.id !== nextCardItem?.id) {
-      fetchVocaPlayableUrl(prevCardItem.id, null, 2500).catch(() => {});
+      audioUrls.push(getR2VocaUrl(prevCardItem.id));
     }
-  }, 250);
+    prefetchVocaUrlsSequentially(audioUrls);
+  }, 350);
 }
 
 function updateCardView() {
@@ -441,6 +402,7 @@ function toggleAudioPlayback() {
 
 function playCurrentAudio(reset = true, useDebounce = true) {
   wakeTacAudioHardware();
+  abortPrefetch();
 
   const card = currentPlaylist[currentIndex];
   if (!card) return;
@@ -450,15 +412,12 @@ function playCurrentAudio(reset = true, useDebounce = true) {
   clearTimeout(audioPlayDebounceTimer);
   if (activeFetchController) activeFetchController.abort();
 
-  const isCached = vocaBlobCache.has(card.id);
-  const delayMs = (useDebounce && !isCached) ? 90 : 0;
-
   audioPlayDebounceTimer = setTimeout(async () => {
     if (token !== audioPlayToken) return;
     activeFetchController = new AbortController();
 
     try {
-      const playableUrl = await fetchVocaPlayableUrl(card.id, activeFetchController.signal, 3000);
+      const playableUrl = await getPlayableVocaUrl(getR2VocaUrl(card.id), activeFetchController.signal, 4000);
       if (token !== audioPlayToken) return;
 
       if (loadedAudioCardId !== card.id || audioPlayer.src !== playableUrl) {
@@ -472,7 +431,7 @@ function playCurrentAudio(reset = true, useDebounce = true) {
       if (activeFetchController.signal.aborted) return;
       console.warn(e);
     }
-  }, delayMs);
+  }, useDebounce ? 80 : 0);
 }
 
 function nextCard() {
