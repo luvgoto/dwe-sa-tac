@@ -90,18 +90,53 @@ export async function initBookViewer(options = {}) {
     refreshLayers: refreshAllSongLayers
   });
 
- bindViewerEvents();
+  bindViewerEvents();
 
   const FALLBACK_PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
+  const loadingTextEl = document.querySelector('#loading-box p');
+
+  async function loadPdfWithProgress(url, timeoutMs = 6000) {
+    const loadingTask = window.pdfjsLib.getDocument({
+      url,
+      disableRange: true,
+      disableStream: true
+    });
+
+    let started = false;
+    const timer = setTimeout(() => {
+      if (!started) {
+        loadingTask.destroy().catch(() => {});
+      }
+    }, timeoutMs);
+
+    loadingTask.onProgress = ({ loaded, total }) => {
+      started = true;
+      clearTimeout(timer);
+      if (loadingTextEl && total > 0) {
+        const pct = Math.min(100, Math.round((loaded / total) * 100));
+        loadingTextEl.textContent = `송북 문서를 불러오고 있습니다... (${pct}%)`;
+      }
+    };
+
+    try {
+      const doc = await loadingTask.promise;
+      clearTimeout(timer);
+      return doc;
+    } catch (e) {
+      clearTimeout(timer);
+      throw e;
+    }
+  }
 
   try {
     const spotsPromise = loadSpotsFromCloud();
     let loadedPdf;
     try {
-      loadedPdf = await window.pdfjsLib.getDocument(PDF_URL).promise;
+      loadedPdf = await loadPdfWithProgress(PDF_URL, 6000);
     } catch (r2Err) {
-      console.warn('R2 PDF 로드 실패, 백업 주소로 전환:', r2Err);
-      loadedPdf = await window.pdfjsLib.getDocument(FALLBACK_PDF_URL).promise;
+      console.warn('R2 PDF 로드 지연/실패, 백업 주소로 전환:', r2Err);
+      if (loadingTextEl) loadingTextEl.textContent = '백업 서버에서 송북을 불러오고 있습니다...';
+      loadedPdf = await loadPdfWithProgress(FALLBACK_PDF_URL, 15000);
     }
 
     await spotsPromise;
@@ -156,7 +191,7 @@ function bindViewerEvents() {
     if (e.key === 'ArrowRight') nextPage();
   });
 
-// 스와이프 + 책 좌우 끝(18%) 탭/클릭으로 페이지 넘김
+  // 스와이프 + 책 좌우 끝(18%) 탭/클릭으로 페이지 넘김
   let touchStartX = 0;
   let touchStartY = 0;
   let lastTouchTime = 0;
@@ -524,7 +559,6 @@ async function toggleSpreadMode() {
   isSpreadMode = !isSpreadMode;
   updateSpreadButtonLabel();
 
-  // 모바일에서 2쪽보기 전환 시 가로모드 자동 회전 시도, 1쪽보기 전환 시 세로모드 복귀
   if (isMobileDevice()) {
     try {
       if (isSpreadMode) {
