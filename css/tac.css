@@ -8,3 +8,84 @@
     transform-origin: center center;
   }
 }
+
+/* 모바일 및 태블릿 가로모드(Landscape) 한 화면 최적화 */
+@media (orientation: landscape) and (max-height: 540px) {
+  #section-tac {
+    overflow-y: hidden !important;
+  }
+
+  #view-card {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+    gap: 0.35rem !important;
+    height: 100%;
+    justify-content: space-between;
+  }
+
+  #tac-card-wrapper {
+    flex: 1;
+    min-height: 0;
+    justify-content: center;
+  }
+
+  #card-touch-area {
+    aspect-ratio: auto !important;
+    height: calc(100dvh - 148px) !important;
+    max-height: 240px !important;
+    width: auto !important;
+    max-width: 100% !important;
+    margin: 0 auto;
+  }
+
+  #card-image,
+  #filter-canvas {
+    width: auto !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  #card-title-row {
+    margin-top: 0.25rem !important;
+  }
+
+  #card-word-title {
+    font-size: 1rem !important;
+  }
+
+  #tac-card-footer {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    padding-top: 0 !important;
+  }
+
+  #tac-nav-buttons {
+    flex: 1;
+    gap: 0.4rem !important;
+  }
+
+  #btn-prev-card,
+  #btn-next-card {
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.45rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  #btn-speaker {
+    width: 3rem !important;
+    height: 2.4rem !important;
+    min-width: 3rem !important;
+    min-height: 2.4rem !important;
+    font-size: 1rem !important;
+  }
+
+  #tac-jump-bar {
+    flex-shrink: 0;
+  }
+
+  #tac-jump-bar .jump-label {
+    display: none;
+  }
+}

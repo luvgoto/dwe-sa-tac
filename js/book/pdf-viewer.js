@@ -64,8 +64,15 @@ export function getCurrentPage() {
 
 export function pauseBookAudio() {
   stopAllBookAudio();
+  // TAC 모드 진입 시 숨겨진 송북 캔버스 메모리를 해제해 구형 태블릿 RAM 확보
+  ['canvas-left', 'canvas-right'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c && c.width > 0) {
+      c.width = 0;
+      c.height = 0;
+    }
+  });
 }
-
 export function toggleFullscreen(isFs) {
   isFullscreenMode = isFs;
   setTimeout(renderCurrentView, 120);

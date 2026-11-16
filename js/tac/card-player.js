@@ -12,14 +12,17 @@ let currentIndex = 0;
 let isAutoPlaying = false;
 let autoPlayTimer = null;
 let audioPlayDebounceTimer = null;
+let imageLoadDebounceTimer = null;
 let idlePrefetchTimer = null;
 let activeFetchController = null;
 let audioPlayToken = 0;
+let imageLoadToken = 0;
 let loadedAudioCardId = null;
 
-// 이미지 프리로드 (앞/뒤 1장)
+// 이미지 프리로드 및 캐시 확인용 Set
 const preloadedNextImg = new Image();
 const preloadedPrevImg = new Image();
+const loadedImageIds = new Set();
 
 // 경량 메모리 Blob 캐시 (최근 25곡 유지 - 단일 audioPlayer 전용)
 const vocaBlobCache = new Map();
@@ -108,7 +111,7 @@ export function initTacPlayer() {
     },
     onClose: () => switchTacView('card')
   });
-  updateCardView();
+  updateCardView(false);
 }
 
 function bindCardEvents() {
@@ -155,9 +158,13 @@ function bindCardEvents() {
 
   imgElement.addEventListener('load', () => {
     fallbackBox.classList.add('hidden');
+    imgElement.classList.remove('hidden');
     const card = currentPlaylist[currentIndex];
-    if (card && card.isMagic) {
-      captureMagicImageData(imgElement, filterCanvas, filterCtx);
+    if (card) {
+      loadedImageIds.add(card.id);
+      if (card.isMagic) {
+        captureMagicImageData(imgElement, filterCanvas, filterCtx);
+      }
     }
   });
 
@@ -244,7 +251,9 @@ export function loadCustomCardList(cardTokens, autoPlay = false, singleJumpMode 
 
 export function stopAllTacPlayback() {
   audioPlayToken++;
+  imageLoadToken++;
   clearTimeout(audioPlayDebounceTimer);
+  clearTimeout(imageLoadDebounceTimer);
   clearTimeout(idlePrefetchTimer);
   if (activeFetchController) activeFetchController.abort();
   if (audioPlayer) {
@@ -279,7 +288,7 @@ export function switchTacView(view) {
   if (view === 'card') {
     document.getElementById('view-card').classList.remove('hidden');
     btnCard.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly';
-    updateCardView();
+    updateCardView(false);
   } else if (view === 'quiz') {
     document.getElementById('view-quiz').classList.remove('hidden');
     btnQuiz.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly';
@@ -299,17 +308,19 @@ function scheduleNeighborPrefetch() {
     const prevCardItem = currentPlaylist[(currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length];
 
     if (nextCardItem) {
+      preloadedNextImg.onload = () => loadedImageIds.add(nextCardItem.id);
       preloadedNextImg.src = `images/${nextCardItem.id}.jpg`;
       fetchVocaPlayableUrl(nextCardItem.id, null, 2500).catch(() => {});
     }
     if (prevCardItem && prevCardItem.id !== nextCardItem?.id) {
+      preloadedPrevImg.onload = () => loadedImageIds.add(prevCardItem.id);
       preloadedPrevImg.src = `images/${prevCardItem.id}.jpg`;
       fetchVocaPlayableUrl(prevCardItem.id, null, 2500).catch(() => {});
     }
-  }, 500);
+  }, 450);
 }
 
-function updateCardView() {
+function updateCardView(useDebounce = false) {
   if (currentPlaylist.length === 0) return;
   if (currentIndex >= currentPlaylist.length) currentIndex = 0;
   if (currentIndex < 0) currentIndex = currentPlaylist.length - 1;
@@ -339,11 +350,25 @@ function updateCardView() {
   });
 
   resetMagicFilterUI(imgElement, filterCanvas, magicControls, card.isMagic);
-
   fallbackBox.classList.add('hidden');
-  imgElement.src = `images/${card.id}.jpg`;
 
-  scheduleNeighborPrefetch();
+  // 연타 시 중간 이미지 다운로드를 건너뛰어 화면이 음원보다 늦게 따라오는 현상 방지
+  const token = ++imageLoadToken;
+  clearTimeout(imageLoadDebounceTimer);
+
+  const isImgCached = loadedImageIds.has(card.id);
+  const imgDelayMs = (useDebounce && !isImgCached) ? 90 : 0;
+
+  if (!isImgCached && imgDelayMs > 0) {
+    // 연타 중 이전 카드 잔상이 남지 않도록 즉시 비움
+    imgElement.removeAttribute('src');
+  }
+
+  imageLoadDebounceTimer = setTimeout(() => {
+    if (token !== imageLoadToken) return;
+    imgElement.src = `images/${card.id}.jpg`;
+    scheduleNeighborPrefetch();
+  }, imgDelayMs);
 }
 
 function updateCardFavoriteUI(isFav) {
@@ -405,9 +430,8 @@ function playCurrentAudio(reset = true, useDebounce = true) {
   clearTimeout(audioPlayDebounceTimer);
   if (activeFetchController) activeFetchController.abort();
 
-  // 이미 Blob 캐시에 있으면 디바운스 없이 즉시 재생
   const isCached = vocaBlobCache.has(card.id);
-  const delayMs = (useDebounce && !isCached) ? 100 : 0;
+  const delayMs = (useDebounce && !isCached) ? 90 : 0;
 
   audioPlayDebounceTimer = setTimeout(async () => {
     if (token !== audioPlayToken) return;
@@ -434,14 +458,14 @@ function playCurrentAudio(reset = true, useDebounce = true) {
 function nextCard() {
   if (currentPlaylist.length === 0) return;
   currentIndex = (currentIndex + 1) % currentPlaylist.length;
-  updateCardView();
+  updateCardView(true);
   playCurrentAudio(true, true);
 }
 
 function prevCard() {
   if (currentPlaylist.length === 0) return;
   currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
-  updateCardView();
+  updateCardView(true);
   playCurrentAudio(true, true);
 }
 
