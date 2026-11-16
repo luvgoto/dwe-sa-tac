@@ -90,18 +90,21 @@ export async function initBookViewer(options = {}) {
     refreshLayers: refreshAllSongLayers
   });
 
-  bindViewerEvents();
+ bindViewerEvents();
+
+  const FALLBACK_PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
 
   try {
-    const [, loadedPdf] = await Promise.all([
-      loadSpotsFromCloud(),
-      window.pdfjsLib.getDocument({
-        url: PDF_URL,
-        rangeChunkSize: 65536 * 4,
-        disableAutoFetch: true,
-        disableStream: false
-      }).promise
-    ]);
+    const spotsPromise = loadSpotsFromCloud();
+    let loadedPdf;
+    try {
+      loadedPdf = await window.pdfjsLib.getDocument(PDF_URL).promise;
+    } catch (r2Err) {
+      console.warn('R2 PDF 로드 실패, 백업 주소로 전환:', r2Err);
+      loadedPdf = await window.pdfjsLib.getDocument(FALLBACK_PDF_URL).promise;
+    }
+
+    await spotsPromise;
     pdfDoc = loadedPdf;
     totalPages = pdfDoc.numPages;
 
