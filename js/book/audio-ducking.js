@@ -9,55 +9,12 @@ let activeSongSpotKey = null;
 let activeVocaSpotKey = null;
 let onPlaybackStateChange = null;
 
-// 연타 방어용 토큰, 타이머, AbortController
 let songPlayToken = 0;
 let vocaPlayToken = 0;
 let vocaDebounceTimer = null;
 let songDebounceTimer = null;
-let activeVocaFetchController = null;
 
-// 송북 내 VOCA(단어) 음원용 메모리 Blob 캐시 (중간 끊김 원천 방지)
-const bookVocaBlobCache = new Map();
-const MAX_BOOK_VOCA_CACHE = 20;
-
-async function fetchBookVocaPlayableUrl(trackId, rawUrl, signal, timeoutMs = 3500) {
-  if (bookVocaBlobCache.has(trackId)) {
-    const cached = bookVocaBlobCache.get(trackId);
-    bookVocaBlobCache.delete(trackId);
-    bookVocaBlobCache.set(trackId, cached);
-    return cached;
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  if (signal) {
-    signal.addEventListener('abort', () => controller.abort(), { once: true });
-  }
-
-  try {
-    const res = await fetch(rawUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (!res.ok) return rawUrl;
-
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-
-    if (bookVocaBlobCache.size >= MAX_BOOK_VOCA_CACHE) {
-      const oldestKey = bookVocaBlobCache.keys().next().value;
-      const oldestUrl = bookVocaBlobCache.get(oldestKey);
-      bookVocaBlobCache.delete(oldestKey);
-      URL.revokeObjectURL(oldestUrl);
-    }
-    bookVocaBlobCache.set(trackId, blobUrl);
-    return blobUrl;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (signal && signal.aborted) throw err;
-    return rawUrl;
-  }
-}
-
-// 모바일 오디오 하드웨어 절전 방지
+// 모바일 오디오 하드웨어 절전 방지 (최초 1회 및 절전 해제용)
 let keepAliveCtx = null;
 function wakeMobileAudioHardware() {
   try {
@@ -67,13 +24,6 @@ function wakeMobileAudioHardware() {
     if (keepAliveCtx.state === 'suspended') {
       keepAliveCtx.resume().catch(() => {});
     }
-    const osc = keepAliveCtx.createOscillator();
-    const gain = keepAliveCtx.createGain();
-    gain.gain.value = 0.00001;
-    osc.connect(gain);
-    gain.connect(keepAliveCtx.destination);
-    osc.start(0);
-    osc.stop(keepAliveCtx.currentTime + 0.05);
   } catch {}
 }
 
@@ -91,7 +41,7 @@ export function getActiveAudioKeys() {
 function fadeSongVolume(targetLevel, durationMs) {
   clearInterval(volumeFadeTimer);
   const startVol = songAudioEl.volume;
-  const steps = 10;
+  const steps = 8;
   const stepTime = Math.max(15, Math.floor(durationMs / steps));
   let currentStep = 0;
 
@@ -109,19 +59,19 @@ function fadeSongVolume(targetLevel, durationMs) {
 function duckSongForVoca() {
   if (!songAudioEl.paused && !isSongDucking) {
     isSongDucking = true;
-    fadeSongVolume(0.15, 250);
+    fadeSongVolume(0.15, 220);
   }
 }
 
 function restoreSongAfterVoca() {
   if (isSongDucking) {
     isSongDucking = false;
-    fadeSongVolume(1.0, 400);
+    fadeSongVolume(1.0, 350);
   }
 }
 
 export function preloadTrackList() {
-  // Intentionally no-op to prevent concurrent stream bandwidth contention
+  // 동시 연결 6개 제한 고갈 방지를 위해 프리로드 비활성화
 }
 
 export function playOrPauseR2Song(trackId, spotKey) {
@@ -134,7 +84,7 @@ export function playOrPauseR2Song(trackId, spotKey) {
   }
 
   if (isVocaTrackId(trackId)) {
-    if (activeVocaSpotKey === spotKey && vocaAudioEl.src) {
+    if (activeVocaSpotKey === spotKey && vocaAudioEl.src === targetUrl) {
       if (vocaAudioEl.paused) {
         duckSongForVoca();
         vocaAudioEl.play().catch(() => {});
@@ -151,28 +101,24 @@ export function playOrPauseR2Song(trackId, spotKey) {
     duckSongForVoca();
     vocaAudioEl.pause();
     clearTimeout(vocaDebounceTimer);
-    if (activeVocaFetchController) activeVocaFetchController.abort();
     if (onPlaybackStateChange) onPlaybackStateChange();
 
-    const isCached = bookVocaBlobCache.has(trackId);
-    vocaDebounceTimer = setTimeout(async () => {
+    // 빠른 연타 시 마지막 터치만 1번 연결 (소켓 고갈 방지)
+    vocaDebounceTimer = setTimeout(() => {
       if (token !== vocaPlayToken || activeVocaSpotKey !== spotKey) return;
-      activeVocaFetchController = new AbortController();
-      try {
-        const playableUrl = await fetchBookVocaPlayableUrl(trackId, targetUrl, activeVocaFetchController.signal, 3500);
-        if (token !== vocaPlayToken || activeVocaSpotKey !== spotKey) return;
-        vocaAudioEl.src = playableUrl;
-        vocaAudioEl.currentTime = 0;
-        await vocaAudioEl.play();
-        if (onPlaybackStateChange) onPlaybackStateChange();
-      } catch (err) {
-        if (activeVocaFetchController.signal.aborted) return;
-        console.warn('보카 재생 오류:', err);
-        restoreSongAfterVoca();
-      }
-    }, isCached ? 0 : 90);
+      vocaAudioEl.src = targetUrl;
+      vocaAudioEl.play()
+        .then(() => {
+          if (token === vocaPlayToken && onPlaybackStateChange) onPlaybackStateChange();
+        })
+        .catch(err => {
+          if (token !== vocaPlayToken) return;
+          console.warn('보카 재생 오류:', err);
+          restoreSongAfterVoca();
+        });
+    }, 150);
   } else {
-    if (activeSongSpotKey === spotKey && songAudioEl.src) {
+    if (activeSongSpotKey === spotKey && songAudioEl.src === targetUrl) {
       if (songAudioEl.paused) {
         songAudioEl.play().catch(() => {});
       } else {
@@ -191,22 +137,23 @@ export function playOrPauseR2Song(trackId, spotKey) {
       isSongDucking = false;
       fadeSongVolume(1.0, 100);
     }
-    // 이전 노래 스트리밍 연결을 완전히 비워 대역폭 충돌 방지
     songAudioEl.pause();
-    songAudioEl.removeAttribute('src');
-    songAudioEl.load();
+    clearTimeout(songDebounceTimer);
     if (onPlaybackStateChange) onPlaybackStateChange();
 
-    clearTimeout(songDebounceTimer);
+    // 빠른 연타 시 마지막 곡만 1번 연결 (.load() 호출 금지 -> 좀비 소켓 차단)
     songDebounceTimer = setTimeout(() => {
       if (token !== songPlayToken || activeSongSpotKey !== spotKey) return;
       songAudioEl.src = targetUrl;
-      songAudioEl.play().catch(err => {
-        if (token !== songPlayToken) return;
-        console.warn('노래 재생 오류:', err);
-      });
-      if (onPlaybackStateChange) onPlaybackStateChange();
-    }, 100);
+      songAudioEl.play()
+        .then(() => {
+          if (token === songPlayToken && onPlaybackStateChange) onPlaybackStateChange();
+        })
+        .catch(err => {
+          if (token !== songPlayToken) return;
+          console.warn('노래 재생 오류:', err);
+        });
+    }, 150);
   }
 }
 
@@ -215,7 +162,6 @@ export function stopAllBookAudio() {
   vocaPlayToken++;
   clearTimeout(vocaDebounceTimer);
   clearTimeout(songDebounceTimer);
-  if (activeVocaFetchController) activeVocaFetchController.abort();
   clearInterval(volumeFadeTimer);
   songAudioEl.pause();
   vocaAudioEl.pause();
