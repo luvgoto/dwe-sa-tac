@@ -21,7 +21,8 @@ const TOC_PAGES = new Set([4, 5, 6, 74, 75, 76, 142, 143, 216, 217]);
 let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 1;
-let isSpreadMode = true;
+let isSpreadMode = window.innerWidth >= window.innerHeight;
+let userManualSpreadOverride = false;
 let hasCoverPage = true;
 let isRendering = false;
 let isFullscreenMode = false;
@@ -30,6 +31,16 @@ let tocAudioMode = false;
 let currentLeftPageNum = null;
 let currentRightPageNum = null;
 let onOpenTacCardsCallback = null;
+
+function syncSpreadModeByViewport() {
+  if (userManualSpreadOverride) return;
+  const shouldSpread = window.innerWidth >= window.innerHeight;
+  if (isSpreadMode !== shouldSpread) {
+    isSpreadMode = shouldSpread;
+    const labelEl = document.getElementById('label-spread');
+    if (labelEl) labelEl.textContent = isSpreadMode ? '2쪽보기' : '1쪽보기';
+  }
+}
 
 export function getCurrentPage() {
   return currentPage;
@@ -50,6 +61,10 @@ export async function initBookViewer(options = {}) {
   }
   onOpenTacCardsCallback = options.onOpenTacCards || null;
   if (options.initialPage) currentPage = options.initialPage;
+
+  syncSpreadModeByViewport();
+  const labelEl = document.getElementById('label-spread');
+  if (labelEl) labelEl.textContent = isSpreadMode ? '2쪽보기' : '1쪽보기';
 
   setAudioStateCallback(refreshAllSongLayers);
 
@@ -129,11 +144,15 @@ function bindViewerEvents() {
   }, { passive: true });
 
   let resizeTimer;
-  window.addEventListener('resize', () => {
+  const handleViewportChange = () => {
+    syncSpreadModeByViewport();
     if (getActiveAppMode() !== 'book') return;
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(renderCurrentView, 150);
-  });
+  };
+
+  window.addEventListener('resize', handleViewportChange);
+  window.addEventListener('orientationchange', () => setTimeout(handleViewportChange, 150));
 }
 
 export async function renderCurrentView() {
@@ -141,8 +160,12 @@ export async function renderCurrentView() {
   isRendering = true;
   try {
     const container = document.getElementById('viewer-container');
-    const availW = Math.max(100, container.clientWidth - (isFullscreenMode ? 88 : 112));
-    const availH = Math.max(100, container.clientHeight - (isFullscreenMode ? 16 : 24));
+    const isCompactScreen = window.innerWidth <= 920;
+    const horizontalMargin = isCompactScreen ? (isFullscreenMode ? 68 : 76) : (isFullscreenMode ? 88 : 112);
+    const verticalMargin = isCompactScreen ? (isFullscreenMode ? 8 : 12) : (isFullscreenMode ? 16 : 24);
+
+    const availW = Math.max(100, container.clientWidth - horizontalMargin);
+    const availH = Math.max(100, container.clientHeight - verticalMargin);
     const leftBox = document.getElementById('left-page-box');
     const rightBox = document.getElementById('right-page-box');
 
@@ -427,6 +450,7 @@ export function goToPage(val) {
 }
 
 function toggleSpreadMode() {
+  userManualSpreadOverride = true;
   isSpreadMode = !isSpreadMode;
   document.getElementById('label-spread').textContent = isSpreadMode ? '2쪽보기' : '1쪽보기';
   renderCurrentView();

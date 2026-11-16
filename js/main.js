@@ -22,6 +22,9 @@ export function switchToBook(targetPage = null) {
   document.getElementById('brand-book').classList.remove('hidden');
   document.getElementById('header-controls-book').classList.remove('hidden');
 
+  // TAC 전체화면 상태에서 BOOK으로 복귀했을 때도 BOOK 전체화면 레이아웃 동기화
+  toggleBookFs(isFullscreenMode);
+
   if (targetPage) {
     goToPage(targetPage);
   } else {
@@ -68,13 +71,17 @@ function toggleFullscreen(forceState) {
   const target = (typeof forceState === 'boolean') ? forceState : !isFullscreenMode;
   if (target) {
     if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => applyFullscreenUI(true));
+      document.documentElement.requestFullscreen()
+        .then(() => applyFullscreenUI(true))
+        .catch(() => applyFullscreenUI(true));
     } else {
       applyFullscreenUI(true);
     }
   } else {
     if (document.fullscreenElement && document.exitFullscreen) {
-      document.exitFullscreen().catch(() => applyFullscreenUI(false));
+      document.exitFullscreen()
+        .then(() => applyFullscreenUI(false))
+        .catch(() => applyFullscreenUI(false));
     } else {
       applyFullscreenUI(false);
     }
