@@ -153,11 +153,25 @@ function bindViewerEvents() {
     if (e.key === 'ArrowRight') nextPage();
   });
 
-  // 스와이프 + 페이지 좌우 끝(15%) 탭으로 페이지 넘김
+// 스와이프 + 책 좌우 끝(18%) 탭/클릭으로 페이지 넘김
   let touchStartX = 0;
   let touchStartY = 0;
   let lastTouchTime = 0;
   const viewerEl = document.getElementById('viewer-container');
+  const spreadEl = document.getElementById('book-spread');
+
+  function handleEdgeNavigation(clientX) {
+    const targetBox = (spreadEl && !spreadEl.classList.contains('hidden')) ? spreadEl : viewerEl;
+    const rect = targetBox.getBoundingClientRect();
+    if (rect.width <= 0) return;
+
+    const ratioX = (clientX - rect.left) / rect.width;
+    if (ratioX <= 0.18) {
+      prevPage();
+    } else if (ratioX >= 0.82) {
+      nextPage();
+    }
+  }
 
   viewerEl.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].clientX;
@@ -181,31 +195,19 @@ function bindViewerEvents() {
       return;
     }
 
-    // 2. 제자리 짧은 탭 -> 화면 좌측 15% 또는 우측 15% 영역 터치 시 페이지 이동
+    // 2. 제자리 짧은 탭 -> 책 좌측 18% 또는 우측 18% 영역 터치 시 페이지 이동
     if (Math.abs(diffX) < 12 && Math.abs(diffY) < 12) {
-      const rect = viewerEl.getBoundingClientRect();
-      const ratioX = (endX - rect.left) / rect.width;
-      if (ratioX <= 0.15) {
-        prevPage();
-      } else if (ratioX >= 0.85) {
-        nextPage();
-      }
+      handleEdgeNavigation(endX);
     }
   }, { passive: true });
 
-  // 데스크톱 마우스 클릭: 화면 좌/우 끝 15% 영역 클릭으로 페이지 넘김
+  // 데스크톱 마우스 클릭: 책(또는 뷰어) 좌/우 끝 18% 영역 클릭으로 페이지 넘김
   viewerEl.addEventListener('click', e => {
     if (Date.now() - lastTouchTime < 500) return;
     if (isEditModeActive()) return;
     if (e.target.closest('.song-spot, .link-layer a')) return;
 
-    const rect = viewerEl.getBoundingClientRect();
-    const ratioX = (e.clientX - rect.left) / rect.width;
-    if (ratioX <= 0.15) {
-      prevPage();
-    } else if (ratioX >= 0.85) {
-      nextPage();
-    }
+    handleEdgeNavigation(e.clientX);
   });
 
   let resizeTimer;
