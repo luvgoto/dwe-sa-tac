@@ -14,6 +14,8 @@ let autoPlayTimer = null;
 let audioPlayDebounceTimer = null;
 let audioPlayToken = 0;
 let preloadedNextImg = new Image();
+let preloadedNextAudio = new Audio();
+preloadedNextAudio.preload = 'auto';
 
 // 모바일 오디오 하드웨어 절전 방지 (앞 1초 잘림 방지)
 let tacAudioCtx = null;
@@ -275,10 +277,14 @@ function updateCardView() {
   fallbackBox.classList.add('hidden');
   imgElement.src = `images/${card.id}.jpg`;
 
-  // 다음 카드 이미지 1장만 미리 캐싱 (카드 전환 버벅임 감소)
+  // 다음 카드 이미지 1장 + 음원 1개만 미리 캐싱 (NEXT 버튼 즉시 반응)
   const nextCardItem = currentPlaylist[(currentIndex + 1) % currentPlaylist.length];
   if (nextCardItem && nextCardItem.id !== card.id) {
     preloadedNextImg.src = `images/${nextCardItem.id}.jpg`;
+    const nextAudioUrl = getR2VocaUrl(nextCardItem.id);
+    if (preloadedNextAudio.src !== nextAudioUrl) {
+      preloadedNextAudio.src = nextAudioUrl;
+    }
   }
 }
 
