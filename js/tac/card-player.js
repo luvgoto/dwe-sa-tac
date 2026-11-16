@@ -12,10 +12,56 @@ let currentIndex = 0;
 let isAutoPlaying = false;
 let autoPlayTimer = null;
 let audioPlayDebounceTimer = null;
+let idlePrefetchTimer = null;
+let activeFetchController = null;
 let audioPlayToken = 0;
-let preloadedNextImg = new Image();
-let preloadedNextAudio = new Audio();
-preloadedNextAudio.preload = 'auto';
+let loadedAudioCardId = null;
+
+// 이미지 프리로드 (앞/뒤 1장)
+const preloadedNextImg = new Image();
+const preloadedPrevImg = new Image();
+
+// 경량 메모리 Blob 캐시 (최근 25곡 유지 - 단일 audioPlayer 전용)
+const vocaBlobCache = new Map();
+const MAX_VOCA_CACHE = 25;
+
+async function fetchVocaPlayableUrl(cardId, signal, timeoutMs = 3000) {
+  const rawUrl = getR2VocaUrl(cardId);
+  if (vocaBlobCache.has(cardId)) {
+    const cached = vocaBlobCache.get(cardId);
+    vocaBlobCache.delete(cardId);
+    vocaBlobCache.set(cardId, cached);
+    return cached;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  if (signal) {
+    signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
+  try {
+    const res = await fetch(rawUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) return rawUrl;
+
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    if (vocaBlobCache.size >= MAX_VOCA_CACHE) {
+      const oldestKey = vocaBlobCache.keys().next().value;
+      const oldestUrl = vocaBlobCache.get(oldestKey);
+      vocaBlobCache.delete(oldestKey);
+      URL.revokeObjectURL(oldestUrl);
+    }
+    vocaBlobCache.set(cardId, blobUrl);
+    return blobUrl;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (signal && signal.aborted) throw err;
+    return rawUrl;
+  }
+}
 
 // 모바일 오디오 하드웨어 절전 방지 (앞 1초 잘림 방지)
 let tacAudioCtx = null;
@@ -199,6 +245,8 @@ export function loadCustomCardList(cardTokens, autoPlay = false, singleJumpMode 
 export function stopAllTacPlayback() {
   audioPlayToken++;
   clearTimeout(audioPlayDebounceTimer);
+  clearTimeout(idlePrefetchTimer);
+  if (activeFetchController) activeFetchController.abort();
   if (audioPlayer) {
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
@@ -243,6 +291,24 @@ export function switchTacView(view) {
   }
 }
 
+function scheduleNeighborPrefetch() {
+  clearTimeout(idlePrefetchTimer);
+  idlePrefetchTimer = setTimeout(() => {
+    if (currentPlaylist.length <= 1) return;
+    const nextCardItem = currentPlaylist[(currentIndex + 1) % currentPlaylist.length];
+    const prevCardItem = currentPlaylist[(currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length];
+
+    if (nextCardItem) {
+      preloadedNextImg.src = `images/${nextCardItem.id}.jpg`;
+      fetchVocaPlayableUrl(nextCardItem.id, null, 2500).catch(() => {});
+    }
+    if (prevCardItem && prevCardItem.id !== nextCardItem?.id) {
+      preloadedPrevImg.src = `images/${prevCardItem.id}.jpg`;
+      fetchVocaPlayableUrl(prevCardItem.id, null, 2500).catch(() => {});
+    }
+  }, 500);
+}
+
 function updateCardView() {
   if (currentPlaylist.length === 0) return;
   if (currentIndex >= currentPlaylist.length) currentIndex = 0;
@@ -277,15 +343,7 @@ function updateCardView() {
   fallbackBox.classList.add('hidden');
   imgElement.src = `images/${card.id}.jpg`;
 
-  // 다음 카드 이미지 1장 + 음원 1개만 미리 캐싱 (NEXT 버튼 즉시 반응)
-  const nextCardItem = currentPlaylist[(currentIndex + 1) % currentPlaylist.length];
-  if (nextCardItem && nextCardItem.id !== card.id) {
-    preloadedNextImg.src = `images/${nextCardItem.id}.jpg`;
-    const nextAudioUrl = getR2VocaUrl(nextCardItem.id);
-    if (preloadedNextAudio.src !== nextAudioUrl) {
-      preloadedNextAudio.src = nextAudioUrl;
-    }
-  }
+  scheduleNeighborPrefetch();
 }
 
 function updateCardFavoriteUI(isFav) {
@@ -327,13 +385,12 @@ function toggleAudioPlayback() {
 
   const card = currentPlaylist[currentIndex];
   if (!card) return;
-  const targetUrl = getR2VocaUrl(card.id);
 
-  if (audioPlayer.src === targetUrl && !audioPlayer.paused && !audioPlayer.ended && audioPlayer.currentTime > 0) {
+  if (loadedAudioCardId === card.id && !audioPlayer.paused && !audioPlayer.ended && audioPlayer.currentTime > 0) {
     audioPlayer.pause();
     updatePlayPauseUI(false);
   } else {
-    playCurrentAudio(audioPlayer.src !== targetUrl || audioPlayer.ended, false);
+    playCurrentAudio(loadedAudioCardId !== card.id || audioPlayer.ended, false);
   }
 }
 
@@ -346,26 +403,32 @@ function playCurrentAudio(reset = true, useDebounce = true) {
   const token = ++audioPlayToken;
   audioPlayer.pause();
   clearTimeout(audioPlayDebounceTimer);
+  if (activeFetchController) activeFetchController.abort();
 
-  const startPlay = () => {
+  // 이미 Blob 캐시에 있으면 디바운스 없이 즉시 재생
+  const isCached = vocaBlobCache.has(card.id);
+  const delayMs = (useDebounce && !isCached) ? 100 : 0;
+
+  audioPlayDebounceTimer = setTimeout(async () => {
     if (token !== audioPlayToken) return;
-    const targetUrl = getR2VocaUrl(card.id);
-    if (audioPlayer.src !== targetUrl) {
-      audioPlayer.src = targetUrl;
-    }
-    if (reset) audioPlayer.currentTime = 0;
-    audioPlayer.play()
-      .then(() => {
-        if (token === audioPlayToken) updatePlayPauseUI(true);
-      })
-      .catch(e => console.warn(e));
-  };
+    activeFetchController = new AbortController();
 
-  if (useDebounce) {
-    audioPlayDebounceTimer = setTimeout(startPlay, 130);
-  } else {
-    startPlay();
-  }
+    try {
+      const playableUrl = await fetchVocaPlayableUrl(card.id, activeFetchController.signal, 3000);
+      if (token !== audioPlayToken) return;
+
+      if (loadedAudioCardId !== card.id || audioPlayer.src !== playableUrl) {
+        audioPlayer.src = playableUrl;
+        loadedAudioCardId = card.id;
+      }
+      if (reset) audioPlayer.currentTime = 0;
+      await audioPlayer.play();
+      if (token === audioPlayToken) updatePlayPauseUI(true);
+    } catch (e) {
+      if (activeFetchController.signal.aborted) return;
+      console.warn(e);
+    }
+  }, delayMs);
 }
 
 function nextCard() {
