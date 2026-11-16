@@ -3,9 +3,56 @@ import { initTacPlayer, switchTacView, loadCustomCardList, stopAllTacPlayback } 
 
 let activeAppMode = 'book'; // 'book' | 'tac'
 let isFullscreenMode = false;
+let isParentMode = false;
 
 export function getActiveAppMode() {
   return activeAppMode;
+}
+
+export function getIsParentMode() {
+  return isParentMode;
+}
+
+function setParentMode(enabled) {
+  isParentMode = enabled;
+  document.querySelectorAll('.parent-only-control').forEach(el => {
+    el.classList.toggle('hidden', !enabled);
+  });
+  document.getElementById('btn-parent-lock').classList.toggle('hidden', !enabled);
+
+  // 부모모드 해제 시 열려있던 편집 도구/필터 뷰 정리
+  if (!enabled) {
+    const editBtn = document.getElementById('btn-edit-spots');
+    const editControls = document.getElementById('edit-controls');
+    if (editControls && !editControls.classList.contains('hidden') && editBtn) {
+      editBtn.click();
+    }
+    if (activeAppMode === 'tac') {
+      switchTacView('card');
+    }
+  }
+}
+
+function bindParentSecretTap(element) {
+  if (!element) return;
+  let tapCount = 0;
+  let tapTimer = null;
+
+  element.addEventListener('click', (e) => {
+    tapCount++;
+    clearTimeout(tapTimer);
+
+    if (tapCount >= 5) {
+      tapCount = 0;
+      e.stopPropagation();
+      setParentMode(!isParentMode);
+      return;
+    }
+
+    tapTimer = setTimeout(() => {
+      tapCount = 0;
+    }, 1500);
+  });
 }
 
 export function switchToBook(targetPage = null) {
@@ -22,7 +69,6 @@ export function switchToBook(targetPage = null) {
   document.getElementById('brand-book').classList.remove('hidden');
   document.getElementById('header-controls-book').classList.remove('hidden');
 
-  // TAC 전체화면 상태에서 BOOK으로 복귀했을 때도 BOOK 전체화면 레이아웃 동기화
   toggleBookFs(isFullscreenMode);
 
   if (targetPage) {
@@ -89,6 +135,11 @@ function toggleFullscreen(forceState) {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // 좌측 상단 타이틀 5연타 -> 부모모드 토글
+  bindParentSecretTap(document.getElementById('brand-book'));
+  bindParentSecretTap(document.getElementById('brand-tac'));
+  document.getElementById('btn-parent-lock').addEventListener('click', () => setParentMode(false));
+
   document.getElementById('btn-switch-to-book').addEventListener('click', () => switchToBook(getCurrentPage()));
   document.getElementById('btn-switch-to-tac').addEventListener('click', () => switchToTac());
   document.getElementById('brand-tac').addEventListener('click', () => switchTacView('card'));
@@ -103,17 +154,21 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  initTacPlayer();
+  await initBookViewer({
+    initialPage: 1,
+    onOpenTacCards: (cards) => switchToTac({ cards, autoPlay: false })
+  });
+
   const params = new URLSearchParams(window.location.search);
   const initialMode = params.get('mode');
   const cardsParam = params.get('cards');
   const cardParam = params.get('card');
   const pageParam = parseInt(params.get('fromPage') || params.get('page'), 10);
 
-  initTacPlayer();
-  await initBookViewer({
-    initialPage: (!isNaN(pageParam) && pageParam >= 1) ? pageParam : 1,
-    onOpenTacCards: (cards) => switchToTac({ cards, autoPlay: false })
-  });
+  if (!isNaN(pageParam) && pageParam >= 1) {
+    goToPage(pageParam);
+  }
 
   if (initialMode === 'tac' || cardsParam || cardParam) {
     if (cardsParam) {

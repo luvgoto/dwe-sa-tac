@@ -32,13 +32,29 @@ let currentLeftPageNum = null;
 let currentRightPageNum = null;
 let onOpenTacCardsCallback = null;
 
+function isMobileDevice() {
+  return window.innerWidth <= 920 || ('ontouchstart' in window && Math.min(window.innerWidth, window.innerHeight) <= 600);
+}
+
+function showRotateToast() {
+  const toast = document.getElementById('rotate-toast');
+  if (!toast) return;
+  toast.classList.remove('hidden');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.add('hidden'), 2600);
+}
+
+function updateSpreadButtonLabel() {
+  const labelEl = document.getElementById('label-spread');
+  if (labelEl) labelEl.textContent = isSpreadMode ? '2쪽' : '1쪽';
+}
+
 function syncSpreadModeByViewport() {
   if (userManualSpreadOverride) return;
   const shouldSpread = window.innerWidth >= window.innerHeight;
   if (isSpreadMode !== shouldSpread) {
     isSpreadMode = shouldSpread;
-    const labelEl = document.getElementById('label-spread');
-    if (labelEl) labelEl.textContent = isSpreadMode ? '2쪽보기' : '1쪽보기';
+    updateSpreadButtonLabel();
   }
 }
 
@@ -63,8 +79,7 @@ export async function initBookViewer(options = {}) {
   if (options.initialPage) currentPage = options.initialPage;
 
   syncSpreadModeByViewport();
-  const labelEl = document.getElementById('label-spread');
-  if (labelEl) labelEl.textContent = isSpreadMode ? '2쪽보기' : '1쪽보기';
+  updateSpreadButtonLabel();
 
   setAudioStateCallback(refreshAllSongLayers);
 
@@ -101,8 +116,6 @@ function bindViewerEvents() {
   document.getElementById('btn-toc-mode-toggle').addEventListener('click', toggleTocInteractionMode);
   document.getElementById('btn-toggle-spread').addEventListener('click', toggleSpreadMode);
   document.getElementById('btn-toggle-cover').addEventListener('click', toggleCoverMode);
-  document.getElementById('btn-prev-page').addEventListener('click', prevPage);
-  document.getElementById('btn-next-page').addEventListener('click', nextPage);
 
   let sliderDebounce;
   document.getElementById('page-slider').addEventListener('input', (e) => {
@@ -132,16 +145,59 @@ function bindViewerEvents() {
     if (e.key === 'ArrowRight') nextPage();
   });
 
+  // 스와이프 + 페이지 좌우 끝(15%) 탭으로 페이지 넘김
   let touchStartX = 0;
+  let touchStartY = 0;
   const viewerEl = document.getElementById('viewer-container');
-  viewerEl.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+
+  viewerEl.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
+  }, { passive: true });
+
   viewerEl.addEventListener('touchend', e => {
-    const diff = e.changedTouches[0].screenX - touchStartX;
-    if (Math.abs(diff) > 60) {
-      if (diff < 0) nextPage();
+    if (isEditModeActive()) return;
+    // 음원 스팟, VOCA 배지, 하이퍼링크를 누른 경우 페이지 넘김 제외
+    if (e.target.closest('.song-spot, .link-layer a')) return;
+
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const diffX = endX - touchStartX;
+    const diffY = endY - touchStartY;
+
+    // 1. 가로 스와이프
+    if (Math.abs(diffX) > 55 && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX < 0) nextPage();
       else prevPage();
+      return;
+    }
+
+    // 2. 제자리 짧은 탭 -> 화면 좌측 15% 또는 우측 15% 영역 터치 시 페이지 이동
+    if (Math.abs(diffX) < 12 && Math.abs(diffY) < 12) {
+      const rect = viewerEl.getBoundingClientRect();
+      const ratioX = (endX - rect.left) / rect.width;
+      if (ratioX <= 0.15) {
+        prevPage();
+      } else if (ratioX >= 0.85) {
+        nextPage();
+      }
     }
   }, { passive: true });
+
+  // 데스크톱 마우스 클릭 시에도 책 좌/우 끝 12% 영역 클릭으로 넘김 지원
+  viewerEl.addEventListener('click', e => {
+    if (isEditModeActive()) return;
+    if (e.target.closest('.song-spot, .link-layer a')) return;
+    if ('ontouchstart' in window) return; // 모바일은 touchend에서 이미 처리
+
+    const rect = viewerEl.getBoundingClientRect();
+    const ratioX = (e.clientX - rect.left) / rect.width;
+    if (ratioX <= 0.12) {
+      prevPage();
+    } else if (ratioX >= 0.88) {
+      nextPage();
+    }
+  });
 
   let resizeTimer;
   const handleViewportChange = () => {
@@ -160,9 +216,10 @@ export async function renderCurrentView() {
   isRendering = true;
   try {
     const container = document.getElementById('viewer-container');
-    const isCompactScreen = window.innerWidth <= 920;
-    const horizontalMargin = isCompactScreen ? (isFullscreenMode ? 68 : 76) : (isFullscreenMode ? 88 : 112);
-    const verticalMargin = isCompactScreen ? (isFullscreenMode ? 8 : 12) : (isFullscreenMode ? 16 : 24);
+    // 좌우 화살표 버튼 제거로 모바일은 여백 0에 가깝게 꽉 채움
+    const compact = isMobileDevice();
+    const horizontalMargin = compact ? 4 : (isFullscreenMode ? 16 : 32);
+    const verticalMargin = compact ? 4 : (isFullscreenMode ? 12 : 20);
 
     const availW = Math.max(100, container.clientWidth - horizontalMargin);
     const availH = Math.max(100, container.clientHeight - verticalMargin);
@@ -401,13 +458,13 @@ function updateTocModeUI(isTocPage) {
   if (tocAudioMode) {
     spread.classList.remove('toc-audio-off');
     spread.classList.add('toc-audio-on');
-    toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-blue-600 text-white border border-blue-700 text-xs font-bold shadow-xs transition';
-    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high mr-1"></i><span>음원 ON</span>`;
+    toggleBtn.className = 'px-2 sm:px-2.5 py-1 rounded-lg bg-blue-600 text-white border border-blue-700 text-xs font-bold shadow-xs transition';
+    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i><span class="hidden sm:inline ml-1">음원 ON</span>`;
   } else {
     spread.classList.remove('toc-audio-on');
     spread.classList.add('toc-audio-off');
-    toggleBtn.className = 'px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition';
-    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark mr-1"></i><span>음원 OFF</span>`;
+    toggleBtn.className = 'px-2 sm:px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition';
+    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i><span class="hidden sm:inline ml-1">음원 OFF</span>`;
   }
 }
 
@@ -449,16 +506,42 @@ export function goToPage(val) {
   }
 }
 
-function toggleSpreadMode() {
+async function toggleSpreadMode() {
   userManualSpreadOverride = true;
   isSpreadMode = !isSpreadMode;
-  document.getElementById('label-spread').textContent = isSpreadMode ? '2쪽보기' : '1쪽보기';
+  updateSpreadButtonLabel();
+
+  // 모바일에서 2쪽보기 전환 시 가로모드 자동 회전 시도, 1쪽보기 전환 시 세로모드 복귀
+  if (isMobileDevice()) {
+    try {
+      if (isSpreadMode) {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen().catch(() => {});
+        }
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('landscape');
+        } else {
+          showRotateToast();
+        }
+      } else {
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('portrait').catch(() => {});
+        }
+      }
+    } catch {
+      if (isSpreadMode && window.innerWidth < window.innerHeight) {
+        showRotateToast();
+      }
+    }
+  }
+
   renderCurrentView();
 }
 
 function toggleCoverMode() {
   hasCoverPage = !hasCoverPage;
-  document.getElementById('label-cover').textContent = hasCoverPage ? '표지포함' : '표지미포함';
+  const labelEl = document.getElementById('label-cover');
+  if (labelEl) labelEl.textContent = hasCoverPage ? '표지포함' : '표지미포함';
   renderCurrentView();
 }
 

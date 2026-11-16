@@ -40,19 +40,13 @@ body {
   border-radius: 8px;
 }
 
-/* 1. 모바일 화면 상단 패널 글자 줄바꿈 및 깨짐 방지 */
+/* 1. 모바일 화면 상단 패널 한 줄 고정 */
 @media (max-width: 767px) {
   #top-panel {
-    height: 44px !important;
+    height: 42px !important;
     padding-left: 8px !important;
     padding-right: 8px !important;
     gap: 4px !important;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  #top-panel::-webkit-scrollbar {
-    display: none;
   }
 
   #top-panel button,
@@ -71,11 +65,6 @@ body {
     line-height: 1.2 !important;
   }
 
-  #brand-book span:last-child,
-  #brand-tac span {
-    font-size: 12px !important;
-  }
-
   #btn-fullscreen {
     width: 28px !important;
     height: 28px !important;
@@ -83,30 +72,74 @@ body {
   }
 }
 
-/* 2. 모바일 가로보기(Landscape) 시 태블릿 뷰처럼 화면 비율 및 여백 최적화 */
-@media (orientation: landscape) and (max-height: 540px) {
+/* 2. 모바일 가로보기(Landscape) 시 TAC 하단 컨트롤 1줄 배치 (카드는 유지, 하단만 압축) */
+@media (orientation: landscape) and (max-height: 560px) {
   #top-panel {
-    height: 40px !important;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
+    height: 38px !important;
   }
 
   #viewer-container {
-    padding: 4px 8px !important;
+    padding: 2px 4px !important;
   }
 
-  /* TAC 가로보기 시 카드가 화면 밖으로 넘치지 않도록 압축 */
   #section-tac #view-card {
-    max-width: 760px !important;
     padding-top: 4px !important;
     padding-bottom: 4px !important;
     gap: 4px !important;
   }
 
-  #section-tac #card-touch-area {
-    max-height: 54dvh !important;
-    width: auto !important;
-    margin-left: auto;
-    margin-right: auto;
+  #section-tac #card-title-row {
+    margin-top: 2px !important;
+  }
+
+  #section-tac #card-word-title {
+    font-size: 1rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 하단 footer를 가로 1줄로 정렬해 Jump to 잘림 방지 */
+  #tac-card-footer {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-top: 2px !important;
+  }
+
+  #tac-nav-buttons {
+    flex: 1 !important;
+    gap: 8px !important;
+  }
+
+  #btn-prev-card,
+  #btn-next-card {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+  }
+
+  #btn-speaker {
+    width: 44px !important;
+    height: 36px !important;
+    min-width: 44px !important;
+    min-height: 36px !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
+  }
+
+  #tac-jump-bar .jump-label {
+    display: none !important;
+  }
+
+  #tac-jump-bar input {
+    width: 54px !important;
+    padding: 4px !important;
+    font-size: 11px !important;
+  }
+
+  #tac-jump-bar button {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
   }
 }
