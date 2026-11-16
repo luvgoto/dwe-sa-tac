@@ -134,6 +134,9 @@ function generateNewQuiz(autoPlay = true) {
 
 function playQuizPromptAudio() {
   if (!currentQuizAnswer) return;
+  if (quizAudioCtx.state === 'suspended') {
+    quizAudioCtx.resume().catch(() => {});
+  }
   audioPlayer.src = getR2VocaUrl(currentQuizAnswer.id);
   audioPlayer.currentTime = 0;
   audioPlayer.play().catch(e => console.warn(e));

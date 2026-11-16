@@ -9,6 +9,32 @@ let activeSongSpotKey = null;
 let activeVocaSpotKey = null;
 let onPlaybackStateChange = null;
 
+// 연타 방어용 토큰 & 타이머
+let songPlayToken = 0;
+let vocaPlayToken = 0;
+let vocaDebounceTimer = null;
+let songDebounceTimer = null;
+
+// 모바일 오디오 하드웨어 절전 방지 (앞 1초 잘림 방지)
+let keepAliveCtx = null;
+function wakeMobileAudioHardware() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!keepAliveCtx) keepAliveCtx = new AudioCtx();
+    if (keepAliveCtx.state === 'suspended') {
+      keepAliveCtx.resume().catch(() => {});
+    }
+    const osc = keepAliveCtx.createOscillator();
+    const gain = keepAliveCtx.createGain();
+    gain.gain.value = 0.00001;
+    osc.connect(gain);
+    gain.connect(keepAliveCtx.destination);
+    osc.start(0);
+    osc.stop(keepAliveCtx.currentTime + 0.05);
+  } catch {}
+}
+
 export function setAudioStateCallback(cb) {
   onPlaybackStateChange = cb;
 }
@@ -52,12 +78,13 @@ function restoreSongAfterVoca() {
   }
 }
 
-// 모바일 오디오 스트림 점유 및 끊김 방지를 위해 백그라운드 다중 프리로드 비활성화
 export function preloadTrackList() {
   // Intentionally no-op on mobile/desktop to prevent concurrent range stream throttling
 }
 
 export function playOrPauseR2Song(trackId, spotKey) {
+  wakeMobileAudioHardware();
+
   const targetUrl = getAudioUrlForTrack(trackId);
   if (!targetUrl) {
     console.warn('[Audio] 재생할 URL이 비어 있습니다:', trackId);
@@ -77,16 +104,23 @@ export function playOrPauseR2Song(trackId, spotKey) {
       return;
     }
 
+    const token = ++vocaPlayToken;
     activeVocaSpotKey = spotKey;
     duckSongForVoca();
     vocaAudioEl.pause();
-    vocaAudioEl.src = targetUrl;
-    vocaAudioEl.load();
-    vocaAudioEl.play().catch(err => {
-      console.warn('보카 재생 오류:', err);
-      restoreSongAfterVoca();
-    });
     if (onPlaybackStateChange) onPlaybackStateChange();
+
+    clearTimeout(vocaDebounceTimer);
+    vocaDebounceTimer = setTimeout(() => {
+      if (token !== vocaPlayToken || activeVocaSpotKey !== spotKey) return;
+      vocaAudioEl.src = targetUrl;
+      vocaAudioEl.play().catch(err => {
+        if (token !== vocaPlayToken) return;
+        console.warn('보카 재생 오류:', err);
+        restoreSongAfterVoca();
+      });
+      if (onPlaybackStateChange) onPlaybackStateChange();
+    }, 90);
   } else {
     if (activeSongSpotKey === spotKey && songAudioEl.src) {
       if (songAudioEl.paused) {
@@ -98,6 +132,7 @@ export function playOrPauseR2Song(trackId, spotKey) {
       return;
     }
 
+    const token = ++songPlayToken;
     activeSongSpotKey = spotKey;
     if (!vocaAudioEl.paused) {
       isSongDucking = true;
@@ -107,14 +142,26 @@ export function playOrPauseR2Song(trackId, spotKey) {
       fadeSongVolume(1.0, 100);
     }
     songAudioEl.pause();
-    songAudioEl.src = targetUrl;
-    songAudioEl.load();
-    songAudioEl.play().catch(err => console.warn('노래 재생 오류:', err));
     if (onPlaybackStateChange) onPlaybackStateChange();
+
+    clearTimeout(songDebounceTimer);
+    songDebounceTimer = setTimeout(() => {
+      if (token !== songPlayToken || activeSongSpotKey !== spotKey) return;
+      songAudioEl.src = targetUrl;
+      songAudioEl.play().catch(err => {
+        if (token !== songPlayToken) return;
+        console.warn('노래 재생 오류:', err);
+      });
+      if (onPlaybackStateChange) onPlaybackStateChange();
+    }, 90);
   }
 }
 
 export function stopAllBookAudio() {
+  songPlayToken++;
+  vocaPlayToken++;
+  clearTimeout(vocaDebounceTimer);
+  clearTimeout(songDebounceTimer);
   clearInterval(volumeFadeTimer);
   songAudioEl.pause();
   vocaAudioEl.pause();

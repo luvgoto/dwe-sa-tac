@@ -11,6 +11,29 @@ let currentPlaylist = [...CARDS];
 let currentIndex = 0;
 let isAutoPlaying = false;
 let autoPlayTimer = null;
+let audioPlayDebounceTimer = null;
+let audioPlayToken = 0;
+let preloadedNextImg = new Image();
+
+// 모바일 오디오 하드웨어 절전 방지 (앞 1초 잘림 방지)
+let tacAudioCtx = null;
+function wakeTacAudioHardware() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!tacAudioCtx) tacAudioCtx = new AudioCtx();
+    if (tacAudioCtx.state === 'suspended') {
+      tacAudioCtx.resume().catch(() => {});
+    }
+    const osc = tacAudioCtx.createOscillator();
+    const gain = tacAudioCtx.createGain();
+    gain.gain.value = 0.00001;
+    osc.connect(gain);
+    gain.connect(tacAudioCtx.destination);
+    osc.start(0);
+    osc.stop(tacAudioCtx.currentTime + 0.05);
+  } catch {}
+}
 
 const imgElement = document.getElementById('card-image');
 const filterCanvas = document.getElementById('filter-canvas');
@@ -142,7 +165,7 @@ export function loadCustomCardList(cardTokens, autoPlay = false, singleJumpMode 
         currentIndex = currentPlaylist.findIndex(c => c.id === numId);
       }
       switchTacView('card');
-      if (autoPlay) playCurrentAudio();
+      if (autoPlay) playCurrentAudio(true, false);
       return;
     }
   }
@@ -172,6 +195,8 @@ export function loadCustomCardList(cardTokens, autoPlay = false, singleJumpMode 
 }
 
 export function stopAllTacPlayback() {
+  audioPlayToken++;
+  clearTimeout(audioPlayDebounceTimer);
   if (audioPlayer) {
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
@@ -183,7 +208,6 @@ export function stopAllTacPlayback() {
 export function switchTacView(view) {
   stopAllTacPlayback();
 
-  // 부모모드가 아닐 경우 filter 뷰 접근 차단
   if (view === 'filter' && !getIsParentMode()) {
     view = 'card';
   }
@@ -250,7 +274,12 @@ function updateCardView() {
 
   fallbackBox.classList.add('hidden');
   imgElement.src = `images/${card.id}.jpg`;
-  audioPlayer.src = getR2VocaUrl(card.id);
+
+  // 다음 카드 이미지 1장만 미리 캐싱 (카드 전환 버벅임 감소)
+  const nextCardItem = currentPlaylist[(currentIndex + 1) % currentPlaylist.length];
+  if (nextCardItem && nextCardItem.id !== card.id) {
+    preloadedNextImg.src = `images/${nextCardItem.id}.jpg`;
+  }
 }
 
 function updateCardFavoriteUI(isFav) {
@@ -281,6 +310,8 @@ function updatePlayPauseUI(isPlaying) {
 }
 
 function toggleAudioPlayback() {
+  wakeTacAudioHardware();
+
   const ripple = document.getElementById('touch-ripple');
   if (ripple) {
     ripple.classList.remove('opacity-0');
@@ -288,32 +319,61 @@ function toggleAudioPlayback() {
     setTimeout(() => ripple.classList.remove('opacity-100'), 250);
   }
 
-  if (!audioPlayer.paused && !audioPlayer.ended && audioPlayer.currentTime > 0) {
+  const card = currentPlaylist[currentIndex];
+  if (!card) return;
+  const targetUrl = getR2VocaUrl(card.id);
+
+  if (audioPlayer.src === targetUrl && !audioPlayer.paused && !audioPlayer.ended && audioPlayer.currentTime > 0) {
     audioPlayer.pause();
     updatePlayPauseUI(false);
   } else {
-    if (audioPlayer.ended) audioPlayer.currentTime = 0;
-    audioPlayer.play().then(() => updatePlayPauseUI(true)).catch(e => console.warn(e));
+    playCurrentAudio(audioPlayer.src !== targetUrl || audioPlayer.ended, false);
   }
 }
 
-function playCurrentAudio(reset = true) {
-  if (reset) audioPlayer.currentTime = 0;
-  audioPlayer.play().then(() => updatePlayPauseUI(true)).catch(e => console.warn(e));
+function playCurrentAudio(reset = true, useDebounce = true) {
+  wakeTacAudioHardware();
+
+  const card = currentPlaylist[currentIndex];
+  if (!card) return;
+
+  const token = ++audioPlayToken;
+  audioPlayer.pause();
+  clearTimeout(audioPlayDebounceTimer);
+
+  const startPlay = () => {
+    if (token !== audioPlayToken) return;
+    const targetUrl = getR2VocaUrl(card.id);
+    if (audioPlayer.src !== targetUrl) {
+      audioPlayer.src = targetUrl;
+    }
+    if (reset) audioPlayer.currentTime = 0;
+    audioPlayer.play()
+      .then(() => {
+        if (token === audioPlayToken) updatePlayPauseUI(true);
+      })
+      .catch(e => console.warn(e));
+  };
+
+  if (useDebounce) {
+    audioPlayDebounceTimer = setTimeout(startPlay, 130);
+  } else {
+    startPlay();
+  }
 }
 
 function nextCard() {
   if (currentPlaylist.length === 0) return;
   currentIndex = (currentIndex + 1) % currentPlaylist.length;
   updateCardView();
-  playCurrentAudio();
+  playCurrentAudio(true, true);
 }
 
 function prevCard() {
   if (currentPlaylist.length === 0) return;
   currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
   updateCardView();
-  playCurrentAudio();
+  playCurrentAudio(true, true);
 }
 
 function jumpToCard() {
@@ -335,7 +395,7 @@ function startAutoPlay() {
   document.getElementById('autoplay-icon').className = 'fa-solid fa-pause text-xs';
   document.getElementById('autoplay-text').textContent = 'PAUSE';
   document.getElementById('btn-autoplay').className = 'px-3.5 py-1 font-black rounded-full bg-pink-600 border border-pink-600 text-white animate-pulse transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs';
-  playCurrentAudio();
+  playCurrentAudio(true, false);
 }
 
 function stopAutoPlay() {
