@@ -2,7 +2,6 @@ import { isVocaTrackId, getAudioUrlForTrack } from '../config/r2-config.js';
 
 const songAudioEl = document.getElementById('song-audio');
 const vocaAudioEl = document.getElementById('voca-audio');
-const preloadedAudioUrls = new Set();
 
 let isSongDucking = false;
 let volumeFadeTimer = null;
@@ -53,17 +52,9 @@ function restoreSongAfterVoca() {
   }
 }
 
-export function preloadTrackList(spotsList) {
-  (spotsList || []).forEach(spot => {
-    if (spot.shape === 'voca' || spot.type === 'voca-link') return;
-    const url = getAudioUrlForTrack(spot.track);
-    if (url && !preloadedAudioUrls.has(url)) {
-      preloadedAudioUrls.add(url);
-      const tempAudio = new Audio();
-      tempAudio.preload = 'metadata';
-      tempAudio.src = url;
-    }
-  });
+// 모바일 오디오 스트림 점유 및 끊김 방지를 위해 백그라운드 다중 프리로드 비활성화
+export function preloadTrackList() {
+  // Intentionally no-op on mobile/desktop to prevent concurrent range stream throttling
 }
 
 export function playOrPauseR2Song(trackId, spotKey) {
@@ -77,7 +68,7 @@ export function playOrPauseR2Song(trackId, spotKey) {
     if (activeVocaSpotKey === spotKey && vocaAudioEl.src) {
       if (vocaAudioEl.paused) {
         duckSongForVoca();
-        vocaAudioEl.play();
+        vocaAudioEl.play().catch(() => {});
       } else {
         vocaAudioEl.pause();
         restoreSongAfterVoca();
@@ -88,7 +79,9 @@ export function playOrPauseR2Song(trackId, spotKey) {
 
     activeVocaSpotKey = spotKey;
     duckSongForVoca();
+    vocaAudioEl.pause();
     vocaAudioEl.src = targetUrl;
+    vocaAudioEl.load();
     vocaAudioEl.play().catch(err => {
       console.warn('보카 재생 오류:', err);
       restoreSongAfterVoca();
@@ -97,7 +90,7 @@ export function playOrPauseR2Song(trackId, spotKey) {
   } else {
     if (activeSongSpotKey === spotKey && songAudioEl.src) {
       if (songAudioEl.paused) {
-        songAudioEl.play();
+        songAudioEl.play().catch(() => {});
       } else {
         songAudioEl.pause();
       }
@@ -113,7 +106,9 @@ export function playOrPauseR2Song(trackId, spotKey) {
       isSongDucking = false;
       fadeSongVolume(1.0, 100);
     }
+    songAudioEl.pause();
     songAudioEl.src = targetUrl;
+    songAudioEl.load();
     songAudioEl.play().catch(err => console.warn('노래 재생 오류:', err));
     if (onPlaybackStateChange) onPlaybackStateChange();
   }
