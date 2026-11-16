@@ -1,4 +1,4 @@
-export const PDF_URL = 'https://raw.githubusercontent.com/luvgoto/dwe-sa-tac/main/songbook.pdf';
+export const PDF_URL = 'https://dwe-songs.luvgoto.workers.dev/songbook.pdf';
 
 export const R2_SONGS_BASE = 'https://dwe-songs.luvgoto.workers.dev/songs';
 export const R2_VOCA_BASE = 'https://dwe-songs.luvgoto.workers.dev/audio';
