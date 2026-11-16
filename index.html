@@ -143,9 +143,9 @@
     기기를 가로로 돌리면 2쪽 보기가 더 크게 보입니다
   </div>
 
-  <!-- 전체화면 복귀 핫스팟 & 플로팅 버튼 -->
-  <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-6 z-50 cursor-pointer"></div>
-  <button id="btn-floating-exit" type="button" class="hidden fixed top-3 right-3 z-50 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-white/20 transition">
+  <!-- 전체화면 복귀 핫스팟 & 플로팅 버튼 (PLAY ALL 버튼과 겹치지 않게 우측 하단 배치) -->
+  <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-5 z-50 cursor-pointer"></div>
+  <button id="btn-floating-exit" type="button" class="hidden fixed bottom-3 right-3 z-50 px-3 py-1.5 rounded-full bg-black/65 hover:bg-black/85 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-white/20 transition">
     <i class="fa-solid fa-compress mr-1"></i> 복귀
   </button>
 
@@ -153,8 +153,8 @@
        SECTION 1. 송북 뷰어 (BOOK) 하단 영역
        ========================================================================= -->
   <div id="section-book" class="flex-1 w-full h-full flex flex-col overflow-hidden">
-    <main id="viewer-container" class="flex-1 w-full h-full relative flex items-center justify-center p-0 sm:p-2 overflow-hidden">
-      <div id="loading-box" class="flex flex-col items-center justify-center text-slate-500">
+    <main id="viewer-container" class="flex-1 w-full h-full relative flex items-start md:items-center justify-center pt-1 px-0 pb-0 sm:p-2 overflow-hidden">
+      <div id="loading-box" class="flex flex-col items-center justify-center text-slate-500 my-auto">
         <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
         <p class="text-xs font-bold">송북 문서 및 클라우드 데이터를 불러오고 있습니다...</p>
       </div>
@@ -268,9 +268,9 @@
        ========================================================================= -->
   <div id="section-tac" class="hidden flex-1 w-full bg-white overflow-y-auto flex flex-col justify-start">
 
-    <!-- 2-1. 메인 카드 놀이 뷰 (상단 여백 제거) -->
-    <main id="view-card" class="w-full max-w-xl md:max-w-3xl lg:max-w-4xl mx-auto px-3 pt-2 pb-3 sm:pt-3 sm:pb-4 flex flex-col items-center gap-1.5 sm:gap-2">
-      <div class="w-full flex items-center justify-between px-1 py-0.5 text-xs">
+    <!-- 2-1. 메인 카드 놀이 뷰 (세로모드에서 상단 적정 여백 pt-4 확보) -->
+    <main id="view-card" class="w-full max-w-xl md:max-w-3xl lg:max-w-4xl mx-auto px-3 pt-4 pb-3 sm:pt-5 sm:pb-4 flex flex-col items-center gap-2 sm:gap-2.5">
+      <div id="tac-top-meta" class="w-full flex items-center justify-between px-1 py-0.5 text-xs shrink-0">
         <div class="flex items-center gap-2">
           <span id="card-stage-badge" class="px-3 py-1 rounded-full font-black text-white text-[11px] sm:text-xs shadow-xs bg-blue-600 tracking-wider">
             BLUE
@@ -290,7 +290,7 @@
         </div>
       </div>
 
-      <div class="w-full my-0 py-0.5">
+      <div id="tac-card-wrapper" class="w-full my-0 py-0.5 flex flex-col items-center">
         <div id="card-touch-area" class="w-full aspect-[2.1/1] bg-slate-100 rounded-2xl sm:rounded-3xl shadow-lg border-2 sm:border-3 border-slate-200 overflow-hidden relative cursor-pointer flex items-center justify-center">
           <img id="card-image" src="" alt="Card" loading="eager" class="w-full h-full object-cover">
           <canvas id="filter-canvas" class="hidden w-full h-full object-cover absolute inset-0 pointer-events-none"></canvas>
@@ -316,14 +316,14 @@
           <div id="touch-ripple" class="absolute inset-0 bg-blue-500/10 opacity-0 pointer-events-none transition-opacity duration-200"></div>
         </div>
 
-        <div id="card-title-row" class="mt-1.5 sm:mt-2 flex items-start justify-between px-1 gap-2">
+        <div id="card-title-row" class="w-full mt-2 flex items-center justify-between px-1 gap-2">
           <span id="card-word-title" class="gothic-font text-lg sm:text-2xl font-black text-slate-900 tracking-tight break-words flex-1"></span>
           <div id="card-tags-box" class="flex flex-wrap gap-1 justify-end shrink-0"></div>
         </div>
       </div>
 
       <!-- 하단 컨트롤: 세로모드 2줄 / 가로모드 1줄 자동 전환 -->
-      <footer id="tac-card-footer" class="w-full flex flex-col items-center gap-1.5 sm:gap-2 pt-0.5">
+      <footer id="tac-card-footer" class="w-full flex flex-col items-center gap-1.5 sm:gap-2 pt-0.5 shrink-0">
         <div id="tac-nav-buttons" class="w-full flex items-center justify-between gap-2.5 sm:gap-6">
           <button id="btn-prev-card" type="button" class="flex-1 py-3 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-2xl border border-slate-200 shadow-xs text-sm sm:text-base btn-jelly flex items-center justify-center gap-1.5 sm:gap-2">
             <i class="fa-solid fa-chevron-left text-xs sm:text-sm"></i>
@@ -348,8 +348,8 @@
       </footer>
     </main>
 
-    <!-- 2-2. 소리 퀴즈 놀이 뷰 (상단 여백 제거) -->
-    <main id="view-quiz" class="hidden w-full max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto px-3 pt-2 pb-4 sm:px-6 sm:pt-3 sm:pb-6 flex flex-col space-y-3 sm:space-y-4">
+    <!-- 2-2. 소리 퀴즈 놀이 뷰 (상단 적정 여백 pt-4) -->
+    <main id="view-quiz" class="hidden w-full max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto px-3 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-6 flex flex-col space-y-3 sm:space-y-4">
       <div class="w-full flex items-center justify-between px-1">
         <div class="flex items-center gap-2">
           <span class="px-3 py-1 rounded-full text-xs font-black text-amber-800 bg-amber-100 border border-amber-200 tracking-wide">
@@ -409,8 +409,8 @@
       </div>
     </main>
 
-    <!-- 2-3. 부모 모드 & 카드 선택/연속재생 뷰 (상단 여백 제거) -->
-    <main id="view-filter" class="hidden w-full max-w-3xl lg:max-w-5xl mx-auto px-3 pt-2 pb-4 sm:px-6 sm:pt-3 sm:pb-6 flex flex-col space-y-3 sm:space-y-4">
+    <!-- 2-3. 부모 모드 & 카드 선택/연속재생 뷰 -->
+    <main id="view-filter" class="hidden w-full max-w-3xl lg:max-w-5xl mx-auto px-3 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-6 flex flex-col space-y-3 sm:space-y-4">
       <div class="bg-slate-50 p-3.5 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
         <div>
           <h2 class="text-sm sm:text-lg font-black text-slate-900">

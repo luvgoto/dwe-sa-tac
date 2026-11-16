@@ -4,7 +4,7 @@ import { isFavoriteCard, toggleFavoriteCard } from './favorites.js';
 import { captureMagicImageData, resetMagicFilterUI, applyMagicFilter } from './magic-filter.js';
 import { initQuizEvents, resetAndStartQuiz } from './quiz-mode.js';
 import { initParentSelect, renderParentView } from './parent-select.js';
-import { getActiveAppMode } from '../main.js';
+import { getActiveAppMode, getIsParentMode } from '../main.js';
 
 let selectedSet = new Set(CARDS.map(c => c.id));
 let currentPlaylist = [...CARDS];
@@ -43,7 +43,10 @@ export function initTacPlayer() {
 function bindCardEvents() {
   document.getElementById('nav-btn-card').addEventListener('click', () => switchTacView('card'));
   document.getElementById('nav-btn-quiz').addEventListener('click', () => switchTacView('quiz'));
-  document.getElementById('nav-btn-filter').addEventListener('click', () => switchTacView('filter'));
+  document.getElementById('nav-btn-filter').addEventListener('click', () => {
+    if (!getIsParentMode()) return;
+    switchTacView('filter');
+  });
 
   document.getElementById('btn-card-fav').addEventListener('click', () => {
     const card = currentPlaylist[currentIndex];
@@ -180,6 +183,11 @@ export function stopAllTacPlayback() {
 export function switchTacView(view) {
   stopAllTacPlayback();
 
+  // 부모모드가 아닐 경우 filter 뷰 접근 차단
+  if (view === 'filter' && !getIsParentMode()) {
+    view = 'card';
+  }
+
   document.getElementById('view-card').classList.add('hidden');
   document.getElementById('view-quiz').classList.add('hidden');
   document.getElementById('view-filter').classList.add('hidden');
@@ -188,9 +196,11 @@ export function switchTacView(view) {
   const btnQuiz = document.getElementById('nav-btn-quiz');
   const btnFilter = document.getElementById('nav-btn-filter');
 
-  [btnCard, btnQuiz, btnFilter].forEach(b => {
-    b.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly';
-  });
+  btnCard.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly';
+  btnQuiz.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly';
+
+  const parentHiddenClass = getIsParentMode() ? '' : 'hidden ';
+  btnFilter.className = `${parentHiddenClass}parent-only-control px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 btn-jelly`;
 
   if (view === 'card') {
     document.getElementById('view-card').classList.remove('hidden');
@@ -202,7 +212,7 @@ export function switchTacView(view) {
     resetAndStartQuiz(selectedSet);
   } else if (view === 'filter') {
     document.getElementById('view-filter').classList.remove('hidden');
-    btnFilter.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-900 text-white shadow-xs btn-jelly';
+    btnFilter.className = `${parentHiddenClass}parent-only-control px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-900 text-white shadow-xs btn-jelly`;
     renderParentView();
   }
 }
