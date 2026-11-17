@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="css/book.css">
   <link rel="stylesheet" href="css/tac.css">
 </head>
-<body class="h-screen w-screen flex flex-col bg-slate-100 text-slate-800 antialiased overflow-hidden">
+<body class="h-dvh w-screen flex flex-col bg-slate-100 text-slate-800 antialiased overflow-hidden">
 
   <!-- ================= 공유 상단 헤더 (D안: Serene Chambray Blue) ================= -->
   <header id="top-panel" class="h-11 sm:h-12 bg-[#FAFBFD] border-b border-slate-200/90 px-2.5 sm:px-4 flex items-center justify-between shrink-0 z-30">
@@ -183,14 +183,14 @@
   <!-- =========================================================================
        SECTION 1. 송북 뷰어 (BOOK) 하단 영역
        ========================================================================= -->
-  <div id="section-book" class="flex-1 w-full h-full flex flex-col overflow-hidden">
-    <main id="viewer-container" class="flex-1 w-full h-full relative flex items-start md:items-center justify-center pt-1 px-0 pb-0 sm:p-2 overflow-hidden">
+  <div id="section-book" class="flex-1 min-h-0 w-full flex flex-col overflow-hidden">
+    <main id="viewer-container" class="flex-1 min-h-0 w-full relative flex items-center justify-center p-2 sm:p-3 overflow-auto">
       <div id="loading-box" class="flex flex-col items-center justify-center text-slate-500 my-auto">
         <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
         <p class="text-xs font-bold">송북 문서 및 클라우드 데이터를 불러오고 있습니다...</p>
       </div>
 
-      <div id="book-spread" class="hidden flex items-center justify-center">
+      <div id="book-spread" class="hidden flex items-center justify-center m-auto">
         <div id="left-page-box" class="page-wrapper rounded-l-md overflow-hidden">
           <canvas id="canvas-left" class="block"></canvas>
           <div id="links-left" class="link-layer"></div>
@@ -297,10 +297,10 @@
   <!-- =========================================================================
        SECTION 2. 단어카드 플레이어 (TAC) 하단 영역
        ========================================================================= -->
-  <div id="section-tac" class="hidden flex-1 w-full bg-white overflow-y-auto flex flex-col justify-start">
+  <div id="section-tac" class="hidden flex-1 min-h-0 w-full bg-white overflow-y-auto flex flex-col">
 
-    <!-- 2-1. 메인 카드 놀이 뷰 (세로모드에서 상단 적정 여백 pt-4 확보) -->
-    <main id="view-card" class="w-full max-w-xl md:max-w-3xl lg:max-w-4xl mx-auto px-3 pt-4 pb-3 sm:pt-5 sm:pb-4 flex flex-col items-center gap-2 sm:gap-2.5">
+    <!-- 2-1. 메인 카드 놀이 뷰 (여유 공간 시 정중앙 my-auto, 세로 넘칠 시 스크롤) -->
+    <main id="view-card" class="w-full max-w-xl md:max-w-3xl lg:max-w-4xl mx-auto my-auto px-3 py-3 sm:px-5 sm:py-4 flex flex-col items-center gap-2 sm:gap-2.5 shrink-0">
       <div id="tac-top-meta" class="w-full flex items-center justify-between px-1 py-0.5 text-xs shrink-0">
         <div class="flex items-center gap-1.5">
           <span id="card-stage-badge" class="h-7 px-3 rounded-full font-black text-white text-[11px] sm:text-xs shadow-xs bg-blue-600 tracking-wider inline-flex items-center justify-center">
@@ -372,8 +372,8 @@
       </footer>
     </main>
 
-    <!-- 2-2. 소리 퀴즈 놀이 뷰 (상단 적정 여백 pt-4) -->
-    <main id="view-quiz" class="hidden w-full max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto px-3 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-6 flex flex-col space-y-3 sm:space-y-4">
+    <!-- 2-2. 소리 퀴즈 놀이 뷰 (여유 공간 시 정중앙 my-auto, 세로 넘칠 시 스크롤) -->
+    <main id="view-quiz" class="hidden w-full max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto my-auto px-3 py-3 sm:px-6 sm:py-5 flex flex-col space-y-3 sm:space-y-4 shrink-0">
       <div class="w-full flex items-center justify-between px-1">
         <div class="flex items-center gap-2">
           <span class="px-3 py-1 rounded-full text-xs font-black text-amber-800 bg-amber-100 border border-amber-200 tracking-wide">
