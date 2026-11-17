@@ -21,151 +21,161 @@
 </head>
 <body class="h-screen w-screen flex flex-col bg-slate-100 text-slate-800 antialiased overflow-hidden">
 
-  <!-- ================= 공유 상단 헤더 ================= -->
-  <header id="top-panel" class="h-11 sm:h-12 bg-white border-b border-slate-200 px-2.5 sm:px-4 flex items-center justify-between shrink-0 z-30">
-    <!-- 좌측 영역: 모드 전환 & 앱 타이틀 (5연타 시 부모모드 토글) -->
+  <!-- ================= 공유 상단 헤더 (D안: Serene Chambray Blue) ================= -->
+  <header id="top-panel" class="h-11 sm:h-12 bg-[#FAFBFD] border-b border-slate-200/90 px-2.5 sm:px-4 flex items-center justify-between shrink-0 z-30">
+    <!-- 좌측 영역: 현재 모드 브랜드 (5연타 시 부모모드 토글) -->
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-      <button id="btn-switch-to-book" type="button" class="hidden px-2 sm:px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold flex items-center gap-1 transition btn-jelly">
-        <i class="fa-solid fa-book-open text-blue-600"></i>
-        <span>BOOK</span>
-      </button>
-
-      <!-- BOOK 모드 타이틀 (5회 연속 탭 -> 부모모드) -->
-      <div id="brand-book" class="flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none">
-        <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs shadow-xs">
+      <!-- BOOK 모드 타이틀 (모바일: 책 아이콘만 / PC: 아이콘 + SINGALONG BOOK) -->
+      <div id="brand-book" class="flex items-center gap-2 cursor-pointer select-none">
+        <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#2B4C7E] text-white flex items-center justify-center text-xs shadow-xs">
           <i class="fa-solid fa-book-open"></i>
         </span>
-        <span class="font-black text-slate-800 text-xs sm:text-sm tracking-tight">DWE<span class="hidden sm:inline"> VIEWER</span></span>
+        <span class="hidden sm:inline font-black text-[#1E3557] text-sm tracking-tight">SINGALONG BOOK</span>
       </div>
 
-      <!-- TAC 모드 타이틀 (5회 연속 탭 -> 부모모드) -->
-      <div id="brand-tac" class="hidden flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none">
-        <span class="font-black text-slate-900 text-xs sm:text-sm tracking-tight">TAC<span class="hidden sm:inline"> PLAYER</span></span>
+      <!-- TAC 모드 타이틀 (모바일: 카드 아이콘만 / PC: 아이콘 + TAC PLAYER) -->
+      <div id="brand-tac" class="hidden flex items-center gap-2 cursor-pointer select-none">
+        <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#2B4C7E] text-white flex items-center justify-center text-xs shadow-xs">
+          <i class="fa-solid fa-layer-group"></i>
+        </span>
+        <span class="hidden sm:inline font-black text-[#1E3557] text-sm tracking-tight">TAC PLAYER</span>
       </div>
 
-      <!-- 부모모드 활성화 표시 & 잠금 복귀 버튼 -->
-      <button id="btn-parent-lock" type="button" class="hidden px-2 py-0.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[10px] sm:text-xs font-black flex items-center gap-1 shadow-xs transition">
-        <i class="fa-solid fa-lock-open"></i>
+      <!-- 부모모드 활성화 배지 (Oat Beige) -->
+      <button id="btn-parent-lock" type="button" class="hidden h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-black flex items-center gap-1 transition">
+        <i class="fa-solid fa-lock-open text-[11px]"></i>
         <span class="hidden sm:inline">부모모드</span>
       </button>
     </div>
 
-    <!-- 우측 영역: 컨트롤 그룹 (아이콘 위주 컴팩트 배치) -->
-    <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+    <!-- 우측 영역: 옵션(글자만) -> 모드 전환(아이콘+글자) -> 전체화면(아이콘만) -->
+    <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
 
-      <!-- [A] BOOK 모드 전용 상단 컨트롤 -->
-      <div id="header-controls-book" class="flex items-center gap-1 sm:gap-2">
-        <!-- 음원편집 모드 전용 도구 (부모모드 + 편집활성 시에만 표시) -->
-        <div id="edit-controls" class="hidden flex items-center gap-1.5 bg-pink-50 border border-pink-200 rounded-lg px-2 py-0.5 mr-1">
-          <div class="flex items-center bg-white rounded border border-pink-200 p-0.5 text-[10px] font-bold">
-            <button id="btn-shape-circle" type="button" class="px-2 py-0.5 rounded bg-pink-600 text-white">원형</button>
-            <button id="btn-shape-rect" type="button" class="px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50">사각</button>
-            <button id="btn-shape-voca" type="button" class="px-2 py-0.5 rounded text-sky-700 hover:bg-sky-50">VOCA</button>
+      <!-- [A] BOOK 모드 우측 컨트롤 -->
+      <div id="header-controls-book" class="flex items-center gap-1 sm:gap-1.5">
+        <!-- 음원편집 모드 전용 도구 (Oat Beige / Denim Navy 통일) -->
+        <div id="edit-controls" class="hidden flex items-center gap-1.5 bg-[#F6F0E6] border border-[#DFD1BC] rounded-lg px-2 py-0.5 mr-0.5">
+          <div class="flex items-center bg-white rounded border border-[#DFD1BC] p-0.5 text-[10px] font-bold">
+            <button id="btn-shape-circle" type="button" class="px-2 py-0.5 rounded bg-[#2B4C7E] text-white">원형</button>
+            <button id="btn-shape-rect" type="button" class="px-2 py-0.5 rounded text-slate-600 hover:bg-slate-100">사각</button>
+            <button id="btn-shape-voca" type="button" class="px-2 py-0.5 rounded text-slate-600 hover:bg-slate-100">VOCA</button>
           </div>
 
           <div id="circle-size-box" class="flex items-center gap-1">
-            <span class="text-[11px] font-bold text-pink-800">크기</span>
+            <span class="text-[11px] font-bold text-[#4A3F35]">크기</span>
             <input type="number" id="circle-size-input" step="0.5" min="1" max="60" value="12"
-                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-[#D8C7B0] rounded text-slate-800 focus:outline-none focus:border-[#2B4C7E]">
           </div>
 
           <div id="rect-size-box" class="hidden flex items-center gap-1">
-            <span class="text-[11px] font-bold text-pink-800">가로</span>
+            <span class="text-[11px] font-bold text-[#4A3F35]">가로</span>
             <input type="number" id="rect-w-input" step="0.5" min="1" max="85" value="26"
-                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
-            <span class="text-[11px] font-bold text-pink-800 ml-0.5">세로</span>
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-[#D8C7B0] rounded text-slate-800 focus:outline-none focus:border-[#2B4C7E]">
+            <span class="text-[11px] font-bold text-[#4A3F35] ml-0.5">세로</span>
             <input type="number" id="rect-h-input" step="0.5" min="1" max="85" value="12"
-                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-pink-300 rounded text-pink-900 focus:outline-none focus:border-pink-500">
-            <button id="btn-rect-large" type="button" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">대</button>
-            <button id="btn-rect-small" type="button" class="px-1.5 py-0.5 rounded bg-white hover:bg-pink-100 border border-pink-300 text-[10px] font-bold text-pink-800">소</button>
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-[#D8C7B0] rounded text-slate-800 focus:outline-none focus:border-[#2B4C7E]">
+            <button id="btn-rect-large" type="button" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-[#EFE6D8] border border-[#D8C7B0] text-[10px] font-bold text-[#4A3F35]">대</button>
+            <button id="btn-rect-small" type="button" class="px-1.5 py-0.5 rounded bg-white hover:bg-[#EFE6D8] border border-[#D8C7B0] text-[10px] font-bold text-[#4A3F35]">소</button>
           </div>
 
           <div id="voca-size-box" class="hidden flex items-center gap-1">
-            <span class="text-[11px] font-bold text-sky-800">가로</span>
+            <span class="text-[11px] font-bold text-[#4A3F35]">가로</span>
             <input type="number" id="voca-w-input" step="0.5" min="1" max="85" value="20.5"
-                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-sky-300 rounded text-sky-900 focus:outline-none focus:border-sky-500">
-            <span class="text-[11px] font-bold text-sky-800 ml-0.5">세로</span>
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-[#D8C7B0] rounded text-slate-800 focus:outline-none focus:border-[#2B4C7E]">
+            <span class="text-[11px] font-bold text-[#4A3F35] ml-0.5">세로</span>
             <input type="number" id="voca-h-input" step="0.5" min="1" max="85" value="6"
-                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-sky-300 rounded text-sky-900 focus:outline-none focus:border-sky-500">
-            <button id="btn-voca-large" type="button" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-sky-100 border border-sky-300 text-[10px] font-bold text-sky-800">대</button>
-            <button id="btn-voca-small" type="button" class="px-1.5 py-0.5 rounded bg-white hover:bg-sky-100 border border-sky-300 text-[10px] font-bold text-sky-800">소</button>
+                   class="w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold bg-white border border-[#D8C7B0] rounded text-slate-800 focus:outline-none focus:border-[#2B4C7E]">
+            <button id="btn-voca-large" type="button" class="ml-0.5 px-1.5 py-0.5 rounded bg-white hover:bg-[#EFE6D8] border border-[#D8C7B0] text-[10px] font-bold text-[#4A3F35]">대</button>
+            <button id="btn-voca-small" type="button" class="px-1.5 py-0.5 rounded bg-white hover:bg-[#EFE6D8] border border-[#D8C7B0] text-[10px] font-bold text-[#4A3F35]">소</button>
           </div>
 
-          <span id="sync-status-badge" class="ml-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1">
+          <span id="sync-status-badge" class="ml-1 px-2 py-0.5 rounded bg-white/90 text-[#2B4C7E] border border-[#D8C7B0] font-bold text-[10px] flex items-center gap-1">
             <i class="fa-solid fa-cloud-check"></i><span class="hidden md:inline">자동저장 대기</span>
           </span>
         </div>
 
-        <!-- 부모모드 전용: 음원편집 버튼 -->
-        <button id="btn-edit-spots" type="button" class="hidden parent-only-control px-2 sm:px-2.5 py-1 rounded-lg bg-pink-50 text-pink-700 border border-pink-200 text-xs font-bold hover:bg-pink-100 transition">
-          <i class="fa-solid fa-music text-pink-600"></i><span class="hidden sm:inline ml-1">음원편집</span>
+        <!-- 부모모드 전용: 음원편집 (Oat Beige 통일) -->
+        <button id="btn-edit-spots" type="button" class="hidden parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition">
+          <i class="fa-solid fa-music text-[11px]"></i><span class="hidden sm:inline">음원편집</span>
         </button>
 
-        <button id="btn-toggle-spread" type="button" class="px-2 sm:px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition flex items-center gap-1">
-          <i class="fa-solid fa-columns"></i><span id="label-spread" class="text-[11px] sm:text-xs">2쪽</span>
+        <!-- 2쪽 (아이콘 없이 글자만) -->
+        <button id="btn-toggle-spread" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center justify-center transition">
+          <span id="label-spread">2쪽</span>
         </button>
 
-        <button id="btn-toggle-cover" type="button" class="px-2 sm:px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition flex items-center gap-1">
-          <i class="fa-solid fa-bookmark text-blue-600"></i><span id="label-cover" class="hidden sm:inline">표지포함</span>
+        <!-- 표지포함 (아이콘 없이 글자만) -->
+        <button id="btn-toggle-cover" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center justify-center transition">
+          <span id="label-cover">표지포함</span>
         </button>
 
-        <button id="btn-switch-to-tac" type="button" class="px-2 sm:px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold transition flex items-center gap-1">
-          <i class="fa-solid fa-layer-group"></i><span>TAC</span>
+        <!-- TAC 전환 (모바일: 아이콘만 / PC: 아이콘 + TAC) -->
+        <button id="btn-switch-to-tac" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center gap-1.5 transition btn-jelly">
+          <i class="fa-solid fa-layer-group text-[11px]"></i><span class="hidden sm:inline">TAC</span>
         </button>
       </div>
 
-      <!-- [B] TAC 모드 전용 상단 컨트롤 -->
+      <!-- [B] TAC 모드 우측 컨트롤 -->
       <div id="header-controls-tac" class="hidden flex items-center gap-1 sm:gap-1.5">
-        <button id="nav-btn-card" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly">
-          <i class="fa-solid fa-clone"></i><span>CARD</span>
+        <!-- 부모모드 전용: SELECT (Oat Beige 통일) -->
+        <button id="nav-btn-filter" type="button" class="hidden parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition btn-jelly">
+          <i class="fa-solid fa-sliders text-[11px]"></i><span class="hidden sm:inline">SELECT</span>
         </button>
-        <button id="nav-btn-quiz" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly">
-          <i class="fa-solid fa-circle-question"></i><span>QUIZ</span>
+
+        <!-- CARD (아이콘 없이 글자만) -->
+        <button id="nav-btn-card" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#2B4C7E] text-white shadow-xs btn-jelly">
+          <span>CARD</span>
         </button>
-        <!-- 부모모드 전용: SELECT CARD 버튼 -->
-        <button id="nav-btn-filter" type="button" class="hidden parent-only-control px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 btn-jelly">
-          <i class="fa-solid fa-sliders"></i><span class="hidden sm:inline">SELECT</span>
+
+        <!-- QUIZ (아이콘 없이 글자만) -->
+        <button id="nav-btn-quiz" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#EDF2F7] text-[#2B4C7E] hover:bg-[#DCE7F5] border border-[#D5E2F2] btn-jelly">
+          <span>QUIZ</span>
+        </button>
+
+        <!-- BOOK 전환 (모바일: 아이콘만 / PC: 아이콘 + BOOK) -->
+        <button id="btn-switch-to-book" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center gap-1.5 transition btn-jelly">
+          <i class="fa-solid fa-book-open text-[11px]"></i><span class="hidden sm:inline">BOOK</span>
         </button>
       </div>
 
-      <!-- 공통 전체화면 버튼 -->
-      <button id="btn-fullscreen" type="button" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center text-xs font-bold transition">
+      <!-- 공통 전체화면 버튼 (아이콘만, 높이 동일 통일) -->
+      <button id="btn-fullscreen" type="button" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] flex items-center justify-center text-xs transition">
         <i id="fs-icon" class="fa-solid fa-expand"></i>
       </button>
     </div>
   </header>
 
   <!-- 가로모드 전환 안내 토스트 -->
-  <div id="rotate-toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-slate-900/90 text-white text-xs font-bold shadow-lg backdrop-blur-xs whitespace-nowrap">
+  <div id="rotate-toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-[#172554]/90 text-white text-xs font-bold shadow-lg backdrop-blur-xs whitespace-nowrap">
     기기를 가로로 돌리면 2쪽 보기가 더 크게 보입니다
   </div>
 
-  <!-- 전체화면 복귀 핫스팟 & 하단 패널 우측 상단 아이콘 플로팅 컨트롤러 -->
+  <!-- 전체화면 복귀 핫스팟 & 하단 패널 우측 상단 플로팅 컨트롤러 (Midnight Blue 유리 질감 통일) -->
   <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-5 z-50 cursor-pointer"></div>
   <div id="floating-top-controls" class="fixed top-14 right-3 z-50 flex items-center gap-1.5 pointer-events-auto">
-    <!-- 1) 송북 노래 일시정지/정지 2버튼 아이콘 캡슐 (노래 활성 시에만 표시) -->
-    <div id="floating-song-capsule" class="hidden h-9 flex items-center bg-slate-900/85 text-white rounded-full shadow-lg border border-white/20 backdrop-blur-md overflow-hidden">
-      <button id="btn-floating-song-toggle" type="button" class="w-9 h-9 hover:bg-white/15 text-xs flex items-center justify-center transition">
-        <i id="floating-song-icon" class="fa-solid fa-pause text-amber-300"></i>
+    <!-- 1) 송북 노래 일시정지/정지 2버튼 아이콘 캡슐 -->
+    <div id="floating-song-capsule" class="hidden h-8 flex items-center bg-[#172554]/75 text-white rounded-full shadow-md border border-white/20 backdrop-blur-md overflow-hidden">
+      <button id="btn-floating-song-toggle" type="button" class="w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition">
+        <i id="floating-song-icon" class="fa-solid fa-pause text-sky-200"></i>
       </button>
-      <div class="w-px h-4 bg-white/20"></div>
-      <button id="btn-floating-song-stop" type="button" class="w-9 h-9 hover:bg-rose-500/80 text-xs flex items-center justify-center transition">
-        <i class="fa-solid fa-stop text-rose-300"></i>
+      <div class="w-px h-3.5 bg-white/20"></div>
+      <button id="btn-floating-song-stop" type="button" class="w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition">
+        <i class="fa-solid fa-stop text-white/85"></i>
       </button>
     </div>
 
-    <!-- 2) 목차 페이지 음원 ON/OFF 아이콘 버튼 (목차 페이지에서만 표시) -->
-    <button id="btn-toc-mode-toggle" type="button" class="hidden w-9 h-9 rounded-full bg-slate-800/85 text-white border border-white/20 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition">
+    <!-- 2) 목차 페이지 음원 ON/OFF 아이콘 버튼 -->
+    <button id="btn-toc-mode-toggle" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition">
       <i class="fa-solid fa-volume-xmark"></i>
     </button>
 
-    <!-- 3) TAC 연속재생(PLAY ALL) 아이콘 버튼 (TAC 카드 학습 뷰에서만 표시) -->
-    <button id="btn-autoplay" type="button" class="hidden w-9 h-9 rounded-full bg-pink-600/90 hover:bg-pink-700 text-white border border-white/25 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition btn-jelly">
+    <!-- 3) TAC 연속재생(PLAY ALL) 아이콘 버튼 -->
+    <button id="btn-autoplay" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
       <i id="autoplay-icon" class="fa-solid fa-play"></i>
     </button>
 
-    <!-- 4) 전체화면 복귀 아이콘 버튼 (전체화면 모드일 때만 표시) -->
-    <button id="btn-floating-exit" type="button" class="hidden w-9 h-9 rounded-full bg-black/75 hover:bg-black/90 text-white text-xs backdrop-blur-md shadow-lg border border-white/20 flex items-center justify-center transition">
+    <!-- 4) 전체화면 복귀 아이콘 버튼 -->
+    <button id="btn-floating-exit" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition">
       <i class="fa-solid fa-compress"></i>
     </button>
   </div>

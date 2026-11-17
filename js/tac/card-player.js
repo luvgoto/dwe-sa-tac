@@ -240,24 +240,24 @@ export function switchTacView(view) {
   const btnQuiz = document.getElementById('nav-btn-quiz');
   const btnFilter = document.getElementById('nav-btn-filter');
 
-  btnCard.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly';
-  btnQuiz.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 btn-jelly';
+  btnCard.className = 'h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#EDF2F7] text-[#2B4C7E] hover:bg-[#DCE7F5] border border-[#D5E2F2] btn-jelly';
+  btnQuiz.className = 'h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#EDF2F7] text-[#2B4C7E] hover:bg-[#DCE7F5] border border-[#D5E2F2] btn-jelly';
 
   const parentHiddenClass = getIsParentMode() ? '' : 'hidden ';
-  btnFilter.className = `${parentHiddenClass}parent-only-control px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 btn-jelly`;
+  btnFilter.className = `${parentHiddenClass}parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition btn-jelly`;
 
   if (view === 'card') {
     document.getElementById('view-card').classList.remove('hidden');
     document.getElementById('btn-autoplay')?.classList.remove('hidden');
-    btnCard.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly';
+    btnCard.className = 'h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#2B4C7E] text-white shadow-xs btn-jelly';
     updateCardView();
   } else if (view === 'quiz') {
     document.getElementById('view-quiz').classList.remove('hidden');
-    btnQuiz.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly';
+    btnQuiz.className = 'h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#2B4C7E] text-white shadow-xs btn-jelly';
     resetAndStartQuiz(selectedSet);
   } else if (view === 'filter') {
     document.getElementById('view-filter').classList.remove('hidden');
-    btnFilter.className = `${parentHiddenClass}parent-only-control px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-900 text-white shadow-xs btn-jelly`;
+    btnFilter.className = `${parentHiddenClass}parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#4A3F35] text-white border border-[#4A3F35] text-xs font-bold flex items-center gap-1 shadow-xs transition btn-jelly`;
     renderParentView();
   }
 }
@@ -468,10 +468,10 @@ function startAutoPlay() {
   isAutoPlaying = true;
   const btn = document.getElementById('btn-autoplay');
   const icon = document.getElementById('autoplay-icon');
-  if (icon) icon.className = 'fa-solid fa-pause';
+  if (icon) icon.className = 'fa-solid fa-pause text-sky-200';
   if (btn) {
     const hiddenClass = btn.classList.contains('hidden') ? 'hidden ' : '';
-    btn.className = `${hiddenClass}w-9 h-9 rounded-full bg-pink-600 hover:bg-pink-700 text-white border border-white/40 text-xs shadow-lg backdrop-blur-md animate-pulse flex items-center justify-center transition btn-jelly`;
+    btn.className = `${hiddenClass}w-8 h-8 rounded-full bg-[#2B4C7E]/90 hover:bg-[#2B4C7E] text-white border border-sky-200/50 ring-2 ring-sky-300/30 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly`;
   }
   playCurrentAudio(true, false);
 }
@@ -484,6 +484,6 @@ function stopAutoPlay() {
   if (icon) icon.className = 'fa-solid fa-play';
   if (btn) {
     const hiddenClass = btn.classList.contains('hidden') ? 'hidden ' : '';
-    btn.className = `${hiddenClass}w-9 h-9 rounded-full bg-pink-600/90 hover:bg-pink-700 text-white border border-white/25 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition btn-jelly`;
+    btn.className = `${hiddenClass}w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly`;
   }
 }

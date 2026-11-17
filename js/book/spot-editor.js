@@ -104,24 +104,23 @@ function setBrushShape(shape) {
   const rectBox = document.getElementById('rect-size-box');
   const vocaBox = document.getElementById('voca-size-box');
 
-  btnCircle.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
-  btnRect.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-pink-50';
-  btnVoca.className = 'px-2 py-0.5 rounded text-sky-700 hover:bg-sky-50';
+  btnCircle.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-slate-100';
+  btnRect.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-slate-100';
+  btnVoca.className = 'px-2 py-0.5 rounded text-slate-600 hover:bg-slate-100';
   circleBox.classList.add('hidden');
   rectBox.classList.add('hidden');
   vocaBox.classList.add('hidden');
 
   if (shape === 'circle') {
-    btnCircle.className = 'px-2 py-0.5 rounded bg-pink-600 text-white';
+    btnCircle.className = 'px-2 py-0.5 rounded bg-[#2B4C7E] text-white';
     circleBox.classList.remove('hidden');
   } else if (shape === 'rect') {
-    btnRect.className = 'px-2 py-0.5 rounded bg-pink-600 text-white';
+    btnRect.className = 'px-2 py-0.5 rounded bg-[#2B4C7E] text-white';
     rectBox.classList.remove('hidden');
   } else if (shape === 'voca') {
-    btnVoca.className = 'px-2 py-0.5 rounded bg-sky-600 text-white';
+    btnVoca.className = 'px-2 py-0.5 rounded bg-[#2B4C7E] text-white';
     vocaBox.classList.remove('hidden');
   }
-}
 
 function applyRectPreset(w, h) {
   rectW = w;
@@ -178,9 +177,9 @@ export function toggleSpotEditMode() {
 
   spread.classList.toggle('edit-active', isSpotEditMode);
   controls.classList.toggle('hidden', !isSpotEditMode);
-  btn.className = isSpotEditMode
-    ? 'px-2.5 py-1 rounded-lg bg-pink-600 text-white border border-pink-600 text-xs font-bold transition'
-    : 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition';
+ btn.className = isSpotEditMode
+    ? 'h-7 sm:h-8 px-2.5 rounded-lg bg-[#4A3F35] text-white border border-[#4A3F35] text-xs font-bold flex items-center gap-1 transition'
+    : 'h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition';
 
   if (isSpotEditMode) {
     ensureOcrWorker();
@@ -203,8 +202,8 @@ export function disableSpotEditMode() {
 
   if (spread) spread.classList.remove('edit-active');
   if (controls) controls.classList.add('hidden');
-  if (btn) {
-    btn.className = 'parent-only-control hidden px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition';
+if (btn) {
+    btn.className = 'hidden parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition';
   }
   hideGhost('left');
   hideGhost('right');

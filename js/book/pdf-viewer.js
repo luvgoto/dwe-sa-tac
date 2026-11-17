@@ -514,12 +514,12 @@ function updateTocModeUI(isTocPage) {
   if (tocAudioMode) {
     spread.classList.remove('toc-audio-off');
     spread.classList.add('toc-audio-on');
-    toggleBtn.className = 'w-9 h-9 rounded-full bg-blue-600/95 hover:bg-blue-700 text-white border border-white/30 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition';
+    toggleBtn.className = 'w-8 h-8 rounded-full bg-[#2B4C7E]/90 hover:bg-[#2B4C7E] text-sky-200 border border-sky-200/50 ring-2 ring-sky-300/30 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition';
     toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
   } else {
     spread.classList.remove('toc-audio-on');
     spread.classList.add('toc-audio-off');
-    toggleBtn.className = 'w-9 h-9 rounded-full bg-slate-800/85 hover:bg-slate-900 text-white border border-white/20 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition';
+    toggleBtn.className = 'w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition';
     toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i>`;
   }
 }

@@ -58,7 +58,6 @@ export function switchToBook(targetPage = null) {
 
   document.getElementById('section-tac').classList.add('hidden');
   document.getElementById('section-book').classList.remove('hidden');
-  document.getElementById('btn-switch-to-book').classList.add('hidden');
   document.getElementById('brand-tac').classList.add('hidden');
   document.getElementById('header-controls-tac').classList.add('hidden');
 
@@ -84,7 +83,6 @@ export function switchToTac(options = {}) {
   document.getElementById('brand-book').classList.add('hidden');
   document.getElementById('header-controls-book').classList.add('hidden');
 
-  document.getElementById('btn-switch-to-book').classList.remove('hidden');
   document.getElementById('brand-tac').classList.remove('hidden');
   document.getElementById('header-controls-tac').classList.remove('hidden');
 
