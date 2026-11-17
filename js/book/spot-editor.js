@@ -8,6 +8,7 @@ import {
 } from './spots-sync.js';
 import { preloadTrackList } from './audio-ducking.js';
 import { ensureOcrWorker, detectCardNumberFromCorner } from './card-ocr.js';
+import { getIsParentMode } from '../main.js';
 
 let isSpotEditMode = false;
 let currentShape = 'circle';
@@ -170,17 +171,27 @@ function hideGhost(side) {
   if (ghost) ghost.style.display = 'none';
 }
 
+function applyEditButtonVisual(active) {
+  const btn = document.getElementById('btn-edit-spots');
+  if (!btn) return;
+  const parentHidden = getIsParentMode() ? '' : 'hidden ';
+  btn.className = active
+    ? `${parentHidden}parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#4A3F35] text-white border border-[#4A3F35] text-xs font-bold flex items-center gap-1 transition`
+    : `${parentHidden}parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition`;
+}
+
 export function toggleSpotEditMode() {
+  if (!getIsParentMode()) {
+    disableSpotEditMode();
+    return;
+  }
   isSpotEditMode = !isSpotEditMode;
   const spread = document.getElementById('book-spread');
-  const btn = document.getElementById('btn-edit-spots');
   const controls = document.getElementById('edit-controls');
 
   spread.classList.toggle('edit-active', isSpotEditMode);
   controls.classList.toggle('hidden', !isSpotEditMode);
-  btn.className = isSpotEditMode
-    ? 'parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#4A3F35] text-white border border-[#4A3F35] text-xs font-bold flex items-center gap-1 transition'
-    : 'parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition';
+  applyEditButtonVisual(isSpotEditMode);
 
   if (isSpotEditMode) {
     ensureOcrWorker();
@@ -194,24 +205,22 @@ export function toggleSpotEditMode() {
 export function disableSpotEditMode() {
   closeSongModal();
   closeVocaLinkModal();
-  if (!isSpotEditMode) return;
-
   isSpotEditMode = false;
+
   const spread = document.getElementById('book-spread');
-  const btn = document.getElementById('btn-edit-spots');
   const controls = document.getElementById('edit-controls');
 
   if (spread) spread.classList.remove('edit-active');
   if (controls) controls.classList.add('hidden');
-  if (btn) {
-    btn.className = 'hidden parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition';
-  }
+  applyEditButtonVisual(false);
+
   hideGhost('left');
   hideGhost('right');
   if (editorDeps) editorDeps.refreshLayers();
 }
 
 export function openSpotModalEdit(pageNum, idx) {
+  if (!isSpotEditMode || !getIsParentMode()) return;
   const spot = getSpotsForPage(pageNum)[idx];
   if (isVocaLinkSpot(spot)) {
     openVocaLinkModal(pageNum, idx);
@@ -226,7 +235,7 @@ export function openSpotModalEdit(pageNum, idx) {
 }
 
 async function openSpotModalNew(e, side) {
-  if (!isSpotEditMode || !editorDeps) return;
+  if (!isSpotEditMode || !getIsParentMode() || !editorDeps) return;
   const pageNum = editorDeps.getPageForSide(side);
   if (!pageNum) return;
 

@@ -275,8 +275,8 @@ export async function renderCurrentView() {
   try {
     const container = document.getElementById('viewer-container');
     const compact = isMobileDevice();
-    const horizontalMargin = compact ? 4 : (isFullscreenMode ? 16 : 32);
-    const verticalMargin = compact ? 4 : (isFullscreenMode ? 12 : 20);
+    const horizontalMargin = isFullscreenMode ? 0 : (compact ? 4 : 32);
+    const verticalMargin = isFullscreenMode ? 0 : (compact ? 4 : 20);
 
     const availW = Math.max(100, container.clientWidth - horizontalMargin);
     const availH = Math.max(100, container.clientHeight - verticalMargin);

@@ -108,6 +108,13 @@ function applyFullscreenUI(isFs) {
     floatingBox.classList.toggle('top-14', !isFs);
   }
 
+  const viewerContainer = document.getElementById('viewer-container');
+  if (viewerContainer) {
+    viewerContainer.classList.toggle('p-0', isFs);
+    viewerContainer.classList.toggle('p-2', !isFs);
+    viewerContainer.classList.toggle('sm:p-3', !isFs);
+  }
+
   if (activeAppMode === 'book') {
     toggleBookFs(isFs);
   }
