@@ -121,6 +121,7 @@ function setBrushShape(shape) {
     btnVoca.className = 'px-2 py-0.5 rounded bg-[#2B4C7E] text-white';
     vocaBox.classList.remove('hidden');
   }
+}
 
 function applyRectPreset(w, h) {
   rectW = w;
@@ -177,7 +178,7 @@ export function toggleSpotEditMode() {
 
   spread.classList.toggle('edit-active', isSpotEditMode);
   controls.classList.toggle('hidden', !isSpotEditMode);
- btn.className = isSpotEditMode
+  btn.className = isSpotEditMode
     ? 'h-7 sm:h-8 px-2.5 rounded-lg bg-[#4A3F35] text-white border border-[#4A3F35] text-xs font-bold flex items-center gap-1 transition'
     : 'h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition';
 
@@ -202,7 +203,7 @@ export function disableSpotEditMode() {
 
   if (spread) spread.classList.remove('edit-active');
   if (controls) controls.classList.add('hidden');
-if (btn) {
+  if (btn) {
     btn.className = 'hidden parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition';
   }
   hideGhost('left');
