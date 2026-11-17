@@ -51,7 +51,6 @@ const fallbackWord = document.getElementById('fallback-word');
 const fallbackText = document.getElementById('fallback-text');
 const indicator = document.getElementById('card-indicator');
 const stageBadge = document.getElementById('card-stage-badge');
-const wordTitle = document.getElementById('card-word-title');
 const tagsBox = document.getElementById('card-tags-box');
 const audioPlayer = document.getElementById('audio-player');
 
@@ -278,7 +277,6 @@ function scheduleNeighborPrefetch() {
       if (img.decode) img.decode().catch(() => {});
     });
 
-    // 디스크 Cache Storage에 다음/이전 카드 1개씩 순차 저장
     const nextCardItem = currentPlaylist[(currentIndex + 1) % len];
     const prevCardItem = currentPlaylist[(currentIndex - 1 + len) % len];
     const audioUrls = [];
@@ -299,12 +297,10 @@ function updateCardView() {
   const stageConfig = STAGE_THEMES[card.stage] || STAGE_THEMES['1단계'];
 
   indicator.textContent = `${currentIndex + 1} / ${currentPlaylist.length}`;
-  stageBadge.className = `px-3 py-1 rounded-full font-black text-white text-[11px] sm:text-xs shadow-xs tracking-wider ${stageConfig.bg}`;
+  stageBadge.className = `h-7 px-3 rounded-full font-black text-white text-[11px] sm:text-xs shadow-xs tracking-wider inline-flex items-center justify-center ${stageConfig.bg}`;
   stageBadge.textContent = stageConfig.name;
 
   updateCardFavoriteUI(isFavoriteCard(card.id));
-
-  wordTitle.textContent = card.isStory ? `STORY #${card.id}` : card.word;
 
   tagsBox.innerHTML = '';
   card.cats.forEach(cat => {
@@ -360,10 +356,10 @@ function updateCardFavoriteUI(isFav) {
   if (!btn || !icon) return;
 
   if (isFav) {
-    btn.className = 'w-7 h-7 rounded-full bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-500 flex items-center justify-center transition btn-jelly';
+    btn.className = 'w-7 h-7 rounded-full bg-[#EFE6D8] hover:bg-[#E5D7C3] border border-[#D8C7B0] text-amber-600 flex items-center justify-center transition btn-jelly';
     icon.className = 'fa-solid fa-star text-xs';
   } else {
-    btn.className = 'w-7 h-7 rounded-full bg-slate-100 hover:bg-amber-50 border border-slate-200 text-slate-400 flex items-center justify-center transition btn-jelly';
+    btn.className = 'w-7 h-7 rounded-full bg-[#EDF2F7] hover:bg-[#DCE7F5] border border-[#D5E2F2] text-[#2B4C7E]/60 flex items-center justify-center transition btn-jelly';
     icon.className = 'fa-regular fa-star text-xs';
   }
 }
