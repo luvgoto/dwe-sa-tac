@@ -268,10 +268,9 @@ export async function renderCurrentView() {
   if (!pdfDoc || isRendering) return;
   isRendering = true;
   try {
-    const container = document.getElementById('viewer-container');
-    const compact = window.innerWidth <= 1024;
-    const horizontalMargin = isFullscreenMode ? 0 : (compact ? 4 : 16);
-    const verticalMargin = isFullscreenMode ? 0 : (compact ? 4 : 12);
+const container = document.getElementById('viewer-container');
+    const horizontalMargin = 0;
+    const verticalMargin = 0;
 
     const availW = Math.max(100, container.clientWidth - horizontalMargin);
     const availH = Math.max(100, container.clientHeight - verticalMargin);
