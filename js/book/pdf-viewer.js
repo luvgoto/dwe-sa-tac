@@ -23,7 +23,6 @@ let currentPage = 1;
 let totalPages = 1;
 let isSpreadMode = window.innerWidth >= window.innerHeight;
 let userManualSpreadOverride = false;
-let hasCoverPage = true;
 let isRendering = false;
 let isFullscreenMode = false;
 let tocAudioMode = false;
@@ -171,7 +170,6 @@ export async function initBookViewer(options = {}) {
 function bindViewerEvents() {
   document.getElementById('btn-toc-mode-toggle').addEventListener('click', toggleTocInteractionMode);
   document.getElementById('btn-toggle-spread').addEventListener('click', toggleSpreadMode);
-  document.getElementById('btn-toggle-cover').addEventListener('click', toggleCoverMode);
 
   let sliderDebounce;
   document.getElementById('page-slider').addEventListener('input', (e) => {
@@ -271,9 +269,9 @@ export async function renderCurrentView() {
   isRendering = true;
   try {
     const container = document.getElementById('viewer-container');
-    const compact = isMobileDevice();
-    const horizontalMargin = isFullscreenMode ? 0 : (compact ? 4 : 32);
-    const verticalMargin = isFullscreenMode ? 0 : (compact ? 4 : 20);
+    const compact = window.innerWidth <= 1024;
+    const horizontalMargin = isFullscreenMode ? 0 : (compact ? 4 : 16);
+    const verticalMargin = isFullscreenMode ? 0 : (compact ? 4 : 12);
 
     const availW = Math.max(100, container.clientWidth - horizontalMargin);
     const availH = Math.max(100, container.clientHeight - verticalMargin);
@@ -285,15 +283,10 @@ export async function renderCurrentView() {
 
     if (!isSpreadMode) {
       leftPageNum = currentPage;
-    } else if (hasCoverPage) {
-      if (currentPage === 1) {
-        rightPageNum = 1;
-      } else {
-        leftPageNum = (currentPage % 2 === 0) ? currentPage : currentPage - 1;
-        rightPageNum = (leftPageNum + 1 <= totalPages) ? leftPageNum + 1 : null;
-      }
+    } else if (currentPage === 1) {
+      rightPageNum = 1;
     } else {
-      leftPageNum = (currentPage % 2 !== 0) ? currentPage : currentPage - 1;
+      leftPageNum = (currentPage % 2 === 0) ? currentPage : currentPage - 1;
       rightPageNum = (leftPageNum + 1 <= totalPages) ? leftPageNum + 1 : null;
     }
 
@@ -303,11 +296,9 @@ export async function renderCurrentView() {
 
     const samplePage = await pdfDoc.getPage(leftPageNum || rightPageNum || 1);
     const baseVp = samplePage.getViewport({ scale: 1.0 });
-    const rawScale = Math.min((isSpreadMode ? availW / 2 : availW) / baseVp.width, availH / baseVp.height);
-    const fsZoomBoost = (isFullscreenMode && !compact) ? 1.035 : 1.0;
-    const scale = rawScale * fsZoomBoost;
-    const renderedW = Math.round(baseVp.width * scale);
-    const renderedH = Math.round(baseVp.height * scale);
+    const scale = Math.min((isSpreadMode ? availW / 2 : availW) / baseVp.width, availH / baseVp.height);
+    const renderedW = Math.floor(baseVp.width * scale);
+    const renderedH = Math.floor(baseVp.height * scale);
 
     if (leftPageNum) {
       leftBox.style.display = 'block';
@@ -351,11 +342,11 @@ async function renderSinglePage(pageNum, canvasId, linkLayerId, songLayerId, sca
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const canvas = document.getElementById(canvasId);
   const ctx = canvas.getContext('2d');
-  const floorW = Math.round(viewport.width);
-  const floorH = Math.round(viewport.height);
+  const floorW = Math.floor(viewport.width);
+  const floorH = Math.floor(viewport.height);
 
-  canvas.width = Math.round(viewport.width * dpr);
-  canvas.height = Math.round(viewport.height * dpr);
+  canvas.width = Math.floor(viewport.width * dpr);
+  canvas.height = Math.floor(viewport.height * dpr);
   canvas.style.width = `${floorW}px`;
   canvas.style.height = `${floorH}px`;
   canvas.parentElement.style.width = `${floorW}px`;
@@ -541,14 +532,14 @@ async function navigateToDestination(dest) {
 export function prevPage() {
   if (currentPage <= 1) return;
   if (!isSpreadMode) currentPage--;
-  else currentPage = hasCoverPage ? ((currentPage <= 3) ? 1 : currentPage - 2) : ((currentPage <= 2) ? 1 : currentPage - 2);
+  else currentPage = (currentPage <= 3) ? 1 : currentPage - 2;
   renderCurrentView();
 }
 
 export function nextPage() {
   if (currentPage >= totalPages) return;
   if (!isSpreadMode) currentPage++;
-  else currentPage = (hasCoverPage && currentPage === 1) ? 2 : Math.min(totalPages, currentPage + 2);
+  else currentPage = (currentPage === 1) ? 2 : Math.min(totalPages, currentPage + 2);
   renderCurrentView();
 }
 
@@ -588,13 +579,6 @@ async function toggleSpreadMode() {
     }
   }
 
-  renderCurrentView();
-}
-
-function toggleCoverMode() {
-  hasCoverPage = !hasCoverPage;
-  const labelEl = document.getElementById('label-cover');
-  if (labelEl) labelEl.textContent = hasCoverPage ? '표지포함' : '표지미포함';
   renderCurrentView();
 }
 

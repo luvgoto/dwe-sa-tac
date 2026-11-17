@@ -99,14 +99,9 @@
           <i class="fa-solid fa-music text-[11px]"></i><span class="hidden sm:inline">음원편집</span>
         </button>
 
-        <!-- 2쪽 (아이콘 없이 글자만) -->
+        <!-- 2쪽 / 1쪽 전환 (아이콘 없이 글자만) -->
         <button id="btn-toggle-spread" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center justify-center transition">
           <span id="label-spread">2쪽</span>
-        </button>
-
-        <!-- 표지포함 (아이콘 없이 글자만) -->
-        <button id="btn-toggle-cover" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center justify-center transition">
-          <span id="label-cover">표지포함</span>
         </button>
 
         <!-- TAC 전환 (모바일: 아이콘만 / PC: 아이콘 + TAC) -->
@@ -150,9 +145,9 @@
     기기를 가로로 돌리면 2쪽 보기가 더 크게 보입니다
   </div>
 
-  <!-- 전체화면 복귀 핫스팟 & 하단 패널 우측 상단 플로팅 컨트롤러 (Midnight Blue 유리 질감 통일) -->
+  <!-- 전체화면 복귀 핫스팟 & 우측 상단 플로팅 컨트롤러 (일반 모드: top-14 / 전체화면: top-3) -->
   <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-5 z-50 cursor-pointer"></div>
-  <div id="floating-top-controls" class="fixed top-3 right-3 z-50 flex items-center gap-1.5 pointer-events-auto">
+  <div id="floating-top-controls" class="fixed top-14 right-3 z-50 flex items-center gap-1.5 pointer-events-auto">
     <!-- 1) 송북 노래 일시정지/정지 2버튼 아이콘 캡슐 -->
     <div id="floating-song-capsule" class="hidden h-8 flex items-center bg-[#172554]/75 text-white rounded-full shadow-md border border-white/20 backdrop-blur-md overflow-hidden">
       <button id="btn-floating-song-toggle" type="button" class="w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition">
@@ -372,41 +367,41 @@
       </footer>
     </main>
 
-    <!-- 2-2. 소리 퀴즈 놀이 뷰 (여유 공간 시 정중앙 my-auto, 세로 넘칠 시 스크롤) -->
-    <main id="view-quiz" class="hidden w-full max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto my-auto px-3 py-3 sm:px-6 sm:py-5 flex flex-col space-y-3 sm:space-y-4 shrink-0">
+    <!-- 2-2. 소리 퀴즈 놀이 뷰 (상단 기준 배치 + 여유 있는 세로 간격) -->
+    <main id="view-quiz" class="hidden w-full max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto px-3 pt-5 pb-6 sm:px-6 sm:pt-7 sm:pb-8 flex flex-col space-y-4 sm:space-y-6 shrink-0">
       <div class="w-full flex items-center justify-between px-1">
         <div class="flex items-center gap-2">
-          <span class="px-3 py-1 rounded-full text-xs font-black text-amber-800 bg-amber-100 border border-amber-200 tracking-wide">
+          <span class="h-7 px-3 rounded-full text-xs font-black text-amber-800 bg-amber-100 border border-amber-200 tracking-wide inline-flex items-center justify-center">
             QUIZ
           </span>
-          <span id="quiz-progress-badge" class="text-xs font-mono font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200">
+          <span id="quiz-progress-badge" class="h-7 px-3 rounded-full text-xs font-mono font-bold bg-[#EDF2F7] text-[#2B4C7E] border border-[#D5E2F2] inline-flex items-center justify-center">
             1 / 10
           </span>
-          <span id="quiz-score-badge" class="text-xs font-black bg-slate-100 text-green-700 px-3 py-1 rounded-full border border-slate-200">
+          <span id="quiz-score-badge" class="h-7 px-3 rounded-full text-xs font-black bg-[#EDF2F7] text-emerald-700 border border-[#D5E2F2] inline-flex items-center justify-center">
             SCORE: 0 / 10
           </span>
         </div>
-        <button id="btn-quiz-reset" type="button" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center border border-slate-200 btn-jelly">
+        <button id="btn-quiz-reset" type="button" class="w-8 h-8 rounded-xl bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] flex items-center justify-center border border-[#D5E2F2] btn-jelly">
           <i class="fa-solid fa-rotate text-xs"></i>
         </button>
       </div>
 
-      <div id="quiz-speaker-banner" class="w-full bg-slate-50 hover:bg-slate-100 p-3.5 sm:p-4 rounded-2xl border-2 border-slate-200 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition group">
-        <div class="flex items-center gap-3.5">
-          <div class="w-11 h-11 sm:w-13 sm:h-13 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl sm:text-2xl shadow-xs group-hover:scale-105 transition">
+      <div id="quiz-speaker-banner" class="w-full bg-slate-50 hover:bg-slate-100 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition group">
+        <div class="flex items-center gap-3.5 sm:gap-4">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#2B4C7E] text-white flex items-center justify-center text-xl sm:text-2xl shadow-xs group-hover:scale-105 transition">
             <i class="fa-solid fa-volume-high animate-pulse"></i>
           </div>
           <div class="text-left">
-            <p class="text-xs sm:text-base font-black text-slate-900 leading-tight">Listen carefully and choose the correct card.</p>
-            <p class="text-[11px] sm:text-xs text-blue-600 font-bold mt-0.5">Tap to listen again.</p>
+            <p class="text-sm sm:text-base font-black text-slate-900 leading-tight">Listen carefully and choose the correct card.</p>
+            <p class="text-xs text-[#2B4C7E] font-bold mt-1">Tap to listen again.</p>
           </div>
         </div>
-        <span class="px-3.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-black rounded-xl shrink-0 uppercase tracking-wider">
+        <span class="px-3.5 py-1.5 bg-[#EDF2F7] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-black rounded-xl shrink-0 uppercase tracking-wider">
           repeat
         </span>
       </div>
 
-      <div id="quiz-options-grid" class="w-full grid grid-cols-1 md:grid-cols-3 gap-3 pt-0.5"></div>
+      <div id="quiz-options-grid" class="w-full grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-5 pt-1"></div>
 
       <div id="quiz-complete-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border-2 border-slate-100">
@@ -416,13 +411,13 @@
           <h3 class="text-xl font-black text-slate-900">GREAT JOB!</h3>
           <p class="text-slate-500 text-xs mt-1">10문제를 모두 완료했습니다.</p>
 
-          <div class="my-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl">
-            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Total Score</span>
-            <p class="text-3xl font-black text-blue-700 mt-0.5"><span id="quiz-final-score">0</span> / 10</p>
+          <div class="my-4 py-3 bg-[#EDF2F7] border border-[#D5E2F2] rounded-2xl">
+            <span class="text-xs font-bold text-[#2B4C7E] uppercase tracking-wider">Total Score</span>
+            <p class="text-3xl font-black text-[#2B4C7E] mt-0.5"><span id="quiz-final-score">0</span> / 10</p>
           </div>
 
           <div class="flex gap-2">
-            <button id="btn-quiz-play-again" type="button" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-xs text-sm btn-jelly">
+            <button id="btn-quiz-play-again" type="button" class="flex-1 py-3 bg-[#2B4C7E] hover:bg-[#1E3557] text-white font-black rounded-xl shadow-xs text-sm btn-jelly">
               PLAY AGAIN
             </button>
             <button id="btn-quiz-to-card" type="button" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm btn-jelly">
