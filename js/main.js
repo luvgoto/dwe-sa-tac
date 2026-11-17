@@ -1,4 +1,5 @@
 import { initBookViewer, pauseBookAudio, goToPage, getCurrentPage, renderCurrentView, toggleFullscreen as toggleBookFs } from './book/pdf-viewer.js';
+import { disableSpotEditMode } from './book/spot-editor.js';
 import { initTacPlayer, switchTacView, loadCustomCardList, stopAllTacPlayback } from './tac/card-player.js';
 
 let activeAppMode = 'book'; // 'book' | 'tac'
@@ -20,19 +21,14 @@ function setParentMode(enabled) {
   });
   document.getElementById('btn-parent-lock').classList.toggle('hidden', !enabled);
 
-  // 부모모드 해제 시 열려있던 편집 도구/필터 뷰 정리
+  // 부모모드 해제 시 열려있던 편집 도구/모달/필터 뷰를 강제로 초기화
   if (!enabled) {
-    const editBtn = document.getElementById('btn-edit-spots');
-    const editControls = document.getElementById('edit-controls');
-    if (editControls && !editControls.classList.contains('hidden') && editBtn) {
-      editBtn.click();
-    }
+    disableSpotEditMode();
     if (activeAppMode === 'tac') {
       switchTacView('card');
     }
   }
 }
-
 function bindParentSecretTap(element) {
   if (!element) return;
   let tapCount = 0;

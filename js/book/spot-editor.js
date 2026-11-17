@@ -191,6 +191,26 @@ export function toggleSpotEditMode() {
   if (editorDeps) editorDeps.refreshLayers();
 }
 
+export function disableSpotEditMode() {
+  closeSongModal();
+  closeVocaLinkModal();
+  if (!isSpotEditMode) return;
+
+  isSpotEditMode = false;
+  const spread = document.getElementById('book-spread');
+  const btn = document.getElementById('btn-edit-spots');
+  const controls = document.getElementById('edit-controls');
+
+  if (spread) spread.classList.remove('edit-active');
+  if (controls) controls.classList.add('hidden');
+  if (btn) {
+    btn.className = 'parent-only-control hidden px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold hover:bg-slate-200 transition';
+  }
+  hideGhost('left');
+  hideGhost('right');
+  if (editorDeps) editorDeps.refreshLayers();
+}
+
 export function openSpotModalEdit(pageNum, idx) {
   const spot = getSpotsForPage(pageNum)[idx];
   if (isVocaLinkSpot(spot)) {
