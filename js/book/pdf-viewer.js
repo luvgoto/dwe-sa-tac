@@ -303,7 +303,9 @@ export async function renderCurrentView() {
 
     const samplePage = await pdfDoc.getPage(leftPageNum || rightPageNum || 1);
     const baseVp = samplePage.getViewport({ scale: 1.0 });
-    const scale = Math.min((isSpreadMode ? availW / 2 : availW) / baseVp.width, availH / baseVp.height);
+    const rawScale = Math.min((isSpreadMode ? availW / 2 : availW) / baseVp.width, availH / baseVp.height);
+    const fsZoomBoost = (isFullscreenMode && !compact) ? 1.035 : 1.0;
+    const scale = rawScale * fsZoomBoost;
     const renderedW = Math.round(baseVp.width * scale);
     const renderedH = Math.round(baseVp.height * scale);
 

@@ -102,7 +102,12 @@ function applyFullscreenUI(isFs) {
   document.getElementById('btn-floating-exit').classList.toggle('hidden', !isFs);
   document.getElementById('fs-icon').className = isFs ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
 
-  // 전체화면 시 PDF 뷰어 패딩 0으로 꽉 채우기 (플로팅 버튼은 현위치 유지)
+  const floatingBox = document.getElementById('floating-top-controls');
+  if (floatingBox) {
+    floatingBox.classList.toggle('top-3', isFs);
+    floatingBox.classList.toggle('top-13', !isFs);
+  }
+
   const viewerContainer = document.getElementById('viewer-container');
   if (viewerContainer) {
     if (isFs) {
