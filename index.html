@@ -140,29 +140,28 @@
     기기를 가로로 돌리면 2쪽 보기가 더 크게 보입니다
   </div>
 
-  <!-- 전체화면 복귀 핫스팟 & 우측 하단 1열(3행) 플로팅 컨트롤러 -->
+  <!-- 전체화면 복귀 핫스팟 & 하단 패널 우측 상단 아이콘 플로팅 컨트롤러 -->
   <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-5 z-50 cursor-pointer"></div>
-  <div id="floating-top-controls" class="fixed bottom-14 right-3 z-50 flex flex-col items-end gap-2 pointer-events-auto">
-    <!-- 1행) 송북 노래 일시정지/정지 2버튼 캡슐 (노래 활성 시에만 표시) -->
-    <div id="floating-song-capsule" class="hidden flex items-center bg-slate-900/85 text-white rounded-full shadow-lg border border-white/20 backdrop-blur-md overflow-hidden">
-      <button id="btn-floating-song-toggle" type="button" class="px-3 py-1.5 hover:bg-white/15 text-xs font-bold flex items-center gap-1 transition">
+  <div id="floating-top-controls" class="fixed top-14 right-3 z-50 flex items-center gap-1.5 pointer-events-auto">
+    <!-- 1) 송북 노래 일시정지/정지 2버튼 아이콘 캡슐 (노래 활성 시에만 표시) -->
+    <div id="floating-song-capsule" class="hidden h-9 flex items-center bg-slate-900/85 text-white rounded-full shadow-lg border border-white/20 backdrop-blur-md overflow-hidden">
+      <button id="btn-floating-song-toggle" type="button" class="w-9 h-9 hover:bg-white/15 text-xs flex items-center justify-center transition">
         <i id="floating-song-icon" class="fa-solid fa-pause text-amber-300"></i>
-        <span id="floating-song-label">일시정지</span>
       </button>
-      <div class="w-px h-3.5 bg-white/20"></div>
-      <button id="btn-floating-song-stop" type="button" class="px-2.5 py-1.5 hover:bg-rose-500/80 text-xs font-bold flex items-center transition">
+      <div class="w-px h-4 bg-white/20"></div>
+      <button id="btn-floating-song-stop" type="button" class="w-9 h-9 hover:bg-rose-500/80 text-xs flex items-center justify-center transition">
         <i class="fa-solid fa-stop text-rose-300"></i>
       </button>
     </div>
 
-    <!-- 2행) 목차 페이지 음원 ON/OFF 플로팅 버튼 (목차 페이지에서만 표시) -->
-    <button id="btn-toc-mode-toggle" type="button" class="hidden px-3 py-1.5 rounded-full bg-slate-800/85 text-white border border-white/20 text-xs font-bold shadow-lg backdrop-blur-md transition">
-      <i class="fa-solid fa-volume-xmark"></i><span class="ml-1">음원 OFF</span>
+    <!-- 2) 목차 페이지 음원 ON/OFF 아이콘 버튼 (목차 페이지에서만 표시) -->
+    <button id="btn-toc-mode-toggle" type="button" class="hidden w-9 h-9 rounded-full bg-slate-800/85 text-white border border-white/20 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition">
+      <i class="fa-solid fa-volume-xmark"></i>
     </button>
 
-    <!-- 3행) 전체화면 복귀 버튼 (전체화면 모드일 때만 표시) -->
-    <button id="btn-floating-exit" type="button" class="hidden px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-white/20 transition">
-      <i class="fa-solid fa-compress mr-1"></i> 복귀
+    <!-- 3) 전체화면 복귀 아이콘 버튼 (전체화면 모드일 때만 표시) -->
+    <button id="btn-floating-exit" type="button" class="hidden w-9 h-9 rounded-full bg-black/75 hover:bg-black/90 text-white text-xs backdrop-blur-md shadow-lg border border-white/20 flex items-center justify-center transition">
+      <i class="fa-solid fa-compress"></i>
     </button>
   </div>
 

@@ -104,6 +104,12 @@ function applyFullscreenUI(isFs) {
   document.getElementById('btn-floating-exit').classList.toggle('hidden', !isFs);
   document.getElementById('fs-icon').className = isFs ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
 
+  const floatingBox = document.getElementById('floating-top-controls');
+  if (floatingBox) {
+    floatingBox.classList.toggle('top-3', isFs);
+    floatingBox.classList.toggle('top-14', !isFs);
+  }
+
   if (activeAppMode === 'book') {
     toggleBookFs(isFs);
   }

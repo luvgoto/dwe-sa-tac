@@ -500,7 +500,6 @@ export function refreshAllSongLayers() {
     renderSongCircles(currentRightPageNum, 'songs-right', parseInt(rightC.style.width, 10), parseInt(rightC.style.height, 10));
   }
 }
-
 function updateTocModeUI(isTocPage) {
   const toggleBtn = document.getElementById('btn-toc-mode-toggle');
   const spread = document.getElementById('book-spread');
@@ -515,13 +514,13 @@ function updateTocModeUI(isTocPage) {
   if (tocAudioMode) {
     spread.classList.remove('toc-audio-off');
     spread.classList.add('toc-audio-on');
-    toggleBtn.className = 'px-3 py-1.5 rounded-full bg-blue-600/95 hover:bg-blue-700 text-white border border-white/30 text-xs font-bold shadow-lg backdrop-blur-md transition';
-    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i><span class="ml-1">음원 ON</span>`;
+    toggleBtn.className = 'w-9 h-9 rounded-full bg-blue-600/95 hover:bg-blue-700 text-white border border-white/30 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition';
+    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
   } else {
     spread.classList.remove('toc-audio-on');
     spread.classList.add('toc-audio-off');
-    toggleBtn.className = 'px-3 py-1.5 rounded-full bg-slate-800/85 hover:bg-slate-900 text-white border border-white/20 text-xs font-bold shadow-lg backdrop-blur-md transition';
-    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i><span class="ml-1">음원 OFF</span>`;
+    toggleBtn.className = 'w-9 h-9 rounded-full bg-slate-800/85 hover:bg-slate-900 text-white border border-white/20 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition';
+    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i>`;
   }
 }
 
