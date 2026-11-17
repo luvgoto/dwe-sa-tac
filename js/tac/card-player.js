@@ -234,6 +234,7 @@ export function switchTacView(view) {
   document.getElementById('view-card').classList.add('hidden');
   document.getElementById('view-quiz').classList.add('hidden');
   document.getElementById('view-filter').classList.add('hidden');
+  document.getElementById('btn-autoplay')?.classList.add('hidden');
 
   const btnCard = document.getElementById('nav-btn-card');
   const btnQuiz = document.getElementById('nav-btn-quiz');
@@ -247,6 +248,7 @@ export function switchTacView(view) {
 
   if (view === 'card') {
     document.getElementById('view-card').classList.remove('hidden');
+    document.getElementById('btn-autoplay')?.classList.remove('hidden');
     btnCard.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-blue-600 text-white shadow-xs btn-jelly';
     updateCardView();
   } else if (view === 'quiz') {
@@ -464,16 +466,24 @@ function toggleAutoPlay() {
 function startAutoPlay() {
   if (currentPlaylist.length === 0) return;
   isAutoPlaying = true;
-  document.getElementById('autoplay-icon').className = 'fa-solid fa-pause text-xs';
-  document.getElementById('autoplay-text').textContent = 'PAUSE';
-  document.getElementById('btn-autoplay').className = 'px-3.5 py-1 font-black rounded-full bg-pink-600 border border-pink-600 text-white animate-pulse transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs';
+  const btn = document.getElementById('btn-autoplay');
+  const icon = document.getElementById('autoplay-icon');
+  if (icon) icon.className = 'fa-solid fa-pause';
+  if (btn) {
+    const hiddenClass = btn.classList.contains('hidden') ? 'hidden ' : '';
+    btn.className = `${hiddenClass}w-9 h-9 rounded-full bg-pink-600 hover:bg-pink-700 text-white border border-white/40 text-xs shadow-lg backdrop-blur-md animate-pulse flex items-center justify-center transition btn-jelly`;
+  }
   playCurrentAudio(true, false);
 }
 
 function stopAutoPlay() {
   isAutoPlaying = false;
   clearTimeout(autoPlayTimer);
-  document.getElementById('autoplay-icon').className = 'fa-solid fa-play text-xs';
-  document.getElementById('autoplay-text').textContent = 'PLAY ALL';
-  document.getElementById('btn-autoplay').className = 'px-3.5 py-1 font-black rounded-full bg-white border border-pink-500 text-pink-600 hover:bg-pink-50 transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs';
+  const btn = document.getElementById('btn-autoplay');
+  const icon = document.getElementById('autoplay-icon');
+  if (icon) icon.className = 'fa-solid fa-play';
+  if (btn) {
+    const hiddenClass = btn.classList.contains('hidden') ? 'hidden ' : '';
+    btn.className = `${hiddenClass}w-9 h-9 rounded-full bg-pink-600/90 hover:bg-pink-700 text-white border border-white/25 text-xs shadow-lg backdrop-blur-md flex items-center justify-center transition btn-jelly`;
+  }
 }

@@ -53,11 +53,11 @@ function bindParentSecretTap(element) {
 
 export function switchToBook(targetPage = null) {
   stopAllTacPlayback();
+  document.getElementById('btn-autoplay')?.classList.add('hidden');
   activeAppMode = 'book';
 
   document.getElementById('section-tac').classList.add('hidden');
   document.getElementById('section-book').classList.remove('hidden');
-
   document.getElementById('btn-switch-to-book').classList.add('hidden');
   document.getElementById('brand-tac').classList.add('hidden');
   document.getElementById('header-controls-tac').classList.add('hidden');
