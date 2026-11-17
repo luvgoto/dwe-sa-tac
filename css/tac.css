@@ -2,13 +2,6 @@
   touch-action: manipulation;
 }
 
-@media screen and (min-width: 1300px) and (min-height: 850px) and (hover: hover) {
-  #view-card {
-    transform: scale(1.22);
-    transform-origin: center center;
-  }
-}
-
 /* 모바일 및 태블릿 가로모드(Landscape) 한 화면 최적화 */
 @media (orientation: landscape) and (max-height: 540px) {
   #section-tac {

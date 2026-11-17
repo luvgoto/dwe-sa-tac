@@ -64,6 +64,8 @@ export function getCurrentPage() {
 
 export function pauseBookAudio() {
   stopAllBookAudio();
+  const tocBtn = document.getElementById('btn-toc-mode-toggle');
+  if (tocBtn) tocBtn.classList.add('hidden');
   // TAC 모드 진입 시 숨겨진 송북 캔버스 메모리를 해제해 구형 태블릿 RAM 확보
   ['canvas-left', 'canvas-right'].forEach(id => {
     const c = document.getElementById(id);
@@ -503,7 +505,7 @@ function updateTocModeUI(isTocPage) {
   const toggleBtn = document.getElementById('btn-toc-mode-toggle');
   const spread = document.getElementById('book-spread');
 
-  if (!isTocPage) {
+  if (!isTocPage || getActiveAppMode() !== 'book') {
     toggleBtn.classList.add('hidden');
     spread.classList.remove('toc-audio-off', 'toc-audio-on');
     return;
@@ -513,13 +515,13 @@ function updateTocModeUI(isTocPage) {
   if (tocAudioMode) {
     spread.classList.remove('toc-audio-off');
     spread.classList.add('toc-audio-on');
-    toggleBtn.className = 'px-2 sm:px-2.5 py-1 rounded-lg bg-blue-600 text-white border border-blue-700 text-xs font-bold shadow-xs transition';
-    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i><span class="hidden sm:inline ml-1">음원 ON</span>`;
+    toggleBtn.className = 'px-3 py-1.5 rounded-full bg-blue-600/95 hover:bg-blue-700 text-white border border-white/30 text-xs font-bold shadow-lg backdrop-blur-md transition';
+    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i><span class="ml-1">음원 ON</span>`;
   } else {
     spread.classList.remove('toc-audio-on');
     spread.classList.add('toc-audio-off');
-    toggleBtn.className = 'px-2 sm:px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition';
-    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i><span class="hidden sm:inline ml-1">음원 OFF</span>`;
+    toggleBtn.className = 'px-3 py-1.5 rounded-full bg-slate-800/85 hover:bg-slate-900 text-white border border-white/20 text-xs font-bold shadow-lg backdrop-blur-md transition';
+    toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i><span class="ml-1">음원 OFF</span>`;
   }
 }
 

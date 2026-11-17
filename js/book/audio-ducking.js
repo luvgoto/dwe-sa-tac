@@ -165,6 +165,37 @@ export function playOrPauseR2Song(trackId, spotKey) {
   }
 }
 
+function updateFloatingSongCapsule() {
+  const capsule = document.getElementById('floating-song-capsule');
+  const icon = document.getElementById('floating-song-icon');
+  const label = document.getElementById('floating-song-label');
+  if (!capsule) return;
+
+  const hasActiveSong = Boolean(activeSongSpotKey && songAudioEl.src && !songAudioEl.ended);
+  capsule.classList.toggle('hidden', !hasActiveSong);
+
+  if (hasActiveSong) {
+    if (songAudioEl.paused) {
+      if (icon) icon.className = 'fa-solid fa-play text-emerald-300';
+      if (label) label.textContent = '이어듣기';
+    } else {
+      if (icon) icon.className = 'fa-solid fa-pause text-amber-300';
+      if (label) label.textContent = '일시정지';
+    }
+  }
+}
+
+export function toggleFloatingSongPause() {
+  if (!activeSongSpotKey || !songAudioEl.src) return;
+  if (songAudioEl.paused) {
+    songAudioEl.play().catch(() => {});
+  } else {
+    songAudioEl.pause();
+  }
+  updateFloatingSongCapsule();
+  if (onPlaybackStateChange) onPlaybackStateChange();
+}
+
 export function stopAllBookAudio() {
   songPlayToken++;
   vocaPlayToken++;
@@ -174,18 +205,24 @@ export function stopAllBookAudio() {
   abortPrefetch();
   clearInterval(volumeFadeTimer);
   songAudioEl.pause();
+  songAudioEl.currentTime = 0;
   vocaAudioEl.pause();
   songAudioEl.volume = 1.0;
   activeSongSpotKey = null;
   activeVocaSpotKey = null;
   isSongDucking = false;
+  updateFloatingSongCapsule();
   if (onPlaybackStateChange) onPlaybackStateChange();
 }
+
+songAudioEl.addEventListener('play', updateFloatingSongCapsule);
+songAudioEl.addEventListener('pause', updateFloatingSongCapsule);
 
 songAudioEl.addEventListener('ended', () => {
   activeSongSpotKey = null;
   isSongDucking = false;
   songAudioEl.volume = 1.0;
+  updateFloatingSongCapsule();
   if (onPlaybackStateChange) onPlaybackStateChange();
 });
 
@@ -194,3 +231,6 @@ vocaAudioEl.addEventListener('ended', () => {
   restoreSongAfterVoca();
   if (onPlaybackStateChange) onPlaybackStateChange();
 });
+
+document.getElementById('btn-floating-song-toggle')?.addEventListener('click', toggleFloatingSongPause);
+document.getElementById('btn-floating-song-stop')?.addEventListener('click', stopAllBookAudio);

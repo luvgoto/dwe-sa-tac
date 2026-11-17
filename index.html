@@ -55,9 +55,7 @@
 
       <!-- [A] BOOK 모드 전용 상단 컨트롤 -->
       <div id="header-controls-book" class="flex items-center gap-1 sm:gap-2">
-        <button id="btn-toc-mode-toggle" type="button" title="목차 음원 모드 전환" class="hidden px-2 sm:px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold shadow-xs transition">
-          <i class="fa-solid fa-volume-xmark"></i><span class="hidden sm:inline ml-1">음원 OFF</span>
-        </button>
+        <!-- 음원편집 모드 전용 도구 (부모모드 + 편집활성 시에만 표시) -->
 
         <!-- 음원편집 모드 전용 도구 (부모모드 + 편집활성 시에만 표시) -->
         <div id="edit-controls" class="hidden flex items-center gap-1.5 bg-pink-50 border border-pink-200 rounded-lg px-2 py-0.5 mr-1">
@@ -144,11 +142,31 @@
     기기를 가로로 돌리면 2쪽 보기가 더 크게 보입니다
   </div>
 
-  <!-- 전체화면 복귀 핫스팟 & 플로팅 버튼 (PLAY ALL 버튼과 겹치지 않게 우측 하단 배치) -->
+  <!-- 전체화면 복귀 핫스팟 & 우측 상단 통합 플로팅 컨트롤러 -->
   <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-5 z-50 cursor-pointer"></div>
-<button id="btn-floating-exit" type="button" class="hidden fixed top-3 right-3 z-50 px-3 py-1.5 rounded-full bg-black/65 hover:bg-black/85 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-white/20 transition">
-    <i class="fa-solid fa-compress mr-1"></i> 복귀
-  </button>
+  <div id="floating-top-controls" class="fixed top-3 right-3 z-50 flex items-center gap-1.5 pointer-events-auto">
+    <!-- 1) 송북 노래 일시정지/정지 2버튼 캡슐 (노래 활성 시에만 표시) -->
+    <div id="floating-song-capsule" class="hidden flex items-center bg-slate-900/80 text-white rounded-full shadow-lg border border-white/20 backdrop-blur-md overflow-hidden">
+      <button id="btn-floating-song-toggle" type="button" title="일시정지 / 이어듣기" class="px-3 py-1.5 hover:bg-white/15 text-xs font-bold flex items-center gap-1 transition">
+        <i id="floating-song-icon" class="fa-solid fa-pause text-amber-300"></i>
+        <span id="floating-song-label" class="hidden sm:inline">일시정지</span>
+      </button>
+      <div class="w-px h-3.5 bg-white/20"></div>
+      <button id="btn-floating-song-stop" type="button" title="정지 및 닫기" class="px-2.5 py-1.5 hover:bg-rose-500/80 text-xs font-bold flex items-center transition">
+        <i class="fa-solid fa-stop text-rose-300"></i>
+      </button>
+    </div>
+
+    <!-- 2) 목차 페이지 음원 ON/OFF 플로팅 버튼 (목차 페이지에서만 표시) -->
+    <button id="btn-toc-mode-toggle" type="button" title="목차 음원 모드 전환" class="hidden px-3 py-1.5 rounded-full bg-slate-800/85 text-white border border-white/20 text-xs font-bold shadow-lg backdrop-blur-md transition">
+      <i class="fa-solid fa-volume-xmark"></i><span class="ml-1">음원 OFF</span>
+    </button>
+
+    <!-- 3) 전체화면 복귀 버튼 (전체화면 모드일 때만 표시) -->
+    <button id="btn-floating-exit" type="button" class="hidden px-3 py-1.5 rounded-full bg-black/70 hover:bg-black/90 text-white text-xs font-bold backdrop-blur-md shadow-lg border border-white/20 transition">
+      <i class="fa-solid fa-compress mr-1"></i> 복귀
+    </button>
+  </div>
 
   <!-- =========================================================================
        SECTION 1. 송북 뷰어 (BOOK) 하단 영역
@@ -283,12 +301,6 @@
             <i id="card-fav-icon" class="fa-regular fa-star text-xs"></i>
           </button>
         </div>
-        <div class="flex items-center gap-1.5">
-          <button id="btn-autoplay" type="button" class="px-3.5 py-1 font-black rounded-full bg-white border border-pink-500 text-pink-600 hover:bg-pink-50 transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs">
-            <i id="autoplay-icon" class="fa-solid fa-play text-xs"></i>
-            <span id="autoplay-text">PLAY ALL</span>
-          </button>
-        </div>
       </div>
 
       <div id="tac-card-wrapper" class="w-full my-0 py-0.5 flex flex-col items-center">
@@ -341,10 +353,16 @@
           </button>
         </div>
 
-        <div id="tac-jump-bar" class="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 shrink-0">
-          <span class="font-bold jump-label">Jump to:</span>
-          <input type="number" id="jump-input" min="1" max="510" placeholder="1~510" class="w-16 sm:w-20 px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-center text-slate-900 font-bold focus:outline-none focus:border-blue-500 text-xs sm:text-sm">
-          <button id="btn-jump-card" type="button" class="px-2.5 sm:px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-black text-xs sm:text-sm">Go</button>
+        <div id="tac-jump-bar" class="flex items-center gap-2 text-xs sm:text-sm text-slate-500 shrink-0">
+          <button id="btn-autoplay" type="button" class="px-3.5 py-1 font-black rounded-full bg-white border border-pink-500 text-pink-600 hover:bg-pink-50 transition flex items-center gap-1.5 shadow-xs btn-jelly text-xs">
+            <i id="autoplay-icon" class="fa-solid fa-play text-xs"></i>
+            <span id="autoplay-text">PLAY ALL</span>
+          </button>
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold jump-label">Jump to:</span>
+            <input type="number" id="jump-input" min="1" max="510" placeholder="1~510" class="w-16 sm:w-20 px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-center text-slate-900 font-bold focus:outline-none focus:border-blue-500 text-xs sm:text-sm">
+            <button id="btn-jump-card" type="button" class="px-2.5 sm:px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-black text-xs sm:text-sm">Go</button>
+          </div>
         </div>
       </footer>
     </main>
