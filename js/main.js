@@ -109,7 +109,18 @@ function applyFullscreenUI(isFs) {
     floatingBox.classList.toggle('top-14', !isFs);
   }
 
-  // 전체화면 시 PDF 뷰어 패딩 0으로 꽉 채우기
+  // 전체화면 시 #section-book 높이를 100lvh로 확장하고 패딩 제거
+  const sectionBook = document.getElementById('section-book');
+  if (sectionBook) {
+    if (isFs) {
+      sectionBook.classList.remove('h-[calc(100lvh-2.75rem)]', 'sm:h-[calc(100lvh-3rem)]');
+      sectionBook.classList.add('h-lvh');
+    } else {
+      sectionBook.classList.remove('h-lvh');
+      sectionBook.classList.add('h-[calc(100lvh-2.75rem)]', 'sm:h-[calc(100lvh-3rem)]');
+    }
+  }
+
   const viewerContainer = document.getElementById('viewer-container');
   if (viewerContainer) {
     if (isFs) {

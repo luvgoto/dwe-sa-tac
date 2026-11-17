@@ -19,10 +19,10 @@
   <link rel="stylesheet" href="css/book.css">
   <link rel="stylesheet" href="css/tac.css">
 </head>
-<body class="h-dvh w-screen flex flex-col bg-slate-100 text-slate-800 antialiased overflow-hidden">
+<body class="min-h-[100lvh] w-screen flex flex-col bg-slate-100 text-slate-800 antialiased overflow-x-hidden">
 
   <!-- ================= 공유 상단 헤더 (D안: Serene Chambray Blue) ================= -->
-  <header id="top-panel" class="h-11 sm:h-12 bg-[#FAFBFD] border-b border-slate-200/90 px-2.5 sm:px-4 flex items-center justify-between shrink-0 z-30">
+  <header id="top-panel" class="sticky top-0 h-11 sm:h-12 bg-[#FAFBFD] border-b border-slate-200/90 px-2.5 sm:px-4 flex items-center justify-between shrink-0 z-30">
     <!-- 좌측 영역: 현재 모드 브랜드 (5연타 시 부모모드 토글) -->
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
       <!-- BOOK 모드 타이틀 (모바일: 책 아이콘만 / PC: 아이콘 + SINGALONG BOOK) -->
@@ -178,7 +178,7 @@
   <!-- =========================================================================
        SECTION 1. 송북 뷰어 (BOOK) 하단 영역
        ========================================================================= -->
-  <div id="section-book" class="flex-1 min-h-0 w-full flex flex-col overflow-hidden">
+  <div id="section-book" class="h-[calc(100lvh-2.75rem)] sm:h-[calc(100lvh-3rem)] w-full flex flex-col overflow-hidden shrink-0">
     <main id="viewer-container" class="flex-1 min-h-0 w-full relative flex items-center justify-center p-2 sm:p-3 overflow-hidden">
       <div id="loading-box" class="flex flex-col items-center justify-center text-slate-500 my-auto">
         <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
@@ -292,9 +292,9 @@
   <!-- =========================================================================
        SECTION 2. 단어카드 플레이어 (TAC) 하단 영역
        ========================================================================= -->
-  <div id="section-tac" class="hidden flex-1 min-h-0 w-full bg-white overflow-y-auto flex flex-col">
+  <div id="section-tac" class="hidden flex-1 min-h-[calc(100lvh-2.75rem)] sm:min-h-[calc(100lvh-3rem)] w-full bg-white flex flex-col">
 
-    <!-- 2-1. 메인 카드 놀이 뷰 (여유 공간 시 정중앙 my-auto, 세로 넘칠 시 스크롤) -->
+    <!-- 2-1. 메인 카드 놀이 뷰 -->
     <main id="view-card" class="w-full max-w-xl md:max-w-3xl lg:max-w-4xl mx-auto my-auto px-3 py-3 sm:px-5 sm:py-4 flex flex-col items-center gap-2 sm:gap-2.5 shrink-0">
       <div id="tac-top-meta" class="w-full flex items-center justify-between px-1 py-0.5 text-xs shrink-0">
         <div class="flex items-center gap-1.5">
@@ -341,8 +341,8 @@
         </div>
       </div>
 
-      <!-- 하단 컨트롤: 세로모드 2줄 / 가로모드 1줄 자동 전환 -->
-      <footer id="tac-card-footer" class="w-full flex flex-col items-center gap-1.5 sm:gap-2 pt-0.5 shrink-0">
+      <!-- 하단 컨트롤: 세로·가로모드 공통 2줄 배치 -->
+      <footer id="tac-card-footer" class="w-full flex flex-col items-center gap-3 sm:gap-3.5 pt-1 shrink-0">
         <div id="tac-nav-buttons" class="w-full flex items-center justify-between gap-2.5 sm:gap-6">
           <button id="btn-prev-card" type="button" class="flex-1 py-3 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-2xl border border-slate-200 shadow-xs text-sm sm:text-base btn-jelly flex items-center justify-center gap-1.5 sm:gap-2">
             <i class="fa-solid fa-chevron-left text-xs sm:text-sm"></i>
@@ -359,7 +359,7 @@
           </button>
         </div>
 
-        <div id="tac-jump-bar" class="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 shrink-0">
+        <div id="tac-jump-bar" class="flex items-center justify-center gap-1.5 pt-0.5 text-xs sm:text-sm text-slate-500 shrink-0">
           <span class="font-bold jump-label">Jump to:</span>
           <input type="number" id="jump-input" min="1" max="510" placeholder="1~510" class="w-16 sm:w-20 px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-center text-slate-900 font-bold focus:outline-none focus:border-blue-500 text-xs sm:text-sm">
           <button id="btn-jump-card" type="button" class="px-2.5 sm:px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-black text-xs sm:text-sm">Go</button>

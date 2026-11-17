@@ -21,16 +21,15 @@
   }
 
   #tac-card-footer {
-    flex-direction: row !important;
-    justify-content: space-between !important;
+    flex-direction: column !important;
     align-items: center !important;
-    gap: 0.5rem !important;
-    padding-top: 0 !important;
+    gap: 0.65rem !important;
+    padding-top: 0.25rem !important;
   }
 
   #tac-nav-buttons {
-    flex: 1;
-    gap: 0.4rem !important;
+    width: 100%;
+    gap: 0.5rem !important;
   }
 
   #btn-prev-card,
@@ -41,18 +40,14 @@
   }
 
   #btn-speaker {
-    width: 3rem !important;
+    width: 3.25rem !important;
     height: 2.4rem !important;
-    min-width: 3rem !important;
+    min-width: 3.25rem !important;
     min-height: 2.4rem !important;
     font-size: 1rem !important;
   }
 
   #tac-jump-bar {
-    flex-shrink: 0;
-  }
-
-  #tac-jump-bar .jump-label {
-    display: none;
+    margin-top: 0.15rem;
   }
 }
