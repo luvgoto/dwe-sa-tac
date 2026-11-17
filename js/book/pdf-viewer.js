@@ -66,7 +66,6 @@ export function pauseBookAudio() {
   stopAllBookAudio();
   const tocBtn = document.getElementById('btn-toc-mode-toggle');
   if (tocBtn) tocBtn.classList.add('hidden');
-  // TAC 모드 진입 시 숨겨진 송북 캔버스 메모리를 해제해 구형 태블릿 RAM 확보
   ['canvas-left', 'canvas-right'].forEach(id => {
     const c = document.getElementById(id);
     if (c && c.width > 0) {
@@ -75,9 +74,11 @@ export function pauseBookAudio() {
     }
   });
 }
+
 export function toggleFullscreen(isFs) {
   isFullscreenMode = isFs;
-  setTimeout(renderCurrentView, 120);
+  setTimeout(renderCurrentView, 100);
+  setTimeout(renderCurrentView, 320);
 }
 
 export async function initBookViewer(options = {}) {
@@ -200,7 +201,6 @@ function bindViewerEvents() {
     if (e.key === 'ArrowRight') nextPage();
   });
 
-  // 스와이프 + 책 좌우 끝(18%) 탭/클릭으로 페이지 넘김
   let touchStartX = 0;
   let touchStartY = 0;
   let lastTouchTime = 0;
@@ -235,20 +235,17 @@ function bindViewerEvents() {
     const diffX = endX - touchStartX;
     const diffY = endY - touchStartY;
 
-    // 1. 가로 스와이프
     if (Math.abs(diffX) > 55 && Math.abs(diffX) > Math.abs(diffY)) {
       if (diffX < 0) nextPage();
       else prevPage();
       return;
     }
 
-    // 2. 제자리 짧은 탭 -> 책 좌측 18% 또는 우측 18% 영역 터치 시 페이지 이동
     if (Math.abs(diffX) < 12 && Math.abs(diffY) < 12) {
       handleEdgeNavigation(endX);
     }
   }, { passive: true });
 
-  // 데스크톱 마우스 클릭: 책(또는 뷰어) 좌/우 끝 18% 영역 클릭으로 페이지 넘김
   viewerEl.addEventListener('click', e => {
     if (Date.now() - lastTouchTime < 500) return;
     if (isEditModeActive()) return;
@@ -307,15 +304,15 @@ export async function renderCurrentView() {
     const samplePage = await pdfDoc.getPage(leftPageNum || rightPageNum || 1);
     const baseVp = samplePage.getViewport({ scale: 1.0 });
     const scale = Math.min((isSpreadMode ? availW / 2 : availW) / baseVp.width, availH / baseVp.height);
-    const renderedW = Math.floor(baseVp.width * scale);
-    const renderedH = Math.floor(baseVp.height * scale);
+    const renderedW = Math.round(baseVp.width * scale);
+    const renderedH = Math.round(baseVp.height * scale);
 
     if (leftPageNum) {
       leftBox.style.display = 'block';
       leftBox.style.visibility = 'visible';
       leftBox.className = isSpreadMode
-        ? 'page-wrapper rounded-l-md overflow-hidden book-spine-left'
-        : 'page-wrapper rounded-md overflow-hidden shadow-lg';
+        ? (isFullscreenMode ? 'page-wrapper overflow-hidden book-spine-left' : 'page-wrapper rounded-l-md overflow-hidden book-spine-left')
+        : (isFullscreenMode ? 'page-wrapper overflow-hidden' : 'page-wrapper rounded-md overflow-hidden shadow-lg');
       await renderSinglePage(leftPageNum, 'canvas-left', 'links-left', 'songs-left', scale);
       preloadTrackList(getSpotsForPage(leftPageNum));
     } else if (isSpreadMode && rightPageNum === 1) {
@@ -330,8 +327,8 @@ export async function renderCurrentView() {
     if (rightPageNum) {
       rightBox.style.display = 'block';
       rightBox.className = (isSpreadMode && !leftPageNum)
-        ? 'page-wrapper rounded-md overflow-hidden'
-        : 'page-wrapper rounded-r-md overflow-hidden book-spine-right border-l border-slate-200';
+        ? (isFullscreenMode ? 'page-wrapper overflow-hidden' : 'page-wrapper rounded-md overflow-hidden')
+        : (isFullscreenMode ? 'page-wrapper overflow-hidden book-spine-right border-l border-slate-200' : 'page-wrapper rounded-r-md overflow-hidden book-spine-right border-l border-slate-200');
       await renderSinglePage(rightPageNum, 'canvas-right', 'links-right', 'songs-right', scale);
       preloadTrackList(getSpotsForPage(rightPageNum));
     } else {
@@ -352,11 +349,11 @@ async function renderSinglePage(pageNum, canvasId, linkLayerId, songLayerId, sca
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const canvas = document.getElementById(canvasId);
   const ctx = canvas.getContext('2d');
-  const floorW = Math.floor(viewport.width);
-  const floorH = Math.floor(viewport.height);
+  const floorW = Math.round(viewport.width);
+  const floorH = Math.round(viewport.height);
 
-  canvas.width = Math.floor(viewport.width * dpr);
-  canvas.height = Math.floor(viewport.height * dpr);
+  canvas.width = Math.round(viewport.width * dpr);
+  canvas.height = Math.round(viewport.height * dpr);
   canvas.style.width = `${floorW}px`;
   canvas.style.height = `${floorH}px`;
   canvas.parentElement.style.width = `${floorW}px`;
@@ -422,8 +419,6 @@ function renderSongCircles(pageNum, layerId, pageW, pageH) {
     if (!isVocaBadge) {
       if (activeSongSpotKey === spotKey) btn.classList.add('playing');
       if (activeVocaSpotKey === spotKey) btn.classList.add('playing-voca');
-    } else {
-      btn.title = 'VOCA 단어카드로 이동하여 학습하기';
     }
 
     let wPx, hPx;
@@ -500,6 +495,7 @@ export function refreshAllSongLayers() {
     renderSongCircles(currentRightPageNum, 'songs-right', parseInt(rightC.style.width, 10), parseInt(rightC.style.height, 10));
   }
 }
+
 function updateTocModeUI(isTocPage) {
   const toggleBtn = document.getElementById('btn-toc-mode-toggle');
   const spread = document.getElementById('book-spread');

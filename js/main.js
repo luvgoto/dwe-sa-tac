@@ -21,7 +21,6 @@ function setParentMode(enabled) {
   });
   document.getElementById('btn-parent-lock').classList.toggle('hidden', !enabled);
 
-  // 부모모드 해제 시 열려있던 편집 도구/모달/필터 뷰를 강제로 초기화
   if (!enabled) {
     disableSpotEditMode();
     if (activeAppMode === 'tac') {
@@ -29,6 +28,7 @@ function setParentMode(enabled) {
     }
   }
 }
+
 function bindParentSecretTap(element) {
   if (!element) return;
   let tapCount = 0;
@@ -102,17 +102,16 @@ function applyFullscreenUI(isFs) {
   document.getElementById('btn-floating-exit').classList.toggle('hidden', !isFs);
   document.getElementById('fs-icon').className = isFs ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
 
-  const floatingBox = document.getElementById('floating-top-controls');
-  if (floatingBox) {
-    floatingBox.classList.toggle('top-3', isFs);
-    floatingBox.classList.toggle('top-14', !isFs);
-  }
-
+  // 전체화면 시 PDF 뷰어 패딩 0으로 꽉 채우기 (플로팅 버튼은 현위치 유지)
   const viewerContainer = document.getElementById('viewer-container');
   if (viewerContainer) {
-    viewerContainer.classList.toggle('p-0', isFs);
-    viewerContainer.classList.toggle('p-2', !isFs);
-    viewerContainer.classList.toggle('sm:p-3', !isFs);
+    if (isFs) {
+      viewerContainer.classList.remove('p-2', 'sm:p-3');
+      viewerContainer.classList.add('p-0');
+    } else {
+      viewerContainer.classList.remove('p-0');
+      viewerContainer.classList.add('p-2', 'sm:p-3');
+    }
   }
 
   if (activeAppMode === 'book') {
@@ -142,7 +141,6 @@ function toggleFullscreen(forceState) {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  // 좌측 상단 타이틀 5연타 -> 부모모드 토글
   bindParentSecretTap(document.getElementById('brand-book'));
   bindParentSecretTap(document.getElementById('brand-tac'));
   document.getElementById('btn-parent-lock').addEventListener('click', () => setParentMode(false));
