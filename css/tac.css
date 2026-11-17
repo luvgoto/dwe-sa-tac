@@ -51,3 +51,91 @@
     margin-top: 0.15rem;
   }
 }
+
+/* 모바일 세로보기(Portrait) 전용: QUIZ 카드 3장 한 화면 압축 배치 */
+@media (orientation: portrait) and (max-width: 767px) {
+  #view-quiz {
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+    justify-content: space-between;
+    min-height: calc(100lvh - 2.75rem);
+  }
+
+  #view-quiz > * + * {
+    margin-top: 0.5rem !important;
+  }
+
+  #quiz-speaker-banner {
+    padding: 0.6rem 0.85rem !important;
+  }
+
+  #quiz-speaker-banner .w-10,
+  #quiz-speaker-banner .w-12 {
+    width: 2.35rem !important;
+    height: 2.35rem !important;
+    font-size: 1rem !important;
+  }
+
+  #quiz-options-grid {
+    gap: 0.5rem !important;
+    padding-top: 0 !important;
+  }
+
+  #quiz-options-grid > * {
+    max-height: 21vh !important;
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  #quiz-options-grid img {
+    max-height: 15.5vh !important;
+    width: auto !important;
+    margin: 0 auto !important;
+    object-fit: contain !important;
+  }
+}
+
+/* 모바일 가로보기(Landscape) 전용: QUIZ 카드 3장 가로 나란히 + 한 화면 배치 */
+@media (orientation: landscape) and (max-height: 520px) {
+  #section-tac {
+    overflow-y: auto !important;
+  }
+
+  #view-quiz {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    gap: 0.5rem !important;
+    justify-content: center;
+    min-height: calc(100lvh - 2.75rem);
+  }
+
+  #view-quiz > * + * {
+    margin-top: 0.45rem !important;
+  }
+
+  #quiz-speaker-banner {
+    padding: 0.45rem 0.85rem !important;
+    border-radius: 0.85rem !important;
+  }
+
+  #quiz-speaker-banner .w-10 {
+    width: 2.1rem !important;
+    height: 2.1rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  #quiz-options-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.6rem !important;
+    padding-top: 0 !important;
+  }
+
+  #quiz-options-grid > * {
+    max-height: 46vh !important;
+  }
+
+  #quiz-options-grid img {
+    max-height: 36vh !important;
+    object-fit: contain !important;
+  }
+}

@@ -395,22 +395,19 @@
         </button>
       </div>
 
-      <div id="quiz-speaker-banner" class="w-full bg-slate-50 hover:bg-slate-100 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition group">
-        <div class="flex items-center gap-3.5 sm:gap-4">
-          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#2B4C7E] text-white flex items-center justify-center text-xl sm:text-2xl shadow-xs group-hover:scale-105 transition">
+      <div id="quiz-speaker-banner" class="w-full bg-slate-50 hover:bg-slate-100 p-3 sm:p-5 rounded-2xl border-2 border-slate-200 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition group">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-[#2B4C7E] text-white flex items-center justify-center text-lg sm:text-2xl shadow-xs group-hover:scale-105 transition shrink-0">
             <i class="fa-solid fa-volume-high animate-pulse"></i>
           </div>
           <div class="text-left">
-            <p class="text-sm sm:text-base font-black text-slate-900 leading-tight">Listen carefully and choose the correct card.</p>
-            <p class="text-xs text-[#2B4C7E] font-bold mt-1">Tap to listen again.</p>
+            <p class="text-xs sm:text-base font-black text-slate-900 leading-tight">Listen carefully and choose the correct card.</p>
+            <p class="text-[11px] sm:text-xs text-[#2B4C7E] font-bold mt-0.5 sm:mt-1">Tap to listen again.</p>
           </div>
         </div>
-        <span class="px-3.5 py-1.5 bg-[#EDF2F7] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-black rounded-xl shrink-0 uppercase tracking-wider">
-          repeat
-        </span>
       </div>
 
-      <div id="quiz-options-grid" class="w-full grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-5 pt-1"></div>
+      <div id="quiz-options-grid" class="w-full grid grid-cols-1 landscape:grid-cols-3 md:grid-cols-3 gap-2.5 sm:gap-5 pt-0.5"></div>
 
       <div id="quiz-complete-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border-2 border-slate-100">
