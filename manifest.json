@@ -1,0 +1,17 @@
+{
+  "name": "SINGALONG BOOK & TAC PLAYER",
+  "short_name": "SINGALONG",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FAFBFD",
+  "theme_color": "#2B4C7E",
+  "orientation": "any",
+"icons": [
+    {
+      "src": "./icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
