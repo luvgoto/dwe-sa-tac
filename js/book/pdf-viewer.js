@@ -16,8 +16,7 @@ import {
 import { initSpotEditor, isEditModeActive, openSpotModalEdit } from './spot-editor.js';
 import { getActiveAppMode } from '../main.js';
 
-const TOC_PAGES = new Set([4, 5, 6, 74, 75, 76, 142, 143, 216, 217]);
-
+const TOC_PAGES = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
 let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 1;
