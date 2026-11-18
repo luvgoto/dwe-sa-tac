@@ -290,7 +290,6 @@ const container = document.getElementById('viewer-container');
 
     currentLeftPageNum = leftPageNum;
     currentRightPageNum = rightPageNum;
-    tocAudioMode = false;
 
     const samplePage = await pdfDoc.getPage(leftPageNum || rightPageNum || 1);
     const baseVp = samplePage.getViewport({ scale: 1.0 });
@@ -327,6 +326,9 @@ const container = document.getElementById('viewer-container');
     }
 
     const isTocView = (leftPageNum && TOC_PAGES.has(leftPageNum)) || (rightPageNum && TOC_PAGES.has(rightPageNum));
+    if (!isTocView) {
+      tocAudioMode = false; // 2~11P 범위를 벗어날 때만 기본(이동 모드)으로 초기화
+    }
     updateTocModeUI(isTocView);
     updateBottomNavUI();
   } finally {
