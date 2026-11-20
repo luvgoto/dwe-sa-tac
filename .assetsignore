@@ -1,2 +1,4 @@
-songbook.pdf
+﻿songbook.pdf
 .git
+!.well-known
+!.well-known/**
