@@ -277,12 +277,17 @@ export async function renderCurrentView() {
   if (!pdfDoc || isRendering) return;
   isRendering = true;
   try {
-const container = document.getElementById('viewer-container');
-    const horizontalMargin = 0;
-    const verticalMargin = 0;
+    const container = document.getElementById('viewer-container');
+    const style = window.getComputedStyle(container);
+    const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+    const padY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
 
-    const availW = Math.max(100, container.clientWidth - horizontalMargin);
-    const availH = Math.max(100, container.clientHeight - verticalMargin);
+    const rect = container.getBoundingClientRect();
+    const vvHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const maxSafeHeight = Math.max(100, vvHeight - rect.top);
+
+    const availW = Math.max(100, rect.width - padX);
+    const availH = Math.max(100, Math.min(rect.height, maxSafeHeight) - padY);
     const leftBox = document.getElementById('left-page-box');
     const rightBox = document.getElementById('right-page-box');
 
