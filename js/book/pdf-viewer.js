@@ -559,9 +559,6 @@ async function toggleSpreadMode() {
   if (isMobileDevice()) {
     try {
       if (isSpreadMode) {
-        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen().catch(() => {});
-        }
         if (screen.orientation && screen.orientation.lock) {
           await screen.orientation.lock('landscape');
         } else {
