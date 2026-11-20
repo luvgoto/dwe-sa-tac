@@ -75,8 +75,9 @@ export function pauseBookAudio() {
 
 export function toggleFullscreen(isFs) {
   isFullscreenMode = isFs;
-  setTimeout(renderCurrentView, 100);
-  setTimeout(renderCurrentView, 320);
+  requestAnimationFrame(() => {
+    renderCurrentView();
+  });
 }
 
 export async function initBookViewer(options = {}) {
@@ -256,11 +257,20 @@ function bindViewerEvents() {
     syncSpreadModeByViewport();
     if (getActiveAppMode() !== 'book') return;
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(renderCurrentView, 150);
+    resizeTimer = setTimeout(renderCurrentView, 80);
   };
 
   window.addEventListener('resize', handleViewportChange);
   window.addEventListener('orientationchange', () => setTimeout(handleViewportChange, 150));
+
+  if (typeof ResizeObserver !== 'undefined' && viewerEl) {
+    const ro = new ResizeObserver(() => {
+      if (getActiveAppMode() !== 'book') return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(renderCurrentView, 60);
+    });
+    ro.observe(viewerEl);
+  }
 }
 
 export async function renderCurrentView() {
