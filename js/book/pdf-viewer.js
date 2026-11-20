@@ -9,6 +9,7 @@ import {
 import {
   preloadTrackList,
   playOrPauseR2Song,
+  playSongPlaylist,
   stopAllBookAudio,
   getActiveAudioKeys,
   setAudioStateCallback
@@ -17,6 +18,37 @@ import { initSpotEditor, isEditModeActive, openSpotModalEdit } from './spot-edit
 import { getActiveAppMode } from '../main.js';
 
 const TOC_PAGES = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+const TOC_SERIES_RANGES = [
+  { name: 'SA1', start: 2, end: 4 },
+  { name: 'SA2', start: 5, end: 7 },
+  { name: 'SA3', start: 8, end: 9 },
+  { name: 'SA4', start: 10, end: 11 }
+];
+
+function getTocRangeForPage(pageNum) {
+  return TOC_SERIES_RANGES.find(r => pageNum >= r.start && pageNum <= r.end) || null;
+}
+
+function collectSongsInPageRange(startPage, endPage) {
+  const result = [];
+  for (let p = startPage; p <= endPage; p++) {
+    const spots = getSpotsForPage(p)
+      .map((spot, idx) => ({ spot, idx, spotKey: `${p}-${idx}` }))
+      .filter(({ spot }) => !isVocaLinkSpot(spot) && !isVocaTrackId(spot.track) && spot.track);
+
+    spots.sort((a, b) => {
+      const dy = (a.spot.y || 0) - (b.spot.y || 0);
+      if (Math.abs(dy) > 1.5) return dy;
+      return (a.spot.x || 0) - (b.spot.x || 0);
+    });
+
+    spots.forEach(({ spot, spotKey }) => {
+      result.push({ track: spot.track, spotKey });
+    });
+  }
+  return result;
+}
+
 let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 1;
@@ -168,6 +200,13 @@ export async function initBookViewer(options = {}) {
 }
 
 function bindViewerEvents() {
+  document.getElementById('btn-cover-shuffle-all')?.addEventListener('click', () => {
+    const allSongs = collectSongsInPageRange(2, 11);
+    if (allSongs.length > 0) {
+      playSongPlaylist(allSongs, -1, true);
+    }
+  });
+
   document.getElementById('btn-toc-mode-toggle').addEventListener('click', toggleTocInteractionMode);
   document.getElementById('btn-toggle-spread').addEventListener('click', toggleSpreadMode);
 
@@ -470,6 +509,17 @@ function renderSongCircles(pageNum, layerId, pageW, pageH) {
         openSpotModalEdit(pageNum, idx);
       } else if (isVocaBadge) {
         launchTacWithVocaSpot(pageNum, spot);
+      } else if (TOC_PAGES.has(pageNum) && !isVocaTrackId(spot.track)) {
+        const range = getTocRangeForPage(pageNum);
+        if (range) {
+          const playlist = collectSongsInPageRange(range.start, range.end);
+          const startIdx = playlist.findIndex(item => item.spotKey === spotKey);
+          if (playlist.length > 0 && startIdx !== -1) {
+            playSongPlaylist(playlist, startIdx, false);
+            return;
+          }
+        }
+        playOrPauseR2Song(spot.track, spotKey);
       } else {
         playOrPauseR2Song(spot.track, spotKey);
       }
@@ -506,9 +556,16 @@ export function refreshAllSongLayers() {
 
 function updateTocModeUI(isTocPage) {
   const toggleBtn = document.getElementById('btn-toc-mode-toggle');
+  const coverShuffleBtn = document.getElementById('btn-cover-shuffle-all');
   const spread = document.getElementById('book-spread');
 
-  if (!isTocPage || getActiveAppMode() !== 'book') {
+  const isBookMode = getActiveAppMode() === 'book';
+  const isCoverVisible = isBookMode && (currentLeftPageNum === 1 || currentRightPageNum === 1);
+  if (coverShuffleBtn) {
+    coverShuffleBtn.classList.toggle('hidden', !isCoverVisible);
+  }
+
+  if (!isTocPage || !isBookMode) {
     toggleBtn.classList.add('hidden');
     spread.classList.remove('toc-audio-off', 'toc-audio-on');
     return;
