@@ -114,9 +114,41 @@ function applyFullscreenUI(isFs) {
   }
 }
 
+function isMobileOrApp() {
+  const isTouchMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && window.innerWidth <= 1024);
+  const isStandaloneApp = window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches;
+  return isTouchMobile || isStandaloneApp;
+}
+
 function toggleFullscreen(forceState) {
   const target = (typeof forceState === 'boolean') ? forceState : !isFullscreenMode;
-  applyFullscreenUI(target);
+
+  // 모바일 또는 설치된 앱(TWA/PWA)에서는 OS 경고창 방지를 위해 내부 UI만 전환
+  if (isMobileOrApp()) {
+    applyFullscreenUI(target);
+    return;
+  }
+
+  // PC 일반 브라우저에서는 윈도우 작업표시줄까지 가리는 전체화면 API 실행
+  if (target) {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen()
+        .then(() => applyFullscreenUI(true))
+        .catch(() => applyFullscreenUI(true));
+    } else {
+      applyFullscreenUI(true);
+    }
+  } else {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen()
+        .then(() => applyFullscreenUI(false))
+        .catch(() => applyFullscreenUI(false));
+    } else {
+      applyFullscreenUI(false);
+    }
+  }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -130,6 +162,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-fullscreen').addEventListener('click', () => toggleFullscreen());
   document.getElementById('top-exit-hotspot').addEventListener('click', () => toggleFullscreen(false));
   document.getElementById('btn-floating-exit').addEventListener('click', () => toggleFullscreen(false));
+  document.addEventListener('fullscreenchange', () => {
+    if (!isMobileOrApp()) {
+      applyFullscreenUI(!!document.fullscreenElement);
+    }
+  });
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isFullscreenMode) {

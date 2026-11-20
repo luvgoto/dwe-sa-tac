@@ -1,0 +1,8 @@
+﻿[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "dev.workers.luvgoto.dwe_sa_tac.twa",
+    "sha256_cert_fingerprints": ["1A:39:3A:C2:60:C1:62:A2:F6:28:DF:B6:DB:73:71:7F:4E:43:6E:73:4F:5B:C2:19:FA:73:FE:75:51:DC:D6:76"]
+  }
+}]
