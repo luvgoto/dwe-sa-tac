@@ -139,23 +139,7 @@ function applyFullscreenUI(isFs) {
 
 function toggleFullscreen(forceState) {
   const target = (typeof forceState === 'boolean') ? forceState : !isFullscreenMode;
-  if (target) {
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen()
-        .then(() => applyFullscreenUI(true))
-        .catch(() => applyFullscreenUI(true));
-    } else {
-      applyFullscreenUI(true);
-    }
-  } else {
-    if (document.fullscreenElement && document.exitFullscreen) {
-      document.exitFullscreen()
-        .then(() => applyFullscreenUI(false))
-        .catch(() => applyFullscreenUI(false));
-    } else {
-      applyFullscreenUI(false);
-    }
-  }
+  applyFullscreenUI(target);
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -169,7 +153,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-fullscreen').addEventListener('click', () => toggleFullscreen());
   document.getElementById('top-exit-hotspot').addEventListener('click', () => toggleFullscreen(false));
   document.getElementById('btn-floating-exit').addEventListener('click', () => toggleFullscreen(false));
-  document.addEventListener('fullscreenchange', () => applyFullscreenUI(!!document.fullscreenElement));
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isFullscreenMode) {
