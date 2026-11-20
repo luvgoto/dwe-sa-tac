@@ -1,7 +1,9 @@
-{
+﻿{
   "name": "dwe-sa-tac",
+  "main": "worker.js",
   "compatibility_date": "2026-11-13",
   "assets": {
-    "directory": "."
+    "directory": ".",
+    "binding": "ASSETS"
   }
 }
