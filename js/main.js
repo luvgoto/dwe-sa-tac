@@ -109,29 +109,6 @@ function applyFullscreenUI(isFs) {
     floatingBox.classList.toggle('top-14', !isFs);
   }
 
-  // 전체화면 시 #section-book 높이를 100lvh로 확장하고 패딩 제거
-  const sectionBook = document.getElementById('section-book');
-  if (sectionBook) {
-    if (isFs) {
-      sectionBook.classList.remove('h-[calc(100lvh-2.75rem)]', 'sm:h-[calc(100lvh-3rem)]');
-      sectionBook.classList.add('h-lvh');
-    } else {
-      sectionBook.classList.remove('h-lvh');
-      sectionBook.classList.add('h-[calc(100lvh-2.75rem)]', 'sm:h-[calc(100lvh-3rem)]');
-    }
-  }
-
-  const viewerContainer = document.getElementById('viewer-container');
-  if (viewerContainer) {
-    if (isFs) {
-      viewerContainer.classList.remove('p-2', 'sm:p-3');
-      viewerContainer.classList.add('p-0');
-    } else {
-      viewerContainer.classList.remove('p-0');
-      viewerContainer.classList.add('p-2', 'sm:p-3');
-    }
-  }
-
   if (activeAppMode === 'book') {
     toggleBookFs(isFs);
   }
