@@ -317,6 +317,8 @@ function updateFloatingSongCapsule() {
         : 'w-8 h-8 hover:bg-white/15 text-white/55 text-xs flex items-center justify-center transition';
     }
   }
+
+  window.dispatchEvent(new Event('resize'));
 }
 
 export function toggleFloatingSongPause() {

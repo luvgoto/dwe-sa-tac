@@ -89,7 +89,9 @@ function syncSpreadModeByViewport() {
 }
 
 /**
- * 플로팅 컨트롤 버튼들을 실제 렌더링된 PDF 페이지 영역 우측 상단 근처에 배치
+ * 플로팅 컨트롤 버튼 위치 자동 조정
+ * - 세로 모드: PDF 책 상단 바깥쪽 위에 여유(12px)를 두고 배치
+ * - 가로 모드: PDF 책 우측 상단에서 너무 멀어지지 않은 위치에 배치
  */
 export function syncFloatingControlsPosition() {
   const floatingBox = document.getElementById('floating-top-controls');
@@ -108,21 +110,40 @@ export function syncFloatingControlsPosition() {
   }
 
   const spreadEl = document.getElementById('book-spread');
-  if (spreadEl && !spreadEl.classList.contains('hidden')) {
-    const rect = spreadEl.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      // 책 페이지 상단 모서리 안쪽(+8px), 최소 헤더 아래 8px 확보
-      const targetTop = Math.max(minTop, Math.round(rect.top + 8));
-      // 책 페이지 우측 모서리에서 안쪽으로 8px (화면 밖으로 나가지 않도록 최소 10px 보장)
-      const targetRight = Math.max(10, Math.round(window.innerWidth - rect.right + 8));
-      floatingBox.style.top = `${targetTop}px`;
-      floatingBox.style.right = `${targetRight}px`;
-      return;
-    }
+  if (!spreadEl || spreadEl.classList.contains('hidden')) {
+    floatingBox.style.top = `${minTop}px`;
+    floatingBox.style.right = '12px';
+    return;
   }
 
-  floatingBox.style.top = `${minTop}px`;
-  floatingBox.style.right = '12px';
+  const rect = spreadEl.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) {
+    floatingBox.style.top = `${minTop}px`;
+    floatingBox.style.right = '12px';
+    return;
+  }
+
+  const boxHeight = floatingBox.offsetHeight || 32;
+  const isPortrait = window.innerHeight > window.innerWidth;
+
+  if (isPortrait) {
+    // 세로 모드: PDF 책 윗선에서 12px 위쪽 여백 공간에 배치 (단, 상단 헤더 아래 minTop 침범 방지)
+    const idealTop = Math.round(rect.top - boxHeight - 12);
+    const targetTop = Math.max(minTop, idealTop);
+    const targetRight = Math.max(12, Math.round(window.innerWidth - rect.right));
+    floatingBox.style.top = `${targetTop}px`;
+    floatingBox.style.right = `${targetRight}px`;
+  } else {
+    // 가로 모드: 우측 끝까지 멀어지지 않고 PDF 책 우측 상단 근처에 배치
+    const targetTop = Math.max(minTop, Math.round(rect.top + 10));
+    const spaceOnRight = window.innerWidth - rect.right;
+    // 책 바깥 오른쪽 여백이 넓으면 책 옆(12px)에 붙이고, 화면을 꽉 채웠으면 책 안쪽 모서리(12px)에 배치
+    const targetRight = spaceOnRight > 72
+      ? Math.max(12, Math.round(spaceOnRight - 56))
+      : Math.max(12, Math.round(spaceOnRight + 12));
+    floatingBox.style.top = `${targetTop}px`;
+    floatingBox.style.right = `${targetRight}px`;
+  }
 }
 
 export function getCurrentPage() {
