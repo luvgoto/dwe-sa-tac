@@ -153,19 +153,27 @@
     기기를 가로로 돌리면 2쪽 보기가 더 크게 보입니다
   </div>
 
-  <!-- 전체화면 복귀 핫스팟 & 우측 상단 플로팅 컨트롤러 (일반 모드: top-14 / 전체화면: top-3) -->
+  <!-- 전체화면 복귀 핫스팟 & 우측 상단 플로팅 컨트롤러 -->
   <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-5 z-50 cursor-pointer"></div>
   <div id="floating-top-controls" class="fixed top-14 right-3 z-50 flex items-center gap-1.5 pointer-events-auto">
-    <!-- 0) 표지(1P) 전용: SA1~4 전체 셔플 재생 버튼 -->
+    <!-- 0) 표지(1P) 전용: SA1~4 전체 재생 버튼 -->
     <button id="btn-cover-shuffle-all" type="button" class="hidden h-8 px-3 rounded-full bg-[#2B4C7E]/90 hover:bg-[#1E3557] text-white border border-white/25 text-xs font-bold shadow-md backdrop-blur-md flex items-center gap-1.5 transition btn-jelly">
       <i class="fa-solid fa-shuffle text-amber-300 text-[11px]"></i>
-      <span>전체 셔플</span>
+      <span>전체</span>
     </button>
 
-    <!-- 1) 송북 노래 일시정지/셔플/정지 3버튼 캡슐 -->
+    <!-- 1) 송북 노래 컨트롤 캡슐 (목차 연속재생 시 이전/일시정지/다음/셔플/정지) -->
     <div id="floating-song-capsule" class="hidden h-8 flex items-center bg-[#172554]/80 text-white rounded-full shadow-md border border-white/20 backdrop-blur-md overflow-hidden">
+      <button id="btn-floating-song-prev" type="button" title="이전 곡" class="hidden w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition text-white/85">
+        <i class="fa-solid fa-backward-step"></i>
+      </button>
+      <div id="floating-prev-divider" class="hidden w-px h-3.5 bg-white/20"></div>
       <button id="btn-floating-song-toggle" type="button" title="일시정지/재생" class="w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition">
         <i id="floating-song-icon" class="fa-solid fa-pause text-sky-200"></i>
+      </button>
+      <div id="floating-next-divider" class="hidden w-px h-3.5 bg-white/20"></div>
+      <button id="btn-floating-song-next" type="button" title="다음 곡" class="hidden w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition text-white/85">
+        <i class="fa-solid fa-forward-step"></i>
       </button>
       <div class="w-px h-3.5 bg-white/20"></div>
       <button id="btn-floating-song-shuffle" type="button" title="셔플 재생 전환" class="hidden w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition text-white/60">
@@ -175,12 +183,6 @@
       <button id="btn-floating-song-stop" type="button" title="정지" class="w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition">
         <i class="fa-solid fa-stop text-white/85"></i>
       </button>
-    </div>
-
-    <!-- 2) 목차 페이지 음원 ON/OFF 아이콘 버튼 -->
-    <button id="btn-toc-mode-toggle" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition">
-      <i class="fa-solid fa-volume-xmark"></i>
-    </button>
     </div>
 
     <!-- 2) 목차 페이지 음원 ON/OFF 아이콘 버튼 -->

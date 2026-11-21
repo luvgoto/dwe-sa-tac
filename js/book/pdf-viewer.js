@@ -88,6 +88,43 @@ function syncSpreadModeByViewport() {
   }
 }
 
+/**
+ * 플로팅 컨트롤 버튼들을 실제 렌더링된 PDF 페이지 영역 우측 상단 근처에 배치
+ */
+export function syncFloatingControlsPosition() {
+  const floatingBox = document.getElementById('floating-top-controls');
+  if (!floatingBox) return;
+
+  const topPanel = document.getElementById('top-panel');
+  const headerBottom = (topPanel && !topPanel.classList.contains('hidden'))
+    ? topPanel.getBoundingClientRect().bottom
+    : 0;
+  const minTop = Math.round(headerBottom + 8);
+
+  if (getActiveAppMode() !== 'book') {
+    floatingBox.style.top = `${minTop}px`;
+    floatingBox.style.right = '12px';
+    return;
+  }
+
+  const spreadEl = document.getElementById('book-spread');
+  if (spreadEl && !spreadEl.classList.contains('hidden')) {
+    const rect = spreadEl.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      // 책 페이지 상단 모서리 안쪽(+8px), 최소 헤더 아래 8px 확보
+      const targetTop = Math.max(minTop, Math.round(rect.top + 8));
+      // 책 페이지 우측 모서리에서 안쪽으로 8px (화면 밖으로 나가지 않도록 최소 10px 보장)
+      const targetRight = Math.max(10, Math.round(window.innerWidth - rect.right + 8));
+      floatingBox.style.top = `${targetTop}px`;
+      floatingBox.style.right = `${targetRight}px`;
+      return;
+    }
+  }
+
+  floatingBox.style.top = `${minTop}px`;
+  floatingBox.style.right = '12px';
+}
+
 export function getCurrentPage() {
   return currentPage;
 }
@@ -109,6 +146,7 @@ export function toggleFullscreen(isFs) {
   isFullscreenMode = isFs;
   requestAnimationFrame(() => {
     renderCurrentView();
+    syncFloatingControlsPosition();
   });
 }
 
@@ -194,6 +232,7 @@ export async function initBookViewer(options = {}) {
     await renderCurrentView();
     document.getElementById('loading-box').classList.add('hidden');
     document.getElementById('book-spread').classList.remove('hidden');
+    requestAnimationFrame(syncFloatingControlsPosition);
   } catch (err) {
     document.getElementById('loading-box').innerHTML = `<p class="text-sm font-bold text-rose-600">PDF 로드 실패: ${err.message}</p>`;
   }
@@ -294,7 +333,10 @@ function bindViewerEvents() {
   let resizeTimer;
   const handleViewportChange = () => {
     syncSpreadModeByViewport();
-    if (getActiveAppMode() !== 'book') return;
+    if (getActiveAppMode() !== 'book') {
+      syncFloatingControlsPosition();
+      return;
+    }
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(renderCurrentView, 80);
   };
@@ -304,7 +346,10 @@ function bindViewerEvents() {
 
   if (typeof ResizeObserver !== 'undefined' && viewerEl) {
     const ro = new ResizeObserver(() => {
-      if (getActiveAppMode() !== 'book') return;
+      if (getActiveAppMode() !== 'book') {
+        syncFloatingControlsPosition();
+        return;
+      }
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(renderCurrentView, 60);
     });
@@ -385,6 +430,7 @@ export async function renderCurrentView() {
     }
     updateTocModeUI(isTocView);
     updateBottomNavUI();
+    requestAnimationFrame(syncFloatingControlsPosition);
   } finally {
     isRendering = false;
   }

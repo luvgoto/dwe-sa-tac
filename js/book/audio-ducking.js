@@ -141,9 +141,6 @@ function startTrackInternal(trackId, spotKey) {
 
 /**
  * 목차 권별(SA1~SA4) 또는 표지 전체 연속/셔플 재생 시작
- * @param {Array<{track: string, spotKey: string}>} items
- * @param {number} startIndex - 처음 재생할 곡의 인덱스 (전체 셔플 시 -1)
- * @param {boolean} shuffle - 셔플 여부
  */
 export function playSongPlaylist(items, startIndex = 0, shuffle = false) {
   if (!items || items.length === 0) return;
@@ -174,6 +171,30 @@ export function playSongPlaylist(items, startIndex = 0, shuffle = false) {
   const first = activePlaylist[currentQueueIndex];
   if (first) {
     startTrackInternal(first.track, first.spotKey);
+  }
+}
+
+export function playPrevInPlaylist() {
+  if (activePlaylist.length <= 1) return;
+  // 곡이 3초 이상 재생되었으면 처음부터 다시, 아니면 이전 곡으로 이동
+  if (songAudioEl.currentTime > 3) {
+    songAudioEl.currentTime = 0;
+    if (songAudioEl.paused) songAudioEl.play().catch(() => {});
+    return;
+  }
+  currentQueueIndex = (currentQueueIndex - 1 + activePlaylist.length) % activePlaylist.length;
+  const prevItem = activePlaylist[currentQueueIndex];
+  if (prevItem) {
+    startTrackInternal(prevItem.track, prevItem.spotKey);
+  }
+}
+
+export function playNextInPlaylist() {
+  if (activePlaylist.length <= 1) return;
+  currentQueueIndex = (currentQueueIndex + 1) % activePlaylist.length;
+  const nextItem = activePlaylist[currentQueueIndex];
+  if (nextItem) {
+    startTrackInternal(nextItem.track, nextItem.spotKey);
   }
 }
 
@@ -267,6 +288,10 @@ export function playOrPauseR2Song(trackId, spotKey) {
 function updateFloatingSongCapsule() {
   const capsule = document.getElementById('floating-song-capsule');
   const icon = document.getElementById('floating-song-icon');
+  const prevBtn = document.getElementById('btn-floating-song-prev');
+  const prevDiv = document.getElementById('floating-prev-divider');
+  const nextBtn = document.getElementById('btn-floating-song-next');
+  const nextDiv = document.getElementById('floating-next-divider');
   const shuffleBtn = document.getElementById('btn-floating-song-shuffle');
   const shuffleDiv = document.getElementById('floating-shuffle-divider');
   if (!capsule) return;
@@ -282,14 +307,14 @@ function updateFloatingSongCapsule() {
     }
 
     const hasQueue = basePlaylist.length > 1;
-    if (shuffleBtn && shuffleDiv) {
-      shuffleBtn.classList.toggle('hidden', !hasQueue);
-      shuffleDiv.classList.toggle('hidden', !hasQueue);
-      if (hasQueue) {
-        shuffleBtn.className = isPlaylistShuffle
-          ? 'w-8 h-8 bg-amber-400/25 text-amber-300 text-xs flex items-center justify-center transition'
-          : 'w-8 h-8 hover:bg-white/15 text-white/55 text-xs flex items-center justify-center transition';
-      }
+    [prevBtn, prevDiv, nextBtn, nextDiv, shuffleBtn, shuffleDiv].forEach(el => {
+      if (el) el.classList.toggle('hidden', !hasQueue);
+    });
+
+    if (hasQueue && shuffleBtn) {
+      shuffleBtn.className = isPlaylistShuffle
+        ? 'w-8 h-8 bg-amber-400/25 text-amber-300 text-xs flex items-center justify-center transition'
+        : 'w-8 h-8 hover:bg-white/15 text-white/55 text-xs flex items-center justify-center transition';
     }
   }
 }
@@ -358,6 +383,8 @@ vocaAudioEl.addEventListener('ended', () => {
   if (onPlaybackStateChange) onPlaybackStateChange();
 });
 
+document.getElementById('btn-floating-song-prev')?.addEventListener('click', playPrevInPlaylist);
 document.getElementById('btn-floating-song-toggle')?.addEventListener('click', toggleFloatingSongPause);
+document.getElementById('btn-floating-song-next')?.addEventListener('click', playNextInPlaylist);
 document.getElementById('btn-floating-song-shuffle')?.addEventListener('click', togglePlaylistShuffle);
 document.getElementById('btn-floating-song-stop')?.addEventListener('click', stopAllBookAudio);
