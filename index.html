@@ -33,7 +33,6 @@
   <header id="top-panel" class="sticky top-0 h-11 sm:h-12 bg-[#FAFBFD] border-b border-slate-200/90 px-2.5 sm:px-4 flex items-center justify-between shrink-0 z-30">
     <!-- 좌측 영역: 현재 모드 브랜드 (5연타 시 부모모드 토글) -->
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-      <!-- BOOK 모드 타이틀 (모바일: 책 아이콘만 / PC: 아이콘 + SINGALONG BOOK) -->
       <div id="brand-book" class="flex items-center gap-2 cursor-pointer select-none">
         <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#2B4C7E] text-white flex items-center justify-center text-xs shadow-xs">
           <i class="fa-solid fa-book-open"></i>
@@ -41,7 +40,6 @@
         <span class="hidden sm:inline font-black text-[#1E3557] text-sm tracking-tight">SINGALONG BOOK</span>
       </div>
 
-      <!-- TAC 모드 타이틀 (모바일: 카드 아이콘만 / PC: 아이콘 + TAC PLAYER) -->
       <div id="brand-tac" class="hidden flex items-center gap-2 cursor-pointer select-none">
         <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#2B4C7E] text-white flex items-center justify-center text-xs shadow-xs">
           <i class="fa-solid fa-layer-group"></i>
@@ -49,19 +47,16 @@
         <span class="hidden sm:inline font-black text-[#1E3557] text-sm tracking-tight">TAC PLAYER</span>
       </div>
 
-      <!-- 부모모드 활성화 배지 (Oat Beige) -->
       <button id="btn-parent-lock" type="button" class="hidden h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-black flex items-center gap-1 transition">
         <i class="fa-solid fa-lock-open text-[11px]"></i>
         <span class="hidden sm:inline">부모모드</span>
       </button>
     </div>
 
-    <!-- 우측 영역: 옵션(글자만) -> 모드 전환(아이콘+글자) -> 전체화면(아이콘만) -->
+    <!-- 우측 영역 -->
     <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
-
       <!-- [A] BOOK 모드 우측 컨트롤 -->
       <div id="header-controls-book" class="flex items-center gap-1 sm:gap-1.5">
-        <!-- 음원편집 모드 전용 도구 (Oat Beige / Denim Navy 통일) -->
         <div id="edit-controls" class="hidden flex items-center gap-1.5 bg-[#F6F0E6] border border-[#DFD1BC] rounded-lg px-2 py-0.5 mr-0.5">
           <div class="flex items-center bg-white rounded border border-[#DFD1BC] p-0.5 text-[10px] font-bold">
             <button id="btn-shape-circle" type="button" class="px-2 py-0.5 rounded bg-[#2B4C7E] text-white">원형</button>
@@ -102,17 +97,14 @@
           </span>
         </div>
 
-        <!-- 부모모드 전용: 음원편집 (Oat Beige 통일) -->
         <button id="btn-edit-spots" type="button" class="hidden parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition">
           <i class="fa-solid fa-music text-[11px]"></i><span class="hidden sm:inline">음원편집</span>
         </button>
 
-        <!-- 2쪽 / 1쪽 전환 (아이콘 없이 글자만) -->
         <button id="btn-toggle-spread" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center justify-center transition">
           <span id="label-spread">2쪽</span>
         </button>
 
-        <!-- TAC 전환 (모바일: 아이콘만 / PC: 아이콘 + TAC) -->
         <button id="btn-switch-to-tac" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center gap-1.5 transition btn-jelly">
           <i class="fa-solid fa-layer-group text-[11px]"></i><span class="hidden sm:inline">TAC</span>
         </button>
@@ -120,28 +112,24 @@
 
       <!-- [B] TAC 모드 우측 컨트롤 -->
       <div id="header-controls-tac" class="hidden flex items-center gap-1 sm:gap-1.5">
-        <!-- 부모모드 전용: SELECT (Oat Beige 통일) -->
         <button id="nav-btn-filter" type="button" class="hidden parent-only-control h-7 sm:h-8 px-2.5 rounded-lg bg-[#EFE6D8] hover:bg-[#E5D7C3] text-[#4A3F35] border border-[#D8C7B0] text-xs font-bold flex items-center gap-1 transition btn-jelly">
           <i class="fa-solid fa-sliders text-[11px]"></i><span class="hidden sm:inline">SELECT</span>
         </button>
 
-        <!-- CARD (아이콘 없이 글자만) -->
         <button id="nav-btn-card" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#2B4C7E] text-white shadow-xs btn-jelly">
           <span>CARD</span>
         </button>
 
-        <!-- QUIZ (아이콘 없이 글자만) -->
         <button id="nav-btn-quiz" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#EDF2F7] text-[#2B4C7E] hover:bg-[#DCE7F5] border border-[#D5E2F2] btn-jelly">
           <span>QUIZ</span>
         </button>
 
-        <!-- BOOK 전환 (모바일: 아이콘만 / PC: 아이콘 + BOOK) -->
         <button id="btn-switch-to-book" type="button" class="h-7 sm:h-8 px-2.5 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] text-xs font-bold flex items-center gap-1.5 transition btn-jelly">
           <i class="fa-solid fa-book-open text-[11px]"></i><span class="hidden sm:inline">BOOK</span>
         </button>
       </div>
 
-      <!-- 공통 전체화면 버튼 (아이콘만, 높이 동일 통일) -->
+      <!-- 공통 전체화면 버튼 -->
       <button id="btn-fullscreen" type="button" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] flex items-center justify-center text-xs transition">
         <i id="fs-icon" class="fa-solid fa-expand"></i>
       </button>
@@ -153,52 +141,46 @@
     기기를 가로로 돌리면 2쪽 보기가 더 크게 보입니다
   </div>
 
-  <!-- 전체화면 복귀 핫스팟 & 우측 상단 플로팅 컨트롤러 -->
+  <!-- 전체화면 복귀 핫스팟 & 플로팅 컨트롤러 (PDF와 완전히 분리된 2줄 구조) -->
   <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-5 z-50 cursor-pointer"></div>
-  <div id="floating-top-controls" class="fixed top-14 right-3 z-50 flex items-center gap-1.5 pointer-events-auto">
-    <!-- 0) 표지(1P) 전용: SA1~4 전체 재생 버튼 -->
-    <button id="btn-cover-shuffle-all" type="button" class="hidden h-8 px-3 rounded-full bg-[#2B4C7E]/90 hover:bg-[#1E3557] text-white border border-white/25 text-xs font-bold shadow-md backdrop-blur-md flex items-center gap-1.5 transition btn-jelly">
-      <i class="fa-solid fa-shuffle text-amber-300 text-[11px]"></i>
-      <span>전체</span>
-    </button>
+  <div id="floating-top-controls" class="fixed top-14 right-3 z-50 flex flex-col items-end gap-1.5 pointer-events-auto">
+    <!-- 1행: [재생/일시정지] [셔플(표지/목차)] [목차 음원ON/OFF] [TAC 연속재생] [전체화면 복귀] -->
+    <div id="floating-row-1" class="flex items-center gap-1.5">
+      <!-- 송북 재생/일시정지 토글 버튼 -->
+      <button id="btn-floating-song-toggle" type="button" title="재생/일시정지" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
+        <i id="floating-song-icon" class="fa-solid fa-play text-emerald-300"></i>
+      </button>
 
-    <!-- 1) 송북 노래 컨트롤 캡슐 (목차 연속재생 시 이전/일시정지/다음/셔플/정지) -->
-    <div id="floating-song-capsule" class="hidden h-8 flex items-center bg-[#172554]/80 text-white rounded-full shadow-md border border-white/20 backdrop-blur-md overflow-hidden">
-      <button id="btn-floating-song-prev" type="button" title="이전 곡" class="hidden w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition text-white/85">
-        <i class="fa-solid fa-backward-step"></i>
-      </button>
-      <div id="floating-prev-divider" class="hidden w-px h-3.5 bg-white/20"></div>
-      <button id="btn-floating-song-toggle" type="button" title="일시정지/재생" class="w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition">
-        <i id="floating-song-icon" class="fa-solid fa-pause text-sky-200"></i>
-      </button>
-      <div id="floating-next-divider" class="hidden w-px h-3.5 bg-white/20"></div>
-      <button id="btn-floating-song-next" type="button" title="다음 곡" class="hidden w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition text-white/85">
-        <i class="fa-solid fa-forward-step"></i>
-      </button>
-      <div class="w-px h-3.5 bg-white/20"></div>
-      <button id="btn-floating-song-shuffle" type="button" title="셔플 재생 전환" class="hidden w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition text-white/60">
+      <!-- 표지/목차 전용 셔플 버튼 -->
+      <button id="btn-floating-song-shuffle" type="button" title="셔플 재생" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white/75 border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
         <i class="fa-solid fa-shuffle"></i>
       </button>
-      <div id="floating-shuffle-divider" class="hidden w-px h-3.5 bg-white/20"></div>
-      <button id="btn-floating-song-stop" type="button" title="정지" class="w-8 h-8 hover:bg-white/15 text-xs flex items-center justify-center transition">
-        <i class="fa-solid fa-stop text-white/85"></i>
+
+      <!-- 목차 페이지 터치 음원 ON/OFF 버튼 -->
+      <button id="btn-toc-mode-toggle" type="button" title="목차 터치 음원 ON/OFF" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition">
+        <i class="fa-solid fa-volume-xmark"></i>
+      </button>
+
+      <!-- TAC 연속재생(PLAY ALL) 버튼 -->
+      <button id="btn-autoplay" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
+        <i id="autoplay-icon" class="fa-solid fa-play"></i>
+      </button>
+
+      <!-- 전체화면 복귀 버튼 -->
+      <button id="btn-floating-exit" type="button" title="전체화면 종료" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition">
+        <i class="fa-solid fa-compress"></i>
       </button>
     </div>
 
-    <!-- 2) 목차 페이지 음원 ON/OFF 아이콘 버튼 -->
-    <button id="btn-toc-mode-toggle" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition">
-      <i class="fa-solid fa-volume-xmark"></i>
-    </button>
-
-    <!-- 3) TAC 연속재생(PLAY ALL) 아이콘 버튼 -->
-    <button id="btn-autoplay" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
-      <i id="autoplay-icon" class="fa-solid fa-play"></i>
-    </button>
-
-    <!-- 4) 전체화면 복귀 아이콘 버튼 -->
-    <button id="btn-floating-exit" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition">
-      <i class="fa-solid fa-compress"></i>
-    </button>
+    <!-- 2행: 표지/목차 재생 중에만 노출되는 [이전곡] [다음곡] -->
+    <div id="floating-row-2" class="hidden flex items-center gap-1.5">
+      <button id="btn-floating-song-prev" type="button" title="이전 곡" class="w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
+        <i class="fa-solid fa-backward-step"></i>
+      </button>
+      <button id="btn-floating-song-next" type="button" title="다음 곡" class="w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
+        <i class="fa-solid fa-forward-step"></i>
+      </button>
+    </div>
   </div>
 
   <!-- =========================================================================
@@ -298,7 +280,7 @@
       </div>
     </div>
 
-    <!-- 하단 페이지 네비게이터 (평소 숨김 유지) -->
+    <!-- 하단 페이지 네비게이터 -->
     <div id="bottom-nav-trigger">
       <div id="bottom-nav-bar" class="w-full h-full flex items-center justify-center px-4 pb-2">
         <div id="bottom-nav-inner" class="bg-slate-900/85 backdrop-blur-md border border-white/20 text-white rounded-2xl px-5 py-2 shadow-2xl flex items-center gap-4 max-w-lg w-full">
@@ -319,8 +301,6 @@
        SECTION 2. 단어카드 플레이어 (TAC) 하단 영역
        ========================================================================= -->
   <div id="section-tac" class="hidden flex-1 min-h-0 w-full bg-white flex flex-col overflow-y-auto">
-
-    <!-- 2-1. 메인 카드 놀이 뷰 -->
     <main id="view-card" class="w-full max-w-xl md:max-w-3xl lg:max-w-4xl mx-auto my-auto px-3 py-3 sm:px-5 sm:py-4 flex flex-col items-center gap-2 sm:gap-2.5 shrink-0">
       <div id="tac-top-meta" class="w-full flex items-center justify-between px-1 py-0.5 text-xs shrink-0">
         <div class="flex items-center gap-1.5">
@@ -367,7 +347,6 @@
         </div>
       </div>
 
-      <!-- 하단 컨트롤: 세로·가로모드 공통 2줄 배치 -->
       <footer id="tac-card-footer" class="w-full flex flex-col items-center gap-3 sm:gap-3.5 pt-1 shrink-0">
         <div id="tac-nav-buttons" class="w-full flex items-center justify-between gap-2.5 sm:gap-6">
           <button id="btn-prev-card" type="button" class="flex-1 py-3 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-2xl border border-slate-200 shadow-xs text-sm sm:text-base btn-jelly flex items-center justify-center gap-1.5 sm:gap-2">
@@ -393,7 +372,7 @@
       </footer>
     </main>
 
-    <!-- 2-2. 소리 퀴즈 놀이 뷰 (상단 기준 배치 + 여유 있는 세로 간격) -->
+    <!-- 2-2. 소리 퀴즈 놀이 뷰 -->
     <main id="view-quiz" class="hidden w-full max-w-xl md:max-w-4xl lg:max-w-5xl mx-auto px-3 pt-5 pb-6 sm:px-6 sm:pt-7 sm:pb-8 flex flex-col space-y-4 sm:space-y-6 shrink-0">
       <div class="w-full flex items-center justify-between px-1">
         <div class="flex items-center gap-2">
@@ -532,7 +511,6 @@
     </main>
   </div>
 
-  <!-- 오디오 채널: 송북 노래 / 송북 보카 / TAC 플레이어 -->
   <audio id="song-audio" preload="none" playsinline></audio>
   <audio id="voca-audio" preload="none" playsinline></audio>
   <audio id="audio-player" preload="none" playsinline></audio>

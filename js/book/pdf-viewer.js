@@ -12,7 +12,9 @@ import {
   playSongPlaylist,
   stopAllBookAudio,
   getActiveAudioKeys,
-  setAudioStateCallback
+  setAudioStateCallback,
+  setDefaultPlayActionCallback,
+  updateFloatingControlsUI
 } from './audio-ducking.js';
 import { initSpotEditor, isEditModeActive, openSpotModalEdit } from './spot-editor.js';
 import { getActiveAppMode } from '../main.js';
@@ -89,13 +91,20 @@ function syncSpreadModeByViewport() {
 }
 
 /**
- * 플로팅 컨트롤 버튼 위치 자동 조정
- * - 세로 모드: PDF 책 상단 바깥쪽 위에 여유(12px)를 두고 배치
- * - 가로 모드: PDF 책 우측 상단에서 너무 멀어지지 않은 위치에 배치
+ * 플로팅 컨트롤 버튼 위치 자동 조정 (PDF에 닿지 않도록 완전히 분리)
+ * - 세로 모드: PDF 책 윗변 바깥쪽 위에 12px 여유를 두고 띄움
+ * - 가로 모드: PDF 책 오른쪽 테두리 바깥쪽 옆(회색 여백)에 14px 띄움
  */
 export function syncFloatingControlsPosition() {
   const floatingBox = document.getElementById('floating-top-controls');
   if (!floatingBox) return;
+
+  const isPortrait = window.innerHeight > window.innerWidth;
+  // 세로 모드는 가로 1줄(flex-row), 가로 모드는 세로 2줄(flex-col)
+  floatingBox.classList.toggle('flex-row', isPortrait);
+  floatingBox.classList.toggle('items-center', isPortrait);
+  floatingBox.classList.toggle('flex-col', !isPortrait);
+  floatingBox.classList.toggle('items-end', !isPortrait);
 
   const topPanel = document.getElementById('top-panel');
   const headerBottom = (topPanel && !topPanel.classList.contains('hidden'))
@@ -104,6 +113,7 @@ export function syncFloatingControlsPosition() {
   const minTop = Math.round(headerBottom + 8);
 
   if (getActiveAppMode() !== 'book') {
+    floatingBox.style.left = 'auto';
     floatingBox.style.top = `${minTop}px`;
     floatingBox.style.right = '12px';
     return;
@@ -111,6 +121,7 @@ export function syncFloatingControlsPosition() {
 
   const spreadEl = document.getElementById('book-spread');
   if (!spreadEl || spreadEl.classList.contains('hidden')) {
+    floatingBox.style.left = 'auto';
     floatingBox.style.top = `${minTop}px`;
     floatingBox.style.right = '12px';
     return;
@@ -118,31 +129,69 @@ export function syncFloatingControlsPosition() {
 
   const rect = spreadEl.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) {
+    floatingBox.style.left = 'auto';
     floatingBox.style.top = `${minTop}px`;
     floatingBox.style.right = '12px';
     return;
   }
 
+  const boxWidth = floatingBox.offsetWidth || 72;
   const boxHeight = floatingBox.offsetHeight || 32;
-  const isPortrait = window.innerHeight > window.innerWidth;
 
   if (isPortrait) {
-    // 세로 모드: PDF 책 윗선에서 12px 위쪽 여백 공간에 배치 (단, 상단 헤더 아래 minTop 침범 방지)
+    // 세로 모드(1줄): PDF 책 윗선에서 위로 12px 띄워 배치
+    floatingBox.style.left = 'auto';
     const idealTop = Math.round(rect.top - boxHeight - 12);
     const targetTop = Math.max(minTop, idealTop);
     const targetRight = Math.max(12, Math.round(window.innerWidth - rect.right));
     floatingBox.style.top = `${targetTop}px`;
     floatingBox.style.right = `${targetRight}px`;
   } else {
-    // 가로 모드: 우측 끝까지 멀어지지 않고 PDF 책 우측 상단 근처에 배치
-    const targetTop = Math.max(minTop, Math.round(rect.top + 10));
+    // 가로 모드(2줄): PDF 책 오른쪽 테두리 바깥쪽(회색 여백)으로 14px 띄워 배치
     const spaceOnRight = window.innerWidth - rect.right;
-    // 책 바깥 오른쪽 여백이 넓으면 책 옆(12px)에 붙이고, 화면을 꽉 채웠으면 책 안쪽 모서리(12px)에 배치
-    const targetRight = spaceOnRight > 72
-      ? Math.max(12, Math.round(spaceOnRight - 56))
-      : Math.max(12, Math.round(spaceOnRight + 12));
-    floatingBox.style.top = `${targetTop}px`;
-    floatingBox.style.right = `${targetRight}px`;
+    const targetTop = Math.max(minTop, Math.round(rect.top + 4));
+
+    if (spaceOnRight >= boxWidth + 20) {
+      floatingBox.style.left = `${Math.round(rect.right + 14)}px`;
+      floatingBox.style.right = 'auto';
+      floatingBox.style.top = `${targetTop}px`;
+    } else {
+      floatingBox.style.left = 'auto';
+      floatingBox.style.right = '10px';
+      floatingBox.style.top = `${minTop}px`;
+    }
+  }
+}
+
+function handleDefaultPagePlay(shuffle = false) {
+  const isCover = (currentLeftPageNum === 1 || currentRightPageNum === 1);
+  if (isCover) {
+    const allSongs = collectSongsInPageRange(2, 11);
+    if (allSongs.length > 0) playSongPlaylist(allSongs, -1, shuffle);
+    return;
+  }
+
+  const activePage = (currentLeftPageNum && TOC_PAGES.has(currentLeftPageNum))
+    ? currentLeftPageNum
+    : (currentRightPageNum && TOC_PAGES.has(currentRightPageNum) ? currentRightPageNum : null);
+
+  if (activePage) {
+    const range = getTocRangeForPage(activePage);
+    if (range) {
+      const seriesSongs = collectSongsInPageRange(range.start, range.end);
+      if (seriesSongs.length > 0) {
+        playSongPlaylist(seriesSongs, shuffle ? -1 : 0, shuffle);
+        return;
+      }
+    }
+  }
+
+  // 일반 본문 페이지(12P~): 현재 펼쳐진 페이지의 첫 곡 재생
+  const startP = currentLeftPageNum || currentRightPageNum || currentPage;
+  const endP = currentRightPageNum || startP;
+  const pageSongs = collectSongsInPageRange(startP, endP);
+  if (pageSongs.length > 0) {
+    playOrPauseR2Song(pageSongs[0].track, pageSongs[0].spotKey);
   }
 }
 
@@ -152,8 +201,10 @@ export function getCurrentPage() {
 
 export function pauseBookAudio() {
   stopAllBookAudio();
-  const tocBtn = document.getElementById('btn-toc-mode-toggle');
-  if (tocBtn) tocBtn.classList.add('hidden');
+  ['btn-toc-mode-toggle', 'btn-floating-song-toggle', 'btn-floating-song-shuffle', 'floating-row-2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
   ['canvas-left', 'canvas-right'].forEach(id => {
     const c = document.getElementById(id);
     if (c && c.width > 0) {
@@ -182,6 +233,7 @@ export async function initBookViewer(options = {}) {
   updateSpreadButtonLabel();
 
   setAudioStateCallback(refreshAllSongLayers);
+  setDefaultPlayActionCallback(handleDefaultPagePlay);
 
   initSpotEditor({
     getPdfDoc: () => pdfDoc,
@@ -260,13 +312,6 @@ export async function initBookViewer(options = {}) {
 }
 
 function bindViewerEvents() {
-  document.getElementById('btn-cover-shuffle-all')?.addEventListener('click', () => {
-    const allSongs = collectSongsInPageRange(2, 11);
-    if (allSongs.length > 0) {
-      playSongPlaylist(allSongs, -1, true);
-    }
-  });
-
   document.getElementById('btn-toc-mode-toggle').addEventListener('click', toggleTocInteractionMode);
   document.getElementById('btn-toggle-spread').addEventListener('click', toggleSpreadMode);
 
@@ -447,7 +492,7 @@ export async function renderCurrentView() {
 
     const isTocView = (leftPageNum && TOC_PAGES.has(leftPageNum)) || (rightPageNum && TOC_PAGES.has(rightPageNum));
     if (!isTocView) {
-      tocAudioMode = false; // 2~11P 범위를 벗어날 때만 기본(이동 모드)으로 초기화
+      tocAudioMode = false;
     }
     updateTocModeUI(isTocView);
     updateBottomNavUI();
@@ -623,18 +668,24 @@ export function refreshAllSongLayers() {
 
 function updateTocModeUI(isTocPage) {
   const toggleBtn = document.getElementById('btn-toc-mode-toggle');
-  const coverShuffleBtn = document.getElementById('btn-cover-shuffle-all');
+  const playToggleBtn = document.getElementById('btn-floating-song-toggle');
+  const shuffleBtn = document.getElementById('btn-floating-song-shuffle');
   const spread = document.getElementById('book-spread');
 
   const isBookMode = getActiveAppMode() === 'book';
-  const isCoverVisible = isBookMode && (currentLeftPageNum === 1 || currentRightPageNum === 1);
-  if (coverShuffleBtn) {
-    coverShuffleBtn.classList.toggle('hidden', !isCoverVisible);
+  const isCoverOrToc = isBookMode && (isTocPage || currentLeftPageNum === 1 || currentRightPageNum === 1);
+
+  if (playToggleBtn) {
+    playToggleBtn.classList.toggle('hidden', !isBookMode);
+  }
+  if (shuffleBtn) {
+    shuffleBtn.classList.toggle('hidden', !isCoverOrToc);
   }
 
   if (!isTocPage || !isBookMode) {
     toggleBtn.classList.add('hidden');
     spread.classList.remove('toc-audio-off', 'toc-audio-on');
+    updateFloatingControlsUI();
     return;
   }
 
@@ -647,9 +698,10 @@ function updateTocModeUI(isTocPage) {
   } else {
     spread.classList.remove('toc-audio-on');
     spread.classList.add('toc-audio-off');
-    toggleBtn.className = 'w-8 h-8 rounded-full bg-[#172554]/75 hover:bg-[#172554]/90 text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition';
+    toggleBtn.className = 'w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition';
     toggleBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i>`;
   }
+  updateFloatingControlsUI();
 }
 
 function toggleTocInteractionMode() {
