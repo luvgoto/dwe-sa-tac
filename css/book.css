@@ -228,19 +228,39 @@
   }
 }
 
-/* 2. 모바일 세로모드: BOOK 모드 PDF 상단 쏠림 보정 */
+/* 2. 모바일 세로모드: 상단 펀치홀 레터박스와 대칭되는 하단 레터박스 생성 및 중앙 정렬 */
 @media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
-  #viewer-container {
-    align-items: flex-start !important;
-    padding-top: 7vh !important;
+  :root {
+    --mobile-bottom-pillar: 34px;
+    --mobile-pillar-color: #f6f6f6;
   }
 
-  body:has(#top-panel.hidden) #viewer-container {
-    padding-top: 5vh !important;
+  /* 하단 끝에 상단 펀치홀 영역과 동일한 색·폭의 레터박스 고정 */
+  body::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--mobile-bottom-pillar);
+    background-color: var(--mobile-pillar-color);
+    z-index: 9999;
+    pointer-events: none;
   }
 
-  #book-spread {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
+  /* 상단 레터박스와 하단 레터박스 사이 영역의 정중앙에 PDF 배치 */
+  #viewer-container,
+  #section-tac {
+    height: calc(100% - var(--mobile-bottom-pillar)) !important;
+    margin-bottom: var(--mobile-bottom-pillar) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-top: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 하단 페이지 슬라이더 바도 하단 레터박스 위쪽으로 자연스럽게 배치 */
+  #bottom-nav-trigger {
+    bottom: var(--mobile-bottom-pillar) !important;
   }
 }
