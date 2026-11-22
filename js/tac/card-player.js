@@ -53,7 +53,7 @@ const indicator = document.getElementById('card-indicator');
 const stageBadge = document.getElementById('card-stage-badge');
 const tagsBox = document.getElementById('card-tags-box');
 const audioPlayer = document.getElementById('audio-player');
-
+ 
 function syncNavButtonsWidthToCard() {
   const cardArea = document.getElementById('card-touch-area');
   const navButtons = document.getElementById('tac-nav-buttons');
