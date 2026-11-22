@@ -20,7 +20,9 @@
 }
 
 /* ==========================================================================
-   스마트폰 가로모드(Landscape) 전용: 좌측 배지 기준폭 + 아담한 2개씩 색인 + 카드/버튼 폭 일치
+   스마트폰 가로모드(Landscape) 전용:
+   - 좌측: 배지 너비 고정 + 색인 2개씩 자동 줄바꿈(크기 확대 없음)
+   - 우측: 카드와 PRE/NEXT 버튼 가로폭 칼같이 일치
    ========================================================================== */
 @media (orientation: landscape) and (max-height: 480px) and (max-width: 960px) and (pointer: coarse) {
   #section-tac {
@@ -33,7 +35,6 @@
     margin: 0 !important;
     padding: 0.5rem 0.75rem !important;
     display: grid !important;
-    /* 좌측 컬럼 너비를 'BLUE · 1 / 510 · ★' 한 줄 실제 너비(max-content)로 자동 맞춤 */
     grid-template-columns: max-content 1fr !important;
     grid-template-rows: auto 1fr auto !important;
     column-gap: 0.75rem !important;
@@ -64,7 +65,7 @@
     flex-shrink: 0 !important;
   }
 
-  /* 2. 색인(태그) 영역: 원래 아담한 크기 유지 + 한 줄에 최대 2개씩 배치 */
+  /* 2. 색인(태그) 영역: 아담한 크기 그대로 유지 + 2개 초과 시 무조건 다음 줄로 개행 */
   #tac-card-wrapper {
     display: contents !important;
   }
@@ -88,19 +89,17 @@
   }
 
   #card-tags-box {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: flex-start !important;
-    align-content: flex-start !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, max-content) !important;
     gap: 0.25rem !important;
+    justify-content: start !important;
+    align-content: start !important;
     width: 100% !important;
   }
 
-  /* 태그 본연의 아담한 크기 유지 + 2개 초과 시 다음 줄로 자연스럽게 개행 */
   #card-tags-box > span {
     width: auto !important;
-    max-width: calc(50% - 0.15rem) !important;
-    flex: 0 0 auto !important;
+    max-width: 5.2rem !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -118,7 +117,7 @@
     margin: auto !important;
   }
 
-  /* 4. 하단 푸터 분할: Jump to는 좌측 하단, PRE/NEXT 버튼은 우측 카드 가로폭에 딱 맞춤 */
+  /* 4. 하단 푸터 분할: Jump to는 좌측 하단, PRE/NEXT 버튼은 우측 카드의 실제 가로 길이에 정확히 일치 */
   #tac-card-footer {
     display: contents !important;
   }
@@ -144,12 +143,11 @@
     padding-right: 0.25rem !important;
   }
 
-  /* 일반 보기(상단 헤더 2.75rem 있음)일 때 카드 실제 가로폭과 일치 */
+  /* 일반 보기(상단 헤더 2.75rem + 상하패딩 1rem + row-gap 0.45rem + 버튼높이 2.15rem = 6.35rem 제외) */
   #tac-nav-buttons {
     grid-column: 2 / 3 !important;
     grid-row: 3 / 4 !important;
-    width: 100% !important;
-    max-width: calc((100dvh - 6.6rem) * 2.1) !important;
+    width: min(100%, calc((100dvh - 6.35rem) * 2.1)) !important;
     margin: 0 auto !important;
     gap: 0.6rem !important;
   }
@@ -162,10 +160,10 @@
   }
 }
 
-/* 전체화면(상단 헤더 숨김)일 때 더 커진 카드 가로폭에 맞춰 하단 PRE/NEXT 폭도 함께 확장 */
+/* 전체화면(상단 헤더 숨김: 상하패딩 1rem + row-gap 0.45rem + 버튼높이 2.15rem = 3.6rem 제외)일 때 카드 가로폭에 맞춰 버튼도 확장 */
 @media (orientation: landscape) and (max-height: 480px) and (max-width: 960px) and (pointer: coarse) {
   #top-panel.hidden ~ #section-tac #tac-nav-buttons {
-    max-width: calc((100dvh - 3.85rem) * 2.1) !important;
+    width: min(100%, calc((100dvh - 3.6rem) * 2.1)) !important;
   }
 }
 
