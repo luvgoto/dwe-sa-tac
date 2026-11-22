@@ -183,41 +183,52 @@
    모바일(스마트폰) 전용 화면 균형 보정 (PC 및 태블릿은 기존 레이아웃 그대로 유지)
    ========================================================================== */
 
-/* 1. 모바일 가로모드 전체화면 시: BOOK + TAC 모두 좌측 펀치홀과 동일한 우측 대칭 여백 적용 */
+/* 1. 모바일 가로모드(일반 + 전체화면 모두): 좌측 시스템 컷아웃 회색 영역과 동일한 우측 회색 기둥 생성 */
 @media (orientation: landscape) and (max-height: 550px) and (pointer: coarse) {
   :root {
-    --mobile-right-pillar: 40px;
+    --mobile-right-pillar: 38px;
+    --mobile-pillar-color: #E5E7EB;
   }
 
-  /* 전체화면일 때 우측 끝에도 좌측 펀치홀 영역과 똑같은 폭의 배경 여백(필러박스)을 덮어 대칭 맞춤 */
-  body:has(#top-panel.hidden)::after {
+  /* 우측 끝에 좌측 펀치홀 영역과 동일한 색·폭의 회색 기둥 고정 */
+  body::after {
     content: "";
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     width: var(--mobile-right-pillar);
-    background-color: #FAFBFD;
-    z-index: 45;
+    background-color: var(--mobile-pillar-color);
+    z-index: 9999;
     pointer-events: none;
   }
 
-  /* BOOK 영역과 TAC 영역 모두 우측 필러박스만큼 안쪽으로 수축해 중앙 정렬 유지 */
-  body:has(#top-panel.hidden) #viewer-container,
-  body:has(#top-panel.hidden) #section-tac {
+  /* 상단 헤더(#top-panel)의 2쪽/TAC/전체화면 버튼들이 우측 회색 기둥 안쪽에 배치되도록 여백 확보 */
+  #top-panel {
+    padding-right: calc(var(--mobile-right-pillar) + 10px) !important;
+  }
+
+  /* BOOK 뷰어와 TAC 영역 모두 우측 회색 기둥만큼 안쪽으로 수축 */
+  #viewer-container,
+  #section-tac {
     width: calc(100% - var(--mobile-right-pillar)) !important;
     margin-left: 0 !important;
     margin-right: var(--mobile-right-pillar) !important;
     box-sizing: border-box !important;
   }
 
-  /* 우측 상단 플로팅 버튼들도 우측 여백 안쪽으로 당겨 잘림 방지 (BOOK·TAC 공통) */
-  body:has(#top-panel.hidden) #floating-top-controls {
-    right: calc(var(--mobile-right-pillar) + 12px) !important;
+  /* 플로팅 컨트롤러(원형 버튼)도 우측 회색 기둥 안쪽으로 이동 */
+  #floating-top-controls {
+    right: calc(var(--mobile-right-pillar) + 10px) !important;
+  }
+
+  /* 하단 페이지 슬라이더 바도 좌우 대칭 중앙에 위치 */
+  #bottom-nav-trigger {
+    right: var(--mobile-right-pillar) !important;
   }
 }
 
-/* 2. 모바일 세로모드: BOOK 모드 PDF 상단 쏠림 보정 (TAC 모드는 기존 세로 배치 유지) */
+/* 2. 모바일 세로모드: BOOK 모드 PDF 상단 쏠림 보정 */
 @media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
   #viewer-container {
     align-items: flex-start !important;
