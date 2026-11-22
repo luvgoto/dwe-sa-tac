@@ -2,7 +2,7 @@
   touch-action: manipulation;
   -webkit-overflow-scrolling: touch;
 }
- 
+
 /* 모든 기기(모바일·태블릿·PC)에서 가운데 노란 스피커 버튼 숨김 */
 #btn-speaker {
   display: none !important;
@@ -21,7 +21,7 @@
 
 /* ==========================================================================
    스마트폰 가로모드(Landscape) 전용:
-   - 좌측: 배지 너비 고정 + 색인 2개씩 줄바꿈(글자 길이에 맞는 알약 크기)
+   - 좌측: 자릿수(1~510) 변화에도 흔들리지 않는 고정폭 + 색인 2개씩 줄바꿈
    - 우측: 카드와 PRE/NEXT 버튼 가로폭 1px 오차 없이 일치
    ========================================================================== */
 @media (orientation: landscape) and (max-height: 480px) and (max-width: 960px) and (pointer: coarse) {
@@ -35,18 +35,19 @@
     margin: 0 !important;
     padding: 0.5rem 0.75rem !important;
     display: grid !important;
-    grid-template-columns: max-content 1fr !important;
+    /* 가장 긴 'YELLOW · 510 / 510 · ★' 기준 고정폭으로 설정해 우측 밀림 방지 */
+    grid-template-columns: 11.2rem 1fr !important;
     grid-template-rows: auto 1fr auto !important;
     column-gap: 0.75rem !important;
     row-gap: 0.45rem !important;
     align-items: stretch !important;
   }
 
-  /* 1. 좌측 상단: BLUE / 1 / 510 / ★ 줄바꿈 및 찌그러짐 방지 */
+  /* 1. 좌측 상단: BLUE / 1 / 510 / ★ 줄바꿈 및 자릿수 흔들림 방지 */
   #tac-top-meta {
     grid-column: 1 / 2 !important;
     grid-row: 1 / 2 !important;
-    width: max-content !important;
+    width: 100% !important;
     padding: 0 !important;
     justify-content: flex-start !important;
   }
@@ -63,6 +64,14 @@
   #btn-card-fav {
     white-space: nowrap !important;
     flex-shrink: 0 !important;
+  }
+
+  /* 숫자 자릿수(1 -> 10 -> 100)가 바뀌어도 가로폭과 ★ 위치가 변하지 않도록 고정 */
+  #card-indicator {
+    font-variant-numeric: tabular-nums !important;
+    min-width: 4.3rem !important;
+    text-align: center !important;
+    display: inline-block !important;
   }
 
   /* 2. 색인(태그) 영역: 글자 좌우 여백만 유지 + 2개씩 줄바꿈 */
