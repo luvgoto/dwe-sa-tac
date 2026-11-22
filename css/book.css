@@ -183,35 +183,49 @@
    모바일(스마트폰) 전용 화면 균형 보정 (PC 및 태블릿은 기존 레이아웃 그대로 유지)
    ========================================================================== */
 
-/* 1. 모바일 가로모드: 전체화면 시 PDF + 우측 플로팅 버튼 모두 좌우 대칭 여백 적용 */
-@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+/* 1. 모바일 가로모드 전체화면 시: BOOK + TAC 모두 좌측 펀치홀과 동일한 우측 대칭 여백 적용 */
+@media (orientation: landscape) and (max-height: 550px) and (pointer: coarse) {
   :root {
-    --mobile-cutout-pad: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px), 34px);
+    --mobile-right-pillar: 40px;
   }
 
-  /* 전체화면일 때 책 영역을 좌우 대칭 여백만큼 안쪽으로 수축 */
-  body:has(#top-panel.hidden) #viewer-container {
-    width: calc(100vw - (var(--mobile-cutout-pad) * 2)) !important;
-    margin-left: var(--mobile-cutout-pad) !important;
-    margin-right: var(--mobile-cutout-pad) !important;
-    box-sizing: border-box;
+  /* 전체화면일 때 우측 끝에도 좌측 펀치홀 영역과 똑같은 폭의 배경 여백(필러박스)을 덮어 대칭 맞춤 */
+  body:has(#top-panel.hidden)::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--mobile-right-pillar);
+    background-color: #FAFBFD;
+    z-index: 45;
+    pointer-events: none;
   }
 
-  /* 전체화면일 때 우측 상단 플로팅 버튼들도 우측 여백 안쪽으로 함께 이동 */
+  /* BOOK 영역과 TAC 영역 모두 우측 필러박스만큼 안쪽으로 수축해 중앙 정렬 유지 */
+  body:has(#top-panel.hidden) #viewer-container,
+  body:has(#top-panel.hidden) #section-tac {
+    width: calc(100% - var(--mobile-right-pillar)) !important;
+    margin-left: 0 !important;
+    margin-right: var(--mobile-right-pillar) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 우측 상단 플로팅 버튼들도 우측 여백 안쪽으로 당겨 잘림 방지 (BOOK·TAC 공통) */
   body:has(#top-panel.hidden) #floating-top-controls {
-    right: calc(var(--mobile-cutout-pad) + 8px) !important;
+    right: calc(var(--mobile-right-pillar) + 12px) !important;
   }
 }
 
-/* 2. 모바일 세로모드: 상단 펀치홀 여백으로 인한 하단 쏠림 보정 */
+/* 2. 모바일 세로모드: BOOK 모드 PDF 상단 쏠림 보정 (TAC 모드는 기존 세로 배치 유지) */
 @media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
   #viewer-container {
-    align-items: flex-start;
-    padding-top: 8vh;
+    align-items: flex-start !important;
+    padding-top: 7vh !important;
   }
 
   body:has(#top-panel.hidden) #viewer-container {
-    padding-top: 6vh;
+    padding-top: 5vh !important;
   }
 
   #book-spread {
