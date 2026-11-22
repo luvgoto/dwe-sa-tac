@@ -178,3 +178,33 @@
 #bottom-nav-bar input[type=range] {
   accent-color: #2563eb;
 }
+
+/* ==========================================================================
+   모바일(스마트폰) 전용 화면 균형 보정 (PC 및 태블릿은 기존 레이아웃 그대로 유지)
+   ========================================================================== */
+
+/* 1. 모바일 가로모드 전체화면 시 좌우 대칭 여백 (화면 높이 500px 이하인 스마트폰 가로 기준) */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  body:has(#top-panel.hidden) #viewer-container {
+    padding-right: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px), 28px);
+    padding-left: env(safe-area-inset-left, 0px);
+    box-sizing: border-box;
+  }
+}
+
+/* 2. 모바일 세로모드 시 PDF 위로 끌어올림 (가로폭 600px 이하인 스마트폰 세로 기준) */
+@media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
+  #viewer-container {
+    align-items: flex-start;
+    padding-top: 8vh; /* 일반 모드 상단 여백 (숫자를 줄이면 더 위로 올라갑니다) */
+  }
+
+  body:has(#top-panel.hidden) #viewer-container {
+    padding-top: 6vh; /* 전체화면 모드 상단 여백 */
+  }
+
+  #book-spread {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+}
