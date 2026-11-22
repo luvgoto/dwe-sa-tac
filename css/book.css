@@ -180,18 +180,20 @@
 }
 
 /* ==========================================================================
-   모바일(스마트폰) 전용 화면 균형 보정 (PC 및 태블릿은 기존 레이아웃 그대로 유지)
+   스마트폰(모바일) 전용 화면 균형 보정 (태블릿 및 PC는 절대 영향 없음)
    ========================================================================== */
 
-/* 1. 모바일 가로모드: 좌측 펀치홀과 대칭되는 우측 고정 기둥 (body::before 전용) */
-@media (orientation: landscape) and (max-height: 550px) and (pointer: coarse) {
-  body::before {
+/* 1. 스마트폰 가로모드 전용 (높이 450px 이하 & 너비 950px 이하) */
+@media (orientation: landscape) and (max-height: 450px) and (max-width: 950px) and (pointer: coarse) {
+  body::after {
     content: "";
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
+    left: auto;
     width: 34px;
+    height: auto;
     background-color: #f6f6f6;
     z-index: 9999;
     pointer-events: none;
@@ -218,14 +220,16 @@
   }
 }
 
-/* 2. 모바일 세로모드: 상단 펀치홀과 대칭되는 하단 고정 기둥 (body::after 전용) */
-@media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
+/* 2. 스마트폰 세로모드 전용 (너비 480px 이하) */
+@media (orientation: portrait) and (max-width: 480px) and (pointer: coarse) {
   body::after {
     content: "";
     position: fixed;
+    top: auto;
     left: 0;
     right: 0;
     bottom: 0;
+    width: auto;
     height: 34px;
     background-color: #f6f6f6;
     z-index: 9999;
