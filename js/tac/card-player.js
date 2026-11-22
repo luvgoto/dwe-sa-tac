@@ -54,6 +54,19 @@ const stageBadge = document.getElementById('card-stage-badge');
 const tagsBox = document.getElementById('card-tags-box');
 const audioPlayer = document.getElementById('audio-player');
 
+function syncNavButtonsWidthToCard() {
+  const cardArea = document.getElementById('card-touch-area');
+  const navButtons = document.getElementById('tac-nav-buttons');
+  if (!cardArea || !navButtons) return;
+
+  const isMobileLandscape = window.matchMedia('(orientation: landscape) and (max-height: 480px) and (max-width: 960px) and (pointer: coarse)').matches;
+  if (isMobileLandscape && cardArea.offsetWidth > 0) {
+    navButtons.style.width = `${cardArea.offsetWidth}px`;
+  } else {
+    navButtons.style.width = '';
+  }
+}
+
 export function initTacPlayer() {
   bindCardEvents();
   initQuizEvents(() => switchTacView('card'));
@@ -66,6 +79,14 @@ export function initTacPlayer() {
     },
     onClose: () => switchTacView('card')
   });
+
+  const cardArea = document.getElementById('card-touch-area');
+  if (cardArea && typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(() => syncNavButtonsWidthToCard());
+    ro.observe(cardArea);
+  }
+  window.addEventListener('resize', syncNavButtonsWidthToCard);
+
   updateCardView();
 }
 
@@ -121,6 +142,7 @@ function bindCardEvents() {
         captureMagicImageData(imgElement, filterCanvas, filterCtx);
       }
     }
+    syncNavButtonsWidthToCard();
   });
 
   audioPlayer.addEventListener('play', () => updatePlayPauseUI(true));
@@ -250,6 +272,7 @@ export function switchTacView(view) {
     document.getElementById('btn-autoplay')?.classList.remove('hidden');
     btnCard.className = 'h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#2B4C7E] text-white shadow-xs btn-jelly';
     updateCardView();
+    requestAnimationFrame(syncNavButtonsWidthToCard);
   } else if (view === 'quiz') {
     document.getElementById('view-quiz').classList.remove('hidden');
     btnQuiz.className = 'h-7 sm:h-8 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center bg-[#2B4C7E] text-white shadow-xs btn-jelly';
@@ -303,17 +326,24 @@ function updateCardView() {
   updateCardFavoriteUI(isFavoriteCard(card.id));
 
   tagsBox.innerHTML = '';
-  card.cats.forEach(cat => {
-    const s = document.createElement('span');
-    if (cat === 'MAGIC') {
-      s.className = 'text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-900 border border-amber-300 shadow-xs flex items-center gap-1';
-      s.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> MAGIC`;
-    } else {
-      s.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
-      s.textContent = cat;
-    }
-    tagsBox.appendChild(s);
-  });
+  for (let i = 0; i < card.cats.length; i += 2) {
+    const row = document.createElement('div');
+    row.className = 'tag-pair-row flex flex-wrap gap-1 justify-end';
+
+    card.cats.slice(i, i + 2).forEach(cat => {
+      const s = document.createElement('span');
+      if (cat === 'MAGIC') {
+        s.className = 'text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-900 border border-amber-300 shadow-xs inline-flex items-center gap-1';
+        s.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> MAGIC`;
+      } else {
+        s.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center';
+        s.textContent = cat;
+      }
+      row.appendChild(s);
+    });
+
+    tagsBox.appendChild(row);
+  }
 
   resetMagicFilterUI(imgElement, filterCanvas, magicControls, card.isMagic);
   fallbackBox.classList.add('hidden');
@@ -336,6 +366,7 @@ function updateCardView() {
     imgElement.classList.remove('hidden');
     imgElement.src = targetImgUrl;
     scheduleNeighborPrefetch();
+    requestAnimationFrame(syncNavButtonsWidthToCard);
   };
 
   loader.onerror = () => {
@@ -348,6 +379,7 @@ function updateCardView() {
   };
 
   loader.src = targetImgUrl;
+  requestAnimationFrame(syncNavButtonsWidthToCard);
 }
 
 function updateCardFavoriteUI(isFav) {
