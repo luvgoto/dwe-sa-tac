@@ -183,73 +183,59 @@
    모바일(스마트폰) 전용 화면 균형 보정 (PC 및 태블릿은 기존 레이아웃 그대로 유지)
    ========================================================================== */
 
-/* 1. 모바일 가로모드(일반 + 전체화면 모두): 우측 대칭 회색 기둥 (34px) */
+/* 1. 모바일 가로모드: 좌측 펀치홀과 대칭되는 우측 고정 기둥 (body::before 전용) */
 @media (orientation: landscape) and (max-height: 550px) and (pointer: coarse) {
-  :root {
-    --mobile-right-pillar: 34px;
-    --mobile-pillar-color: #f6f6f6;
-  }
-
-  body::after {
+  body::before {
     content: "";
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
-    left: auto;
-    width: var(--mobile-right-pillar);
-    height: auto;
-    background-color: var(--mobile-pillar-color);
+    width: 34px;
+    background-color: #f6f6f6;
     z-index: 9999;
     pointer-events: none;
   }
 
   #top-panel {
-    padding-right: calc(var(--mobile-right-pillar) + 10px) !important;
+    padding-right: 44px !important;
   }
 
   #viewer-container,
   #section-tac {
-    width: calc(100% - var(--mobile-right-pillar)) !important;
+    width: calc(100% - 34px) !important;
     margin-left: 0 !important;
-    margin-right: var(--mobile-right-pillar) !important;
+    margin-right: 34px !important;
     box-sizing: border-box !important;
   }
 
   #floating-top-controls {
-    right: calc(var(--mobile-right-pillar) + 10px) !important;
+    right: 44px !important;
   }
 
   #bottom-nav-trigger {
-    right: var(--mobile-right-pillar) !important;
+    right: 34px !important;
   }
 }
 
-/* 2. 모바일 세로모드(일반 + 전체화면 모두): 하단 대칭 레터박스 (34px) 및 중앙 정렬 */
+/* 2. 모바일 세로모드: 상단 펀치홀과 대칭되는 하단 고정 기둥 (body::after 전용) */
 @media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
-  :root {
-    --mobile-bottom-pillar: 34px;
-    --mobile-pillar-color: #f6f6f6;
-  }
-
   body::after {
     content: "";
     position: fixed;
-    top: auto;
     left: 0;
     right: 0;
     bottom: 0;
-    width: auto;
-    height: var(--mobile-bottom-pillar);
-    background-color: var(--mobile-pillar-color);
+    height: 34px;
+    background-color: #f6f6f6;
     z-index: 9999;
     pointer-events: none;
   }
 
   #viewer-container,
   #section-tac {
-    height: calc(100% - var(--mobile-bottom-pillar)) !important;
-    margin-bottom: var(--mobile-bottom-pillar) !important;
+    height: calc(100% - 34px) !important;
+    margin-bottom: 34px !important;
     align-items: center !important;
     justify-content: center !important;
     padding-top: 0 !important;
@@ -257,6 +243,6 @@
   }
 
   #bottom-nav-trigger {
-    bottom: var(--mobile-bottom-pillar) !important;
+    bottom: 34px !important;
   }
 }
