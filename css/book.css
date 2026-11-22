@@ -186,7 +186,7 @@
 /* 1. 모바일 가로모드(일반 + 전체화면 모두): 좌측 시스템 컷아웃 회색 영역과 동일한 우측 회색 기둥 생성 */
 @media (orientation: landscape) and (max-height: 550px) and (pointer: coarse) {
   :root {
-    --mobile-right-pillar: 36px;
+    --mobile-right-pillar: 34px;
     --mobile-pillar-color: #f6f6f6;
   }
 
