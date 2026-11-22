@@ -3,13 +3,13 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* 모든 기기(모바일·태블릿·PC)에서 가운데 노란 스피커 버튼 숨김 (카드 직접 터치로 재생) */
+/* 모든 기기(모바일·태블릿·PC)에서 가운데 노란 스피커 버튼 숨김 */
 #btn-speaker {
   display: none !important;
 }
 
 /* ==========================================================================
-   스마트폰 가로모드(Landscape) 전용: 좌측(메타·색인·Jump) / 우측(큰 카드·PRE/NEXT) 2단 배치
+   스마트폰 가로모드(Landscape) 전용: 좌측 폭을 'BLUE · 1/510 · ★' 너비에 딱 맞추고 우측 카드 최대화
    ========================================================================== */
 @media (orientation: landscape) and (max-height: 480px) and (max-width: 960px) and (pointer: coarse) {
   #section-tac {
@@ -22,7 +22,8 @@
     margin: 0 !important;
     padding: 0.5rem 0.75rem !important;
     display: grid !important;
-    grid-template-columns: 31% 1fr !important;
+    /* 좌측 컬럼 너비를 상단 배지 줄(max-content) 너비로 고정하고 나머지를 모두 우측 카드(1fr)에 할당 */
+    grid-template-columns: max-content 1fr !important;
     grid-template-rows: auto 1fr auto !important;
     column-gap: 0.75rem !important;
     row-gap: 0.4rem !important;
@@ -33,11 +34,12 @@
   #tac-top-meta {
     grid-column: 1 / 2 !important;
     grid-row: 1 / 2 !important;
+    width: max-content !important;
     padding: 0 !important;
     justify-content: flex-start !important;
   }
 
-  /* 2. 색인(태그) 영역을 좌측 중단(BLUE 버튼 아래)으로 이동 + 우측 카드 영역은 오른쪽 전체 차지 */
+  /* 2. 색인(태그) 영역: 상단 배지 너비(100%)를 넘지 않게 제한 + 배경·테두리 완전 제거 */
   #tac-card-wrapper {
     display: contents !important;
   }
@@ -45,22 +47,29 @@
   #card-title-row {
     grid-column: 1 / 2 !important;
     grid-row: 2 / 3 !important;
+    width: 100% !important;
+    min-width: 0 !important;
     margin-top: 0 !important;
-    padding: 0.35rem !important;
-    background-color: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 0.75rem !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     justify-content: flex-start !important;
     align-items: flex-start !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
   }
 
   #card-tags-box {
-    justify-content: flex-start !important;
     width: 100% !important;
+    justify-content: flex-start !important;
+    align-content: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
   }
 
-  /* 3. 우측 메인 영역(1~2행 통합): TAC 카드를 화면 높이 끝까지 최대화 */
+  /* 3. 우측 메인 영역(1~2행 통합): 넓어진 가로폭과 전체 높이를 써서 TAC 카드 극대화 */
   #card-touch-area {
     grid-column: 2 / 3 !important;
     grid-row: 1 / 3 !important;
@@ -80,8 +89,20 @@
   #tac-jump-bar {
     grid-column: 1 / 2 !important;
     grid-row: 3 / 4 !important;
+    width: 100% !important;
     justify-content: flex-start !important;
     padding-top: 0 !important;
+    gap: 0.25rem !important;
+  }
+
+  #tac-jump-bar .jump-label {
+    display: none !important;
+  }
+
+  #jump-input {
+    width: 3.4rem !important;
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
   }
 
   #tac-nav-buttons {
