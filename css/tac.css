@@ -20,7 +20,7 @@
 }
 
 /* ==========================================================================
-   스마트폰 가로모드(Landscape) 전용: 좌측 고정폭 + 색인 2열 정렬 + 우측 카드 & 버튼 정렬
+   스마트폰 가로모드(Landscape) 전용: 좌측 배지 기준폭 + 아담한 2개씩 색인 + 카드/버튼 폭 일치
    ========================================================================== */
 @media (orientation: landscape) and (max-height: 480px) and (max-width: 960px) and (pointer: coarse) {
   #section-tac {
@@ -33,28 +33,38 @@
     margin: 0 !important;
     padding: 0.5rem 0.75rem !important;
     display: grid !important;
-    /* 좌측 폭을 'BLUE · 1/510 · ★' 너비(9.25rem)로 고정해 색인이 많아져도 옆으로 밀리지 않음 */
-    grid-template-columns: 9.25rem 1fr !important;
+    /* 좌측 컬럼 너비를 'BLUE · 1 / 510 · ★' 한 줄 실제 너비(max-content)로 자동 맞춤 */
+    grid-template-columns: max-content 1fr !important;
     grid-template-rows: auto 1fr auto !important;
     column-gap: 0.75rem !important;
     row-gap: 0.45rem !important;
     align-items: stretch !important;
   }
 
-  /* 1. 좌측 상단: BLUE / 1/510 / 즐겨찾기 */
+  /* 1. 좌측 상단: BLUE / 1 / 510 / ★ 절대 줄바꿈 및 찌그러짐 방지 */
   #tac-top-meta {
     grid-column: 1 / 2 !important;
     grid-row: 1 / 2 !important;
-    width: 100% !important;
+    width: max-content !important;
     padding: 0 !important;
     justify-content: flex-start !important;
   }
 
   #tac-top-meta > div {
-    gap: 0.25rem !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 0.3rem !important;
   }
 
-  /* 2. 색인(태그) 영역: 2열 그리드 정렬 (2개 초과 시 하단으로 쌓임) */
+  #card-stage-badge,
+  #card-indicator,
+  #btn-card-fav {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 2. 색인(태그) 영역: 원래 아담한 크기 유지 + 한 줄에 최대 2개씩 배치 */
   #tac-card-wrapper {
     display: contents !important;
   }
@@ -63,6 +73,7 @@
     grid-column: 1 / 2 !important;
     grid-row: 2 / 3 !important;
     width: 100% !important;
+    max-width: 100% !important;
     min-width: 0 !important;
     margin-top: 0 !important;
     padding: 0 !important;
@@ -77,19 +88,19 @@
   }
 
   #card-tags-box {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    align-content: flex-start !important;
     gap: 0.25rem !important;
     width: 100% !important;
-    align-content: start !important;
   }
 
+  /* 태그 본연의 아담한 크기 유지 + 2개 초과 시 다음 줄로 자연스럽게 개행 */
   #card-tags-box > span {
-    width: 100% !important;
-    justify-content: center !important;
-    text-align: center !important;
-    padding-left: 0.35rem !important;
-    padding-right: 0.35rem !important;
+    width: auto !important;
+    max-width: calc(50% - 0.15rem) !important;
+    flex: 0 0 auto !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -99,7 +110,7 @@
   #card-touch-area {
     grid-column: 2 / 3 !important;
     grid-row: 1 / 3 !important;
-    width: 100% !important;
+    width: auto !important;
     height: 100% !important;
     max-width: 100% !important;
     max-height: 100% !important;
@@ -107,7 +118,7 @@
     margin: auto !important;
   }
 
-  /* 4. 하단 푸터 분할: Jump to는 좌측 하단, PRE/NEXT 버튼은 우측 카드 너비에 맞춰 정렬 */
+  /* 4. 하단 푸터 분할: Jump to는 좌측 하단, PRE/NEXT 버튼은 우측 카드 가로폭에 딱 맞춤 */
   #tac-card-footer {
     display: contents !important;
   }
@@ -133,11 +144,12 @@
     padding-right: 0.25rem !important;
   }
 
+  /* 일반 보기(상단 헤더 2.75rem 있음)일 때 카드 실제 가로폭과 일치 */
   #tac-nav-buttons {
     grid-column: 2 / 3 !important;
     grid-row: 3 / 4 !important;
     width: 100% !important;
-    max-width: calc((100dvh - 5.8rem) * 2.1) !important;
+    max-width: calc((100dvh - 6.6rem) * 2.1) !important;
     margin: 0 auto !important;
     gap: 0.6rem !important;
   }
@@ -147,6 +159,13 @@
     padding-top: 0.45rem !important;
     padding-bottom: 0.45rem !important;
     font-size: 0.85rem !important;
+  }
+}
+
+/* 전체화면(상단 헤더 숨김)일 때 더 커진 카드 가로폭에 맞춰 하단 PRE/NEXT 폭도 함께 확장 */
+@media (orientation: landscape) and (max-height: 480px) and (max-width: 960px) and (pointer: coarse) {
+  #top-panel.hidden ~ #section-tac #tac-nav-buttons {
+    max-width: calc((100dvh - 3.85rem) * 2.1) !important;
   }
 }
 
@@ -176,7 +195,7 @@
   }
 }
 
-/* 모바일 세로보기(Portrait) 전용: QUIZ 맨 윗줄 + 질문줄 + 선택지 3개 균일 행간 배분 (간격 확장) */
+/* 모바일 세로보기(Portrait) 전용: QUIZ 맨 윗줄 + 질문줄 + 선택지 3개 균일 행간 배분 */
 @media (orientation: portrait) and (max-width: 767px) {
   #view-quiz:not(.hidden) {
     padding-top: 1rem !important;
