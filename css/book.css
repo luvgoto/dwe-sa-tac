@@ -183,24 +183,35 @@
    모바일(스마트폰) 전용 화면 균형 보정 (PC 및 태블릿은 기존 레이아웃 그대로 유지)
    ========================================================================== */
 
-/* 1. 모바일 가로모드 전체화면 시 좌우 대칭 여백 (화면 높이 500px 이하인 스마트폰 가로 기준) */
+/* 1. 모바일 가로모드: 전체화면 시 PDF + 우측 플로팅 버튼 모두 좌우 대칭 여백 적용 */
 @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  :root {
+    --mobile-cutout-pad: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px), 34px);
+  }
+
+  /* 전체화면일 때 책 영역을 좌우 대칭 여백만큼 안쪽으로 수축 */
   body:has(#top-panel.hidden) #viewer-container {
-    padding-right: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px), 28px);
-    padding-left: env(safe-area-inset-left, 0px);
+    width: calc(100vw - (var(--mobile-cutout-pad) * 2)) !important;
+    margin-left: var(--mobile-cutout-pad) !important;
+    margin-right: var(--mobile-cutout-pad) !important;
     box-sizing: border-box;
+  }
+
+  /* 전체화면일 때 우측 상단 플로팅 버튼들도 우측 여백 안쪽으로 함께 이동 */
+  body:has(#top-panel.hidden) #floating-top-controls {
+    right: calc(var(--mobile-cutout-pad) + 8px) !important;
   }
 }
 
-/* 2. 모바일 세로모드 시 PDF 위로 끌어올림 (가로폭 600px 이하인 스마트폰 세로 기준) */
+/* 2. 모바일 세로모드: 상단 펀치홀 여백으로 인한 하단 쏠림 보정 */
 @media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
   #viewer-container {
     align-items: flex-start;
-    padding-top: 8vh; /* 일반 모드 상단 여백 (숫자를 줄이면 더 위로 올라갑니다) */
+    padding-top: 8vh;
   }
 
   body:has(#top-panel.hidden) #viewer-container {
-    padding-top: 6vh; /* 전체화면 모드 상단 여백 */
+    padding-top: 6vh;
   }
 
   #book-spread {
