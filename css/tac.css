@@ -2,7 +2,7 @@
   touch-action: manipulation;
   -webkit-overflow-scrolling: touch;
 }
-
+ 
 /* 모든 기기(모바일·태블릿·PC)에서 가운데 노란 스피커 버튼 숨김 */
 #btn-speaker {
   display: none !important;
