@@ -7,6 +7,7 @@ html, body {
   height: 100dvh;
   width: 100vw;
   overflow: hidden;
+  background-color: #FAFBFD;
 }
 
 .gothic-font {
@@ -41,12 +42,20 @@ html, body {
   border-radius: 8px;
 }
 
+/* 기본 상단 패널 (PC/태블릿은 safe-area 0px로 기존과 동일, 펀치홀 기기만 상단 확장) */
+#top-panel {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  padding-left: max(0.625rem, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(0.625rem, env(safe-area-inset-right, 0px)) !important;
+  height: calc(3rem + env(safe-area-inset-top, 0px)) !important;
+}
+
 /* 1. 모바일 화면 상단 패널 한 줄 고정 */
 @media (max-width: 767px) {
   #top-panel {
-    height: 42px !important;
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    height: calc(42px + env(safe-area-inset-top, 0px)) !important;
+    padding-left: max(8px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(8px, env(safe-area-inset-right, 0px)) !important;
     gap: 4px !important;
   }
 
@@ -76,7 +85,9 @@ html, body {
 /* 2. 가로보기(Landscape) 시 TAC 전체 콘텐츠가 스크롤/잘림 없이 한 페이지에 쏙 들어가도록 최적화 */
 @media (orientation: landscape) and (max-height: 600px) {
   #top-panel {
-    height: 36px !important;
+    height: calc(36px + env(safe-area-inset-top, 0px)) !important;
+    padding-left: max(8px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(8px, env(safe-area-inset-right, 0px)) !important;
   }
 
   #viewer-container {

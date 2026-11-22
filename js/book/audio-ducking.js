@@ -19,7 +19,6 @@ let vocaDebounceTimer = null;
 let songDebounceTimer = null;
 let activeVocaFetchController = null;
 
-// 연속 재생 & 셔플 플레이리스트 상태
 let basePlaylist = [];
 let activePlaylist = [];
 let currentQueueIndex = -1;
@@ -122,7 +121,7 @@ function startTrackInternal(trackId, spotKey) {
   }
   songAudioEl.pause();
   clearTimeout(songDebounceTimer);
-  updateFloatingControlsUI();
+  updateFloatingControlsUI(true);
   if (onPlaybackStateChange) onPlaybackStateChange();
 
   songDebounceTimer = setTimeout(() => {
@@ -130,11 +129,15 @@ function startTrackInternal(trackId, spotKey) {
     songAudioEl.src = targetUrl;
     songAudioEl.play()
       .then(() => {
-        if (token === songPlayToken && onPlaybackStateChange) onPlaybackStateChange();
+        if (token === songPlayToken) {
+          updateFloatingControlsUI();
+          if (onPlaybackStateChange) onPlaybackStateChange();
+        }
       })
       .catch(err => {
         if (token !== songPlayToken) return;
         console.warn('노래 재생 오류:', err);
+        updateFloatingControlsUI();
       });
   }, 120);
 }
@@ -144,6 +147,7 @@ export function playSongPlaylist(items, startIndex = 0, shuffle = false) {
   wakeMobileAudioHardware();
   abortPrefetch();
 
+  // 같은 곡을 한 번 더 터치하면 일시정지/재개 토글
   if (startIndex >= 0 && items[startIndex]) {
     const clicked = items[startIndex];
     const targetUrl = getAudioUrlForTrack(clicked.track);
@@ -153,6 +157,7 @@ export function playSongPlaylist(items, startIndex = 0, shuffle = false) {
       } else {
         songAudioEl.pause();
       }
+      updateFloatingControlsUI();
       if (onPlaybackStateChange) onPlaybackStateChange();
       return;
     }
@@ -193,16 +198,10 @@ export function playNextInPlaylist() {
   }
 }
 
-export function togglePlaylistShuffle(fallbackItems = null) {
-  // 아직 재생 전인 표지/목차 상태에서 셔플 버튼을 누르면 즉시 전체/해당권 랜덤 재생 시작
-  if (basePlaylist.length <= 1) {
-    if (fallbackItems && fallbackItems.length > 0) {
-      playSongPlaylist(fallbackItems, -1, true);
-    }
-    return;
-  }
-
+export function togglePlaylistShuffle() {
+  if (basePlaylist.length <= 1) return;
   isPlaylistShuffle = !isPlaylistShuffle;
+
   const currentItem = activePlaylist[currentQueueIndex];
   if (isPlaylistShuffle) {
     const rest = basePlaylist.filter(item => !currentItem || item.spotKey !== currentItem.spotKey);
@@ -262,7 +261,7 @@ export function playOrPauseR2Song(trackId, spotKey) {
       }
     }, 80);
   } else {
-    // 본문 단일 곡 재생
+    // 본문 단일 곡 재생 시 플레이리스트 초기화
     basePlaylist = [];
     activePlaylist = [];
     currentQueueIndex = -1;
@@ -274,6 +273,7 @@ export function playOrPauseR2Song(trackId, spotKey) {
       } else {
         songAudioEl.pause();
       }
+      updateFloatingControlsUI();
       if (onPlaybackStateChange) onPlaybackStateChange();
       return;
     }
@@ -282,15 +282,13 @@ export function playOrPauseR2Song(trackId, spotKey) {
   }
 }
 
-export function updateFloatingControlsUI() {
-  const toggleBtn = document.getElementById('btn-floating-song-toggle');
+export function updateFloatingControlsUI(forceStarting = false) {
   const icon = document.getElementById('floating-song-icon');
   const shuffleBtn = document.getElementById('btn-floating-song-shuffle');
   const row2 = document.getElementById('floating-row-2');
-  if (!toggleBtn) return;
 
-  const hasActiveSong = Boolean(activeSongSpotKey && songAudioEl.src && !songAudioEl.ended);
-  const isPlayingNow = hasActiveSong && !songAudioEl.paused;
+  const hasActiveSong = Boolean(activeSongSpotKey && (forceStarting || (songAudioEl.src && !songAudioEl.ended)));
+  const isPlayingNow = hasActiveSong && (forceStarting || !songAudioEl.paused);
   const hasQueue = basePlaylist.length > 1;
 
   if (icon) {
@@ -301,22 +299,22 @@ export function updateFloatingControlsUI() {
 
   if (shuffleBtn) {
     shuffleBtn.className = (hasQueue && isPlaylistShuffle)
-      ? 'w-8 h-8 rounded-full bg-[#2B4C7E] text-amber-300 border border-amber-300/60 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly'
-      : 'w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white/75 border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly';
+      ? 'flex-1 h-full bg-amber-400/25 text-amber-300 text-[10px] flex items-center justify-center transition'
+      : 'flex-1 h-full hover:bg-white/15 text-white/55 text-[10px] flex items-center justify-center transition';
   }
 
-  // 표지/목차 플레이리스트가 활성화된 상태에서만 2행(이전/다음) 표시
+  // 음악이 실제로 재생 중(isPlayingNow)이고 표지/목차 플레이리스트일 때만 캡슐 노출
   if (row2) {
-    row2.classList.toggle('hidden', !(hasActiveSong && hasQueue));
+    row2.classList.toggle('hidden', !(isPlayingNow && hasQueue));
   }
 
-  window.dispatchEvent(new Event('resize'));
+  window.dispatchEvent(new Event('floating-controls-sync'));
 }
 
 export function toggleFloatingSongPause() {
   const hasActiveSong = Boolean(activeSongSpotKey && songAudioEl.src && !songAudioEl.ended);
   if (!hasActiveSong) {
-    if (defaultPlayActionCallback) defaultPlayActionCallback(false);
+    if (defaultPlayActionCallback) defaultPlayActionCallback();
     return;
   }
 
@@ -352,8 +350,8 @@ export function stopAllBookAudio() {
   if (onPlaybackStateChange) onPlaybackStateChange();
 }
 
-songAudioEl.addEventListener('play', updateFloatingControlsUI);
-songAudioEl.addEventListener('pause', updateFloatingControlsUI);
+songAudioEl.addEventListener('play', () => updateFloatingControlsUI());
+songAudioEl.addEventListener('pause', () => updateFloatingControlsUI());
 
 songAudioEl.addEventListener('ended', () => {
   if (activePlaylist.length > 0 && currentQueueIndex + 1 < activePlaylist.length) {
@@ -384,10 +382,4 @@ vocaAudioEl.addEventListener('ended', () => {
 document.getElementById('btn-floating-song-prev')?.addEventListener('click', playPrevInPlaylist);
 document.getElementById('btn-floating-song-toggle')?.addEventListener('click', toggleFloatingSongPause);
 document.getElementById('btn-floating-song-next')?.addEventListener('click', playNextInPlaylist);
-document.getElementById('btn-floating-song-shuffle')?.addEventListener('click', () => {
-  if (basePlaylist.length > 1) {
-    togglePlaylistShuffle();
-  } else if (defaultPlayActionCallback) {
-    defaultPlayActionCallback(true);
-  }
-});
+document.getElementById('btn-floating-song-shuffle')?.addEventListener('click', togglePlaylistShuffle);

@@ -27,11 +27,10 @@
   <link rel="stylesheet" href="css/book.css">
   <link rel="stylesheet" href="css/tac.css">
 </head>
-<body class="h-[100dvh] w-screen flex flex-col bg-slate-100 text-slate-800 antialiased overflow-hidden">
+<body class="h-[100dvh] w-screen flex flex-col bg-[#FAFBFD] text-slate-800 antialiased overflow-hidden">
 
   <!-- ================= 공유 상단 헤더 (D안: Serene Chambray Blue) ================= -->
   <header id="top-panel" class="sticky top-0 h-11 sm:h-12 bg-[#FAFBFD] border-b border-slate-200/90 px-2.5 sm:px-4 flex items-center justify-between shrink-0 z-30">
-    <!-- 좌측 영역: 현재 모드 브랜드 (5연타 시 부모모드 토글) -->
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
       <div id="brand-book" class="flex items-center gap-2 cursor-pointer select-none">
         <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#2B4C7E] text-white flex items-center justify-center text-xs shadow-xs">
@@ -53,7 +52,6 @@
       </button>
     </div>
 
-    <!-- 우측 영역 -->
     <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
       <!-- [A] BOOK 모드 우측 컨트롤 -->
       <div id="header-controls-book" class="flex items-center gap-1 sm:gap-1.5">
@@ -129,39 +127,32 @@
         </button>
       </div>
 
-      <!-- 공통 전체화면 버튼 -->
       <button id="btn-fullscreen" type="button" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#EDF2F7] hover:bg-[#DCE7F5] text-[#2B4C7E] border border-[#D5E2F2] flex items-center justify-center text-xs transition">
         <i id="fs-icon" class="fa-solid fa-expand"></i>
       </button>
     </div>
   </header>
 
-  <!-- 가로모드 전환 안내 토스트 -->
   <div id="rotate-toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-[#172554]/90 text-white text-xs font-bold shadow-lg backdrop-blur-xs whitespace-nowrap">
     기기를 가로로 돌리면 2쪽 보기가 더 크게 보입니다
   </div>
 
-  <!-- 전체화면 복귀 핫스팟 & 플로팅 컨트롤러 (PDF와 완전히 분리된 2줄 구조) -->
+  <!-- 전체화면 복귀 핫스팟 & 플로팅 컨트롤러 -->
   <div id="top-exit-hotspot" class="hidden fixed top-0 left-0 right-0 h-5 z-50 cursor-pointer"></div>
-  <div id="floating-top-controls" class="fixed top-14 right-3 z-50 flex flex-col items-end gap-1.5 pointer-events-auto">
-    <!-- 1행: [재생/일시정지] [셔플(표지/목차)] [목차 음원ON/OFF] [TAC 연속재생] [전체화면 복귀] -->
+  <div id="floating-top-controls" class="fixed top-14 right-3 z-50 flex flex-col items-start gap-1.5 pointer-events-auto">
+    <!-- 1행: 표지는 [재생/일시정지] + [복귀], 목차는 [소리 ON/OFF] + [복귀], 본문(12P~)은 [복귀]만 -->
     <div id="floating-row-1" class="flex items-center gap-1.5">
-      <!-- 송북 재생/일시정지 토글 버튼 -->
+      <!-- 표지(1P) 전용 재생/일시정지 버튼 -->
       <button id="btn-floating-song-toggle" type="button" title="재생/일시정지" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
         <i id="floating-song-icon" class="fa-solid fa-play text-emerald-300"></i>
       </button>
 
-      <!-- 표지/목차 전용 셔플 버튼 -->
-      <button id="btn-floating-song-shuffle" type="button" title="셔플 재생" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white/75 border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
-        <i class="fa-solid fa-shuffle"></i>
-      </button>
-
-      <!-- 목차 페이지 터치 음원 ON/OFF 버튼 -->
+      <!-- 목차(2~11P) 전용 소리 ON/OFF 버튼 -->
       <button id="btn-toc-mode-toggle" type="button" title="목차 터치 음원 ON/OFF" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition">
         <i class="fa-solid fa-volume-xmark"></i>
       </button>
 
-      <!-- TAC 연속재생(PLAY ALL) 버튼 -->
+      <!-- TAC 연속재생 버튼 -->
       <button id="btn-autoplay" type="button" class="hidden w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
         <i id="autoplay-icon" class="fa-solid fa-play"></i>
       </button>
@@ -172,13 +163,18 @@
       </button>
     </div>
 
-    <!-- 2행: 표지/목차 재생 중에만 노출되는 [이전곡] [다음곡] -->
-    <div id="floating-row-2" class="hidden flex items-center gap-1.5">
-      <button id="btn-floating-song-prev" type="button" title="이전 곡" class="w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
+    <!-- 2행(가로) / 좌측 펼침(세로): 표지/목차 음악 재생 중에만 나타나는 [이전 | 다음 | 셔플] 캡슐 -->
+    <div id="floating-row-2" class="hidden w-[70px] h-7 flex items-center bg-[#172554]/80 text-white rounded-full shadow-md border border-white/20 backdrop-blur-md overflow-hidden shrink-0">
+      <button id="btn-floating-song-prev" type="button" title="이전 곡" class="flex-1 h-full hover:bg-white/15 text-[10px] flex items-center justify-center transition text-white/90">
         <i class="fa-solid fa-backward-step"></i>
       </button>
-      <button id="btn-floating-song-next" type="button" title="다음 곡" class="w-8 h-8 rounded-full bg-[#172554]/80 hover:bg-[#172554] text-white border border-white/20 text-xs shadow-md backdrop-blur-md flex items-center justify-center transition btn-jelly">
+      <div class="w-px h-3 bg-white/20"></div>
+      <button id="btn-floating-song-next" type="button" title="다음 곡" class="flex-1 h-full hover:bg-white/15 text-[10px] flex items-center justify-center transition text-white/90">
         <i class="fa-solid fa-forward-step"></i>
+      </button>
+      <div class="w-px h-3 bg-white/20"></div>
+      <button id="btn-floating-song-shuffle" type="button" title="셔플 전환" class="flex-1 h-full hover:bg-white/15 text-[10px] flex items-center justify-center transition text-white/55">
+        <i class="fa-solid fa-shuffle"></i>
       </button>
     </div>
   </div>

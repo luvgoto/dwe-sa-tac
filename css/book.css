@@ -159,21 +159,19 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 64px;
   z-index: 40;
-}
-
-#bottom-nav-bar {
-  transition: transform 0.25s ease, opacity 0.25s ease;
-  transform: translateY(100%);
-  opacity: 0;
   pointer-events: none;
 }
-
-#bottom-nav-trigger:hover #bottom-nav-bar,
+#bottom-nav-bar {
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
 #bottom-nav-bar.active {
-  transform: translateY(0);
   opacity: 1;
+  transform: translateY(0);
   pointer-events: auto;
 }
 

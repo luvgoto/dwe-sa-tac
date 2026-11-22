@@ -91,20 +91,18 @@ function syncSpreadModeByViewport() {
 }
 
 /**
- * 플로팅 컨트롤 버튼 위치 자동 조정 (PDF에 닿지 않도록 완전히 분리)
- * - 세로 모드: PDF 책 윗변 바깥쪽 위에 12px 여유를 두고 띄움
- * - 가로 모드: PDF 책 오른쪽 테두리 바깥쪽 옆(회색 여백)에 14px 띄움
+ * 플로팅 컨트롤 버튼 위치 및 방향 자동 조정
+ * - 모바일 세로 모드: PDF 책 윗선 바깥쪽 위(12px)에 1줄 가로 배치 (좌측으로 캡슐 펼침)
+ * - PC 등 우측 여백이 넓은 가로 모드: PDF 책 오른쪽 바깥에 1행 우측 펼침 배치
+ * - 모바일 가로 모드(여백 좁음): PDF 책 오른쪽 바깥에 2행 세로 배치 (좌측 기준점 고정)
  */
 export function syncFloatingControlsPosition() {
   const floatingBox = document.getElementById('floating-top-controls');
   if (!floatingBox) return;
 
   const isPortrait = window.innerHeight > window.innerWidth;
-  // 세로 모드는 가로 1줄(flex-row), 가로 모드는 세로 2줄(flex-col)
-  floatingBox.classList.toggle('flex-row', isPortrait);
-  floatingBox.classList.toggle('items-center', isPortrait);
-  floatingBox.classList.toggle('flex-col', !isPortrait);
-  floatingBox.classList.toggle('items-end', !isPortrait);
+  const row1 = document.getElementById('floating-row-1');
+  const row2 = document.getElementById('floating-row-2');
 
   const topPanel = document.getElementById('top-panel');
   const headerBottom = (topPanel && !topPanel.classList.contains('hidden'))
@@ -112,34 +110,52 @@ export function syncFloatingControlsPosition() {
     : 0;
   const minTop = Math.round(headerBottom + 8);
 
-  if (getActiveAppMode() !== 'book') {
-    floatingBox.style.left = 'auto';
-    floatingBox.style.top = `${minTop}px`;
-    floatingBox.style.right = '12px';
-    return;
-  }
-
   const spreadEl = document.getElementById('book-spread');
-  if (!spreadEl || spreadEl.classList.contains('hidden')) {
+  const hasSpread = spreadEl && !spreadEl.classList.contains('hidden');
+  const rect = hasSpread ? spreadEl.getBoundingClientRect() : null;
+  const spaceOnRight = (rect && rect.width > 0) ? (window.innerWidth - rect.right) : 0;
+
+  if (isPortrait) {
+    // 모바일 세로보기: 1줄 가로 배치, 기준 버튼 좌측으로 캡슐 펼침
+    floatingBox.classList.remove('flex-col', 'items-start', 'items-end');
+    floatingBox.classList.add('flex-row', 'items-center');
+    if (row1 && row2 && row2.nextElementSibling !== row1) {
+      floatingBox.insertBefore(row2, row1);
+    }
+    if (row2) row2.style.width = '76px';
+  } else if (spaceOnRight >= 175) {
+    // PC 등 오른쪽 회색 여백이 넓은 경우: 1행 우측 펼침 배치
+    floatingBox.classList.remove('flex-col', 'items-start', 'items-end');
+    floatingBox.classList.add('flex-row', 'items-center');
+    if (row1 && row2 && row1.nextElementSibling !== row2) {
+      floatingBox.insertBefore(row1, row2);
+    }
+    if (row2) row2.style.width = '82px';
+  } else {
+    // 모바일 가로보기: 2행 세로 배치, 좌측 기준점(items-start) 고정
+    floatingBox.classList.remove('flex-row', 'items-center', 'items-end');
+    floatingBox.classList.add('flex-col', 'items-start');
+    if (row1 && row2 && row1.nextElementSibling !== row2) {
+      floatingBox.insertBefore(row1, row2);
+    }
+    if (row1 && row2 && !row2.classList.contains('hidden')) {
+      const w1 = row1.offsetWidth;
+      row2.style.width = w1 >= 68 ? `${w1}px` : '70px';
+    }
+  }
+
+  if (getActiveAppMode() !== 'book' || !rect || rect.width <= 0 || rect.height <= 0) {
     floatingBox.style.left = 'auto';
     floatingBox.style.top = `${minTop}px`;
     floatingBox.style.right = '12px';
     return;
   }
 
-  const rect = spreadEl.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) {
-    floatingBox.style.left = 'auto';
-    floatingBox.style.top = `${minTop}px`;
-    floatingBox.style.right = '12px';
-    return;
-  }
-
-  const boxWidth = floatingBox.offsetWidth || 72;
+  const boxWidth = floatingBox.offsetWidth || 70;
   const boxHeight = floatingBox.offsetHeight || 32;
 
   if (isPortrait) {
-    // 세로 모드(1줄): PDF 책 윗선에서 위로 12px 띄워 배치
+    // 세로 모드: PDF 책 윗선에서 위로 12px 띄워 우측 라인에 맞춤
     floatingBox.style.left = 'auto';
     const idealTop = Math.round(rect.top - boxHeight - 12);
     const targetTop = Math.max(minTop, idealTop);
@@ -147,10 +163,8 @@ export function syncFloatingControlsPosition() {
     floatingBox.style.top = `${targetTop}px`;
     floatingBox.style.right = `${targetRight}px`;
   } else {
-    // 가로 모드(2줄): PDF 책 오른쪽 테두리 바깥쪽(회색 여백)으로 14px 띄워 배치
-    const spaceOnRight = window.innerWidth - rect.right;
+    // 가로 모드: PDF 책 오른쪽 테두리 바깥쪽(회색 여백)으로 14px 띄워 배치
     const targetTop = Math.max(minTop, Math.round(rect.top + 4));
-
     if (spaceOnRight >= boxWidth + 20) {
       floatingBox.style.left = `${Math.round(rect.right + 14)}px`;
       floatingBox.style.right = 'auto';
@@ -163,35 +177,11 @@ export function syncFloatingControlsPosition() {
   }
 }
 
-function handleDefaultPagePlay(shuffle = false) {
+function handleDefaultPagePlay() {
   const isCover = (currentLeftPageNum === 1 || currentRightPageNum === 1);
   if (isCover) {
     const allSongs = collectSongsInPageRange(2, 11);
-    if (allSongs.length > 0) playSongPlaylist(allSongs, -1, shuffle);
-    return;
-  }
-
-  const activePage = (currentLeftPageNum && TOC_PAGES.has(currentLeftPageNum))
-    ? currentLeftPageNum
-    : (currentRightPageNum && TOC_PAGES.has(currentRightPageNum) ? currentRightPageNum : null);
-
-  if (activePage) {
-    const range = getTocRangeForPage(activePage);
-    if (range) {
-      const seriesSongs = collectSongsInPageRange(range.start, range.end);
-      if (seriesSongs.length > 0) {
-        playSongPlaylist(seriesSongs, shuffle ? -1 : 0, shuffle);
-        return;
-      }
-    }
-  }
-
-  // 일반 본문 페이지(12P~): 현재 펼쳐진 페이지의 첫 곡 재생
-  const startP = currentLeftPageNum || currentRightPageNum || currentPage;
-  const endP = currentRightPageNum || startP;
-  const pageSongs = collectSongsInPageRange(startP, endP);
-  if (pageSongs.length > 0) {
-    playOrPauseR2Song(pageSongs[0].track, pageSongs[0].spotKey);
+    if (allSongs.length > 0) playSongPlaylist(allSongs, 0, false);
   }
 }
 
@@ -201,7 +191,7 @@ export function getCurrentPage() {
 
 export function pauseBookAudio() {
   stopAllBookAudio();
-  ['btn-toc-mode-toggle', 'btn-floating-song-toggle', 'btn-floating-song-shuffle', 'floating-row-2'].forEach(id => {
+  ['btn-toc-mode-toggle', 'btn-floating-song-toggle', 'floating-row-2'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
   });
@@ -315,25 +305,34 @@ function bindViewerEvents() {
   document.getElementById('btn-toc-mode-toggle').addEventListener('click', toggleTocInteractionMode);
   document.getElementById('btn-toggle-spread').addEventListener('click', toggleSpreadMode);
 
+  let hideBottomTimer;
+  function showBottomNavBar() {
+    const bar = document.getElementById('bottom-nav-bar');
+    if (!bar) return;
+    bar.classList.add('active');
+    clearTimeout(hideBottomTimer);
+    hideBottomTimer = setTimeout(() => bar.classList.remove('active'), 3500);
+  }
+
   let sliderDebounce;
   document.getElementById('page-slider').addEventListener('input', (e) => {
     const val = e.target.value;
     document.getElementById('current-page-num').textContent = val;
     document.getElementById('direct-page-input').value = val;
+    showBottomNavBar();
     clearTimeout(sliderDebounce);
     sliderDebounce = setTimeout(() => goToPage(val), 70);
   });
 
-  document.getElementById('direct-page-input').addEventListener('change', (e) => goToPage(e.target.value));
-
-  let hideBottomTimer;
-  document.getElementById('bottom-nav-trigger').addEventListener('click', () => {
-    const bar = document.getElementById('bottom-nav-bar');
-    bar.classList.add('active');
-    clearTimeout(hideBottomTimer);
-    hideBottomTimer = setTimeout(() => bar.classList.remove('active'), 3500);
+  document.getElementById('direct-page-input').addEventListener('change', (e) => {
+    showBottomNavBar();
+    goToPage(e.target.value);
   });
-  document.getElementById('bottom-nav-inner').addEventListener('click', (e) => e.stopPropagation());
+
+  document.getElementById('bottom-nav-inner').addEventListener('click', (e) => {
+    e.stopPropagation();
+    showBottomNavBar();
+  });
 
   window.addEventListener('keydown', (e) => {
     if (getActiveAppMode() !== 'book') return;
@@ -370,19 +369,35 @@ function bindViewerEvents() {
   viewerEl.addEventListener('touchend', e => {
     lastTouchTime = Date.now();
     if (isEditModeActive()) return;
-    if (e.target.closest('.song-spot, .link-layer a')) return;
 
     const endX = e.changedTouches[0].clientX;
     const endY = e.changedTouches[0].clientY;
     const diffX = endX - touchStartX;
     const diffY = endY - touchStartY;
 
+    // 1) 하단 영역(화면 하단 95px 이내)에서 살짝 위로 스와이프할 때 페이지 이동 바 표시
+    if (touchStartY >= window.innerHeight - 95 && diffY < -24 && Math.abs(diffY) > Math.abs(diffX)) {
+      showBottomNavBar();
+      return;
+    }
+
+    // 2) 열린 페이지 이동 바를 아래로 쓸어내리면 닫기
+    const bar = document.getElementById('bottom-nav-bar');
+    if (bar && bar.classList.contains('active') && diffY > 24 && Math.abs(diffY) > Math.abs(diffX)) {
+      bar.classList.remove('active');
+      return;
+    }
+
+    if (e.target.closest('.song-spot, .link-layer a')) return;
+
+    // 3) 좌우 스와이프 페이지 이동
     if (Math.abs(diffX) > 55 && Math.abs(diffX) > Math.abs(diffY)) {
       if (diffX < 0) nextPage();
       else prevPage();
       return;
     }
 
+    // 4) 좌우 가장자리 짧은 탭 페이지 이동
     if (Math.abs(diffX) < 12 && Math.abs(diffY) < 12) {
       handleEdgeNavigation(endX);
     }
@@ -392,6 +407,12 @@ function bindViewerEvents() {
     if (Date.now() - lastTouchTime < 500) return;
     if (isEditModeActive()) return;
     if (e.target.closest('.song-spot, .link-layer a')) return;
+
+    // PC 환경 보조: 최하단 24px 빈 여백 클릭 시 페이지 바 열기
+    if (e.clientY >= window.innerHeight - 24) {
+      showBottomNavBar();
+      return;
+    }
 
     handleEdgeNavigation(e.clientX);
   });
@@ -409,6 +430,7 @@ function bindViewerEvents() {
 
   window.addEventListener('resize', handleViewportChange);
   window.addEventListener('orientationchange', () => setTimeout(handleViewportChange, 150));
+  window.addEventListener('floating-controls-sync', syncFloatingControlsPosition);
 
   if (typeof ResizeObserver !== 'undefined' && viewerEl) {
     const ro = new ResizeObserver(() => {
@@ -669,17 +691,13 @@ export function refreshAllSongLayers() {
 function updateTocModeUI(isTocPage) {
   const toggleBtn = document.getElementById('btn-toc-mode-toggle');
   const playToggleBtn = document.getElementById('btn-floating-song-toggle');
-  const shuffleBtn = document.getElementById('btn-floating-song-shuffle');
   const spread = document.getElementById('book-spread');
 
   const isBookMode = getActiveAppMode() === 'book';
-  const isCoverOrToc = isBookMode && (isTocPage || currentLeftPageNum === 1 || currentRightPageNum === 1);
+  const isCoverPage = isBookMode && (currentLeftPageNum === 1 || currentRightPageNum === 1);
 
   if (playToggleBtn) {
-    playToggleBtn.classList.toggle('hidden', !isBookMode);
-  }
-  if (shuffleBtn) {
-    shuffleBtn.classList.toggle('hidden', !isCoverOrToc);
+    playToggleBtn.classList.toggle('hidden', !isCoverPage);
   }
 
   if (!isTocPage || !isBookMode) {
@@ -714,6 +732,7 @@ async function navigateToDestination(dest) {
     const destArray = (typeof dest === 'string') ? await pdfDoc.getDestination(dest) : dest;
     if (Array.isArray(destArray) && destArray[0]) {
       const idx = (typeof destArray[0] === 'object') ? await pdfDoc.getPageIndex(destArray[0]) : destArray[0];
+      stopAllBookAudio();
       currentPage = idx + 1;
       await renderCurrentView();
     }
@@ -722,6 +741,7 @@ async function navigateToDestination(dest) {
 
 export function prevPage() {
   if (currentPage <= 1) return;
+  stopAllBookAudio();
   if (!isSpreadMode) currentPage--;
   else currentPage = (currentPage <= 3) ? 1 : currentPage - 2;
   renderCurrentView();
@@ -729,6 +749,7 @@ export function prevPage() {
 
 export function nextPage() {
   if (currentPage >= totalPages) return;
+  stopAllBookAudio();
   if (!isSpreadMode) currentPage++;
   else currentPage = (currentPage === 1) ? 2 : Math.min(totalPages, currentPage + 2);
   renderCurrentView();
@@ -736,7 +757,8 @@ export function nextPage() {
 
 export function goToPage(val) {
   const num = parseInt(val, 10);
-  if (!isNaN(num) && num >= 1 && num <= totalPages) {
+  if (!isNaN(num) && num >= 1 && num <= totalPages && num !== currentPage) {
+    stopAllBookAudio();
     currentPage = num;
     renderCurrentView();
   }
