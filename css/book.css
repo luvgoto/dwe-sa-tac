@@ -163,12 +163,14 @@
   z-index: 40;
   pointer-events: none;
 }
+
 #bottom-nav-bar {
   opacity: 0;
   transform: translateY(16px);
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
+
 #bottom-nav-bar.active {
   opacity: 1;
   transform: translateY(0);
@@ -177,76 +179,4 @@
 
 #bottom-nav-bar input[type=range] {
   accent-color: #2563eb;
-}
-
-/* ==========================================================================
-   스마트폰(모바일) 전용 화면 균형 보정 (태블릿 및 PC는 절대 영향 없음)
-   ========================================================================== */
-
-/* 1. 스마트폰 가로모드 전용 (높이 450px 이하 & 너비 950px 이하) */
-@media (orientation: landscape) and (max-height: 450px) and (max-width: 950px) and (pointer: coarse) {
-  body::after {
-    content: "";
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: auto;
-    width: 34px;
-    height: auto;
-    background-color: #f6f6f6;
-    z-index: 9999;
-    pointer-events: none;
-  }
-
-  #top-panel {
-    padding-right: 44px !important;
-  }
-
-  #viewer-container,
-  #section-tac {
-    width: calc(100% - 34px) !important;
-    margin-left: 0 !important;
-    margin-right: 34px !important;
-    box-sizing: border-box !important;
-  }
-
-  #floating-top-controls {
-    right: 44px !important;
-  }
-
-  #bottom-nav-trigger {
-    right: 34px !important;
-  }
-}
-
-/* 2. 스마트폰 세로모드 전용 (너비 480px 이하) */
-@media (orientation: portrait) and (max-width: 480px) and (pointer: coarse) {
-  body::after {
-    content: "";
-    position: fixed;
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    height: 34px;
-    background-color: #f6f6f6;
-    z-index: 9999;
-    pointer-events: none;
-  }
-
-  #viewer-container,
-  #section-tac {
-    height: calc(100% - 34px) !important;
-    margin-bottom: 34px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding-top: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  #bottom-nav-trigger {
-    bottom: 34px !important;
-  }
 }
