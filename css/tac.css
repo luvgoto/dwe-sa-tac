@@ -8,6 +8,12 @@
   display: none !important;
 }
 
+/* 전체화면 시 우측 플로팅 버튼(연속재생·전체화면 복귀)을 우측 최상단으로 확실히 고정 */
+#top-panel.hidden ~ #floating-top-controls {
+  top: 0.6rem !important;
+  right: 0.75rem !important;
+}
+
 /* ==========================================================================
    스마트폰 가로모드(Landscape) 전용: 좌측 폭을 'BLUE · 1/510 · ★' 너비에 딱 맞추고 우측 카드 최대화
    ========================================================================== */
@@ -16,13 +22,13 @@
     overflow: hidden !important;
   }
 
-  #view-card {
+  /* :not(.hidden)을 반드시 포함해야 QUIZ 전환 시 카드 뷰가 정상적으로 숨겨짐 */
+  #view-card:not(.hidden) {
     max-width: 100% !important;
     height: 100% !important;
     margin: 0 !important;
     padding: 0.5rem 0.75rem !important;
     display: grid !important;
-    /* 좌측 컬럼 너비를 상단 배지 줄(max-content) 너비로 고정하고 나머지를 모두 우측 카드(1fr)에 할당 */
     grid-template-columns: max-content 1fr !important;
     grid-template-rows: auto 1fr auto !important;
     column-gap: 0.75rem !important;
@@ -122,7 +128,7 @@
 
 /* 태블릿 가로모드(높이 481px~540px 등) 보정 */
 @media (orientation: landscape) and (min-height: 481px) and (max-height: 540px) {
-  #view-card {
+  #view-card:not(.hidden) {
     padding-top: 0.5rem !important;
     padding-bottom: 0.5rem !important;
     gap: 0.4rem !important;
@@ -146,21 +152,23 @@
   }
 }
 
-/* 모바일 세로보기(Portrait) 전용: QUIZ 카드 3장 한 화면 압축 배치 */
+/* 모바일 세로보기(Portrait) 전용: QUIZ 맨 윗줄 + 질문줄 + 선택지 3개 균일 행간 배분 */
 @media (orientation: portrait) and (max-width: 767px) {
-  #view-quiz {
-    padding-top: 0.65rem !important;
-    padding-bottom: 0.65rem !important;
-    justify-content: space-between;
-    min-height: calc(100lvh - 2.75rem);
+  #view-quiz:not(.hidden) {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    margin-top: auto !important;
+    margin-bottom: auto !important;
+    justify-content: center !important;
+    min-height: auto !important;
   }
 
   #view-quiz > * + * {
-    margin-top: 0.5rem !important;
+    margin-top: 0.75rem !important;
   }
 
   #quiz-speaker-banner {
-    padding: 0.6rem 0.85rem !important;
+    padding: 0.65rem 0.85rem !important;
   }
 
   #quiz-speaker-banner .w-10,
@@ -171,18 +179,18 @@
   }
 
   #quiz-options-grid {
-    gap: 0.5rem !important;
+    gap: 0.75rem !important;
     padding-top: 0 !important;
   }
 
   #quiz-options-grid > * {
-    max-height: 21vh !important;
-    padding-top: 0.35rem !important;
-    padding-bottom: 0.35rem !important;
+    max-height: 20vh !important;
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
   }
 
   #quiz-options-grid img {
-    max-height: 15.5vh !important;
+    max-height: 15vh !important;
     width: auto !important;
     margin: 0 auto !important;
     object-fit: contain !important;
@@ -195,7 +203,7 @@
     overflow-y: auto !important;
   }
 
-  #view-quiz {
+  #view-quiz:not(.hidden) {
     padding-top: 0.5rem !important;
     padding-bottom: 0.5rem !important;
     gap: 0.5rem !important;
