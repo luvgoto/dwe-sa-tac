@@ -183,32 +183,31 @@
    모바일(스마트폰) 전용 화면 균형 보정 (PC 및 태블릿은 기존 레이아웃 그대로 유지)
    ========================================================================== */
 
-/* 1. 모바일 가로모드(일반 + 전체화면 모두): 좌측 시스템 컷아웃 회색 영역과 동일한 우측 회색 기둥 생성 */
+/* 1. 모바일 가로모드(일반 + 전체화면 모두): 우측 대칭 회색 기둥 (34px) */
 @media (orientation: landscape) and (max-height: 550px) and (pointer: coarse) {
   :root {
     --mobile-right-pillar: 34px;
     --mobile-pillar-color: #f6f6f6;
   }
 
-  /* 우측 끝에 좌측 펀치홀 영역과 동일한 색·폭의 회색 기둥 고정 */
   body::after {
     content: "";
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
+    left: auto;
     width: var(--mobile-right-pillar);
+    height: auto;
     background-color: var(--mobile-pillar-color);
     z-index: 9999;
     pointer-events: none;
   }
 
-  /* 상단 헤더(#top-panel)의 2쪽/TAC/전체화면 버튼들이 우측 회색 기둥 안쪽에 배치되도록 여백 확보 */
   #top-panel {
     padding-right: calc(var(--mobile-right-pillar) + 10px) !important;
   }
 
-  /* BOOK 뷰어와 TAC 영역 모두 우측 회색 기둥만큼 안쪽으로 수축 */
   #viewer-container,
   #section-tac {
     width: calc(100% - var(--mobile-right-pillar)) !important;
@@ -217,38 +216,36 @@
     box-sizing: border-box !important;
   }
 
-  /* 플로팅 컨트롤러(원형 버튼)도 우측 회색 기둥 안쪽으로 이동 */
   #floating-top-controls {
     right: calc(var(--mobile-right-pillar) + 10px) !important;
   }
 
-  /* 하단 페이지 슬라이더 바도 좌우 대칭 중앙에 위치 */
   #bottom-nav-trigger {
     right: var(--mobile-right-pillar) !important;
   }
 }
 
-/* 2. 모바일 세로모드: 상단 펀치홀 레터박스와 대칭되는 하단 레터박스 생성 및 중앙 정렬 */
+/* 2. 모바일 세로모드(일반 + 전체화면 모두): 하단 대칭 레터박스 (34px) 및 중앙 정렬 */
 @media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
   :root {
     --mobile-bottom-pillar: 34px;
     --mobile-pillar-color: #f6f6f6;
   }
 
-  /* 하단 끝에 상단 펀치홀 영역과 동일한 색·폭의 레터박스 고정 */
   body::after {
     content: "";
     position: fixed;
+    top: auto;
     left: 0;
     right: 0;
     bottom: 0;
+    width: auto;
     height: var(--mobile-bottom-pillar);
     background-color: var(--mobile-pillar-color);
     z-index: 9999;
     pointer-events: none;
   }
 
-  /* 상단 레터박스와 하단 레터박스 사이 영역의 정중앙에 PDF 배치 */
   #viewer-container,
   #section-tac {
     height: calc(100% - var(--mobile-bottom-pillar)) !important;
@@ -259,7 +256,6 @@
     box-sizing: border-box !important;
   }
 
-  /* 하단 페이지 슬라이더 바도 하단 레터박스 위쪽으로 자연스럽게 배치 */
   #bottom-nav-trigger {
     bottom: var(--mobile-bottom-pillar) !important;
   }
